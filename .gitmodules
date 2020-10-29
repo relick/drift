@@ -4,6 +4,3 @@
 [submodule "ecs"]
 	path = ecs
 	url = https://github.com/kgorking/ecs
-[submodule "quickvec"]
-	path = quickvec
-	url = https://bitbucket.org/kellogg92/quickvec

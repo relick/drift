@@ -1,13 +1,20 @@
+#pragma once
+
 #include "common.h"
 
+#include <ecs/ecs.h>
+
+// Core
 namespace Core
 {
-
-#include "components/transform.h"
-
+	// Only one entity will get this, allows for systems with only global components to run once per frame
+	struct GlobalWorkaround_Tag
+	{
+		ecs_flags(ecs::flag::tag);
+	};
 }
 
-namespace Game
-{
+#include "components/Core/Render.h"
+#include "components/Core/Transform.h"
 
-}
+// Game

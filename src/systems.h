@@ -1,11 +1,9 @@
+#pragma once
+
 #include "common.h"
+#include "systems/SystemOrdering.h"
 
-namespace Core
-{
+// Core
+#include "systems/ImGui.h"
 
-}
-
-namespace Game
-{
-
-}
+// Game

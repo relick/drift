@@ -1,3 +1,12 @@
+#pragma once
+
+#ifndef _DEBUG
+#define DEBUG 0
+#endif
+
+#define IMGUI_DEBUG_ENABLED _DEBUG
+#define SOKOL_GLCORE33
+
 // Define some number types
 #include <cstddef>
 #include <cstdint>
@@ -30,3 +39,4 @@ using fTrans = b3Transform;
 using fTransData = b3TransformData;
 using fMat3 = b3Matrix3x3;
 using fMat3Data = b3Matrix3x3Data;
+

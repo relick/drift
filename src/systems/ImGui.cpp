@@ -15,7 +15,7 @@
 #include <sokol_time.h>
 #include <ecs/ecs.h>
 
-sg_imgui_t gfxImGuiState;
+sg_imgui_t gfxImGuiState{};
 
 namespace Core
 {

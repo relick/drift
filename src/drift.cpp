@@ -18,23 +18,22 @@
 #include <sokol_glue.h>
 #include <sokol_time.h>
 
+#include <util/sokol_gl.h>
+
 #include "CubeTest.h"
 
 void initialise_cb()
 {
-	// gfx setup start
+	// sokol setup start
 	{
 		sg_desc gfxDesc{};
 		gfxDesc.context = sapp_sgcontext();
 		sg_setup(&gfxDesc);
+		Core::Render::TextAndGLDebugSetup();
+		Core::Render::ImGuiSetup();
+		stm_setup();
 	}
-	Core::Render::ImGuiSetup();
-	// gfx setup done
-
-	// time setup
-	stm_setup();
-	// time setup done
-
+	// sokol setup done
 
 
 	// Setup entity manager
@@ -69,6 +68,9 @@ void initialise_cb()
 
 	ecs::make_system<ecs::opts::group<Sys::RENDER_START>>([](Core::Render::FrameData const& _rfd, Core::Render::Frame_Tag)
 	{
+		// update sgl viewport
+		sgl_viewport(0, 0, _rfd.w, _rfd.h, true);
+		sgl_scissor_rect(0, 0, _rfd.w, _rfd.h, true);
 
 	});
 
@@ -83,11 +85,14 @@ void initialise_cb()
 		color_attach_action.val[3] = 1.0f;
 		pass_action.colors[0] = color_attach_action;
 
-		sg_begin_default_pass(&pass_action, static_cast<int>(_rfd.w), static_cast<int>(_rfd.h));
+		sg_begin_default_pass(&pass_action, _rfd.w, _rfd.h);
 	});
 
-	ecs::make_system<ecs::opts::group<Sys::DEFAULT_PASS_END>>([](Core::Render::DefaultPass_Tag)
+	ecs::make_system<ecs::opts::group<Sys::DEFAULT_PASS_END>>([](Core::Render::FrameData const& _rfd, Core::Render::DefaultPass_Tag)
 	{
+		// End of the default pass -
+		// 3D scene drawn already, text layer next, imgui last.
+		Core::Render::TextAndGLDebugRender(_rfd.w, _rfd.h);
 		Core::Render::ImGuiRender();
 		sg_end_pass();
 	});
@@ -110,6 +115,7 @@ void frame_cb()
 void cleanup_cb()
 {
 	Core::Render::ImGuiCleanup();
+	Core::Render::TextAndGLDebugCleanup();
 	sg_shutdown();
 }
 
@@ -132,8 +138,8 @@ sapp_desc sokol_main(int argc, char* argv[])
 	desc.event_cb = &event_cb;
 	desc.fail_cb = &fail_cb;
 
-	desc.width = 640;
-	desc.height = 480;
+	desc.width = WINDOW_START_WIDTH;
+	desc.height = WINDOW_START_HEIGHT;
 	desc.sample_count = 4;
 	desc.window_title = "drift";
 

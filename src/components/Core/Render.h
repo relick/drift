@@ -10,10 +10,10 @@ namespace Core
 		{
 			ecs_flags(ecs::flag::global);
 
-			int w{ 0 };
-			int h{ 0 };
-			float fW{ 0.0f };
-			float fH{ 0.0f };
+			int w{ WINDOW_START_WIDTH };
+			int h{ WINDOW_START_HEIGHT };
+			float fW{ static_cast<float>(w) };
+			float fH{ static_cast<float>(h) };
 		};
 		struct Frame_Tag
 		{

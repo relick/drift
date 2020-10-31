@@ -5,5 +5,6 @@
 
 // Core
 #include "systems/ImGui.h"
+#include "systems/TextAndGLDebug.h"
 
 // Game

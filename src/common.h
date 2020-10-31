@@ -40,3 +40,5 @@ using fTransData = b3TransformData;
 using fMat3 = b3Matrix3x3;
 using fMat3Data = b3Matrix3x3Data;
 
+#define WINDOW_START_WIDTH 640
+#define WINDOW_START_HEIGHT 480

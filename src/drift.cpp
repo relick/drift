@@ -16,6 +16,7 @@
 #include <sokol_app.h>
 #include <sokol_gfx.h>
 #include <sokol_glue.h>
+#include <sokol_time.h>
 
 #include "CubeTest.h"
 
@@ -27,10 +28,12 @@ void initialise_cb()
 		gfxDesc.context = sapp_sgcontext();
 		sg_setup(&gfxDesc);
 	}
-#if IMGUI_DEBUG_ENABLED
 	Core::Render::ImGuiSetup();
-#endif
 	// gfx setup done
+
+	// time setup
+	stm_setup();
+	// time setup done
 
 
 
@@ -46,20 +49,30 @@ void initialise_cb()
 	setup_cube();
 
 	// Setup systems
-	ecs::make_system<ecs::opts::group<Sys::RENDER_START>>([](Core::Render::FrameData& _fd, Core::GlobalWorkaround_Tag)
+	ecs::make_system<ecs::opts::group<Sys::FRAME_START>>([](Core::FrameData& _fd, Core::GlobalWorkaround_Tag)
 	{
-		_fd.w = sapp_width();
-		_fd.fW = static_cast<float>(_fd.w);
-		_fd.h = sapp_height();
-		_fd.fH = static_cast<float>(_fd.h);
+		uint64 const lappedTicks = stm_laptime(&_fd.m_lastFrameTicks);
+		// stm_round_to_common_refresh_rate?
+		_fd.unscaled_ddt = stm_sec(lappedTicks);
+		_fd.unscaled_dt = static_cast<float>(_fd.unscaled_ddt);
+		_fd.ddt = _fd.m_scale * _fd.unscaled_ddt;
+		_fd.dt = static_cast<float>(_fd.ddt);
 	});
 
-	ecs::make_system<ecs::opts::group<Sys::RENDER_START>>([](Core::Render::FrameData& _fd, Core::Render::Frame_Tag)
+	ecs::make_system<ecs::opts::group<Sys::RENDER_START>>([](Core::Render::FrameData& _rfd, Core::GlobalWorkaround_Tag)
+	{
+		_rfd.w = sapp_width();
+		_rfd.fW = static_cast<float>(_rfd.w);
+		_rfd.h = sapp_height();
+		_rfd.fH = static_cast<float>(_rfd.h);
+	});
+
+	ecs::make_system<ecs::opts::group<Sys::RENDER_START>>([](Core::Render::FrameData const& _rfd, Core::Render::Frame_Tag)
 	{
 
 	});
 
-	ecs::make_system<ecs::opts::group<Sys::DEFAULT_PASS_START>>([](Core::Render::FrameData& _fd, Core::Render::DefaultPass_Tag)
+	ecs::make_system<ecs::opts::group<Sys::DEFAULT_PASS_START>>([](Core::Render::FrameData const& _rfd, Core::Render::DefaultPass_Tag)
 	{
 		sg_pass_action pass_action{};
 		sg_color_attachment_action color_attach_action{};
@@ -70,14 +83,12 @@ void initialise_cb()
 		color_attach_action.val[3] = 1.0f;
 		pass_action.colors[0] = color_attach_action;
 
-		sg_begin_default_pass(&pass_action, static_cast<int>(_fd.w), static_cast<int>(_fd.h));
+		sg_begin_default_pass(&pass_action, static_cast<int>(_rfd.w), static_cast<int>(_rfd.h));
 	});
 
 	ecs::make_system<ecs::opts::group<Sys::DEFAULT_PASS_END>>([](Core::Render::DefaultPass_Tag)
 	{
-#if IMGUI_DEBUG_ENABLED
 		Core::Render::ImGuiRender();
-#endif
 		sg_end_pass();
 	});
 
@@ -98,17 +109,13 @@ void frame_cb()
 
 void cleanup_cb()
 {
-#if IMGUI_DEBUG_ENABLED
 	Core::Render::ImGuiCleanup();
-#endif
 	sg_shutdown();
 }
 
 void event_cb(sapp_event const* _event)
 {
-#if IMGUI_DEBUG_ENABLED
 	Core::Render::ImGuiEvent(_event);
-#endif
 }
 
 void fail_cb(char const* _error)

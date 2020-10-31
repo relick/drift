@@ -14,6 +14,7 @@ namespace Core
 	};
 }
 
+#include "components/Core/Frame.h"
 #include "components/Core/Render.h"
 #include "components/Core/Transform.h"
 

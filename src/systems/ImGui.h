@@ -2,8 +2,6 @@
 
 #include "common.h"
 
-#if IMGUI_DEBUG_ENABLED
-
 struct sapp_event;
 
 namespace Core
@@ -16,5 +14,3 @@ namespace Core
 		void ImGuiEvent(sapp_event const* _event);
 	}
 }
-
-#endif

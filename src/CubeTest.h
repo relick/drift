@@ -38,7 +38,10 @@ namespace Core
 	namespace Render
 	{
 		struct CubeTest
-		{};
+		{
+			float rx{ 0.0f };
+			float ry{ 0.0f };
+		};
 	}
 }
 
@@ -163,15 +166,22 @@ void setup_cube()
 	ecs::add_component(cube2, Core::Transform(fQuat::getIdentity(), LoadVec3(0.0f, -1.0f, 0.0f)));
 	ecs::add_component(cube2, Core::Render::CubeTest{});
 
+	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::FrameData const& _fd, Core::Render::CubeTest& _cubeTest, Core::Transform& _t)
+	{
+		_cubeTest.rx += 1.0f * _fd.dt;
+		_cubeTest.ry += 2.0f * _fd.dt;
+		_t.T().getBasis().setEulerYPR(_cubeTest.ry, 0.0f, _cubeTest.rx);
+	});
+
 	ecs::make_system<ecs::opts::group<Sys::DEFAULT_PASS>, ecs::opts::not_parallel>([](Core::Render::FrameData& _fd, Core::Render::CubeTest& _cubeTest, Core::Transform& _t)
 	{
 		vs_params_t vs_params;
-		hmm_mat4 proj = HMM_Perspective(60.0f, _fd.w / _fd.h, 0.01f, 10.0f);
+		hmm_mat4 proj = HMM_Perspective(60.0f, _fd.fW / _fd.fH, 0.01f, 10.0f);
 		fVec3 const& pos = _t.T().getOrigin();
 		fQuat quat;
 		_t.T().getBasis().getRotation(quat);
 
-		hmm_mat4 view = HMM_LookAt(HMM_Vec3(0.0f, 0.0f, 6.0f), HMM_Vec3(0.0f, 0.0f, 0.0f), HMM_Vec3(0.0f, 1.0f, 0.0f));
+		hmm_mat4 view = HMM_LookAt(HMM_Vec3(0.0f, 1.5f, 6.0f), HMM_Vec3(0.0f, 0.0f, 0.0f), HMM_Vec3(0.0f, 1.0f, 0.0f));
 		hmm_mat4 view_proj = HMM_MultiplyMat4(proj, view);
 
 		hmm_vec3 position = HMM_Vec3(pos.x, pos.y, pos.z);

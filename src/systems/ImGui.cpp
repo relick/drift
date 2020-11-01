@@ -46,18 +46,16 @@ namespace Core
 
 			void Setup
 			(
-				ecs::entity_id _renderEnt
 			)
 			{
 #if IMGUI_DEBUG_ENABLED
-				ecs::add_component(_renderEnt, Core::Render::DImGui::ImGuiData{});
 
 				ecs::make_system<ecs::opts::group<Sys::FRAME_START>>([](Core::FrameData const& _fd, Core::Render::FrameData const& _rfd, Core::Render::Frame_Tag)
 				{
 					simgui_new_frame(_rfd.w, _rfd.h, _fd.unscaled_ddt > 0.0 ? _fd.unscaled_ddt : DBL_EPSILON);
 				});
 
-				ecs::make_system<ecs::opts::group<Sys::IMGUI>>([](Core::Render::DImGui::ImGuiData& _id, Core::Render::FrameData const& _rfd)
+				ecs::make_system<ecs::opts::group<Sys::IMGUI>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::GlobalWorkaround_Tag)
 				{
 					// Draw gfx debug UI
 					sg_imgui_draw(&gfxImGuiState);

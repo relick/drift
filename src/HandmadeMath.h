@@ -244,7 +244,7 @@
 #include <stdint.h> // This is for types
 
 #ifdef HANDMADE_MATH__USE_SSE
-#include <xmmintrin.h>
+#include <intrin.h>
 #endif
 
 #ifndef HANDMADE_MATH_H
@@ -572,6 +572,8 @@ extern "C"
     HMMDEF hmm_mat4 HMM_DivideMat4f(hmm_mat4 Matrix, float Scalar);
 
     HMMDEF hmm_mat4 HMM_Transpose(hmm_mat4 Matrix);
+    HMMDEF hmm_mat4 HMM_InverseNoScale(hmm_mat4 Matrix);
+    HMMDEF hmm_mat4 HMM_Inverse(hmm_mat4 Matrix);
 
     HMMDEF hmm_mat4 HMM_Orthographic(float Left, float Right, float Bottom, float Top, float Near, float Far);
     HMMDEF hmm_mat4 HMM_Perspective(float FOV, float AspectRatio, float Near, float Far);
@@ -1594,6 +1596,97 @@ HMM_Transpose(hmm_mat4 Matrix)
 #endif 
 
     return (Result);
+}
+
+
+#define MakeShuffleMask(x,y,z,w)           (x | (y<<2) | (z<<4) | (w<<6))
+
+// vec(0, 1, 2, 3) -> (vec[x], vec[y], vec[z], vec[w])
+#define VecSwizzleMask(vec, mask)          _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(vec), mask))
+#define VecSwizzle(vec, x, y, z, w)        VecSwizzleMask(vec, MakeShuffleMask(x,y,z,w))
+#define VecSwizzle1(vec, x)                VecSwizzleMask(vec, MakeShuffleMask(x,x,x,x))
+// special swizzle
+#define VecSwizzle_0022(vec)               _mm_moveldup_ps(vec)
+#define VecSwizzle_1133(vec)               _mm_movehdup_ps(vec)
+
+// return (vec1[x], vec1[y], vec2[z], vec2[w])
+#define VecShuffle(vec1, vec2, x,y,z,w)    _mm_shuffle_ps(vec1, vec2, MakeShuffleMask(x,y,z,w))
+// special shuffle
+#define VecShuffle_0101(vec1, vec2)        _mm_movelh_ps(vec1, vec2)
+#define VecShuffle_2323(vec1, vec2)        _mm_movehl_ps(vec2, vec1)
+
+
+HINLINE hmm_mat4
+HMM_InverseNoScale(hmm_mat4 Matrix)
+{
+    hmm_mat4 r = HMM_Mat4();
+
+#ifdef HANDMADE_MATH__USE_SSE
+    // transpose 3x3, we know m03 = m13 = m23 = 0
+    __m128 t0 = VecShuffle_0101(Matrix.Rows[0], Matrix.Rows[1]); // 00, 01, 10, 11
+    __m128 t1 = VecShuffle_2323(Matrix.Rows[0], Matrix.Rows[1]); // 02, 03, 12, 13
+    r.Rows[0] = VecShuffle(t0, Matrix.Rows[2], 0, 2, 0, 3); // 00, 10, 20, 23(=0)
+    r.Rows[1] = VecShuffle(t0, Matrix.Rows[2], 1, 3, 1, 3); // 01, 11, 21, 23(=0)
+    r.Rows[2] = VecShuffle(t1, Matrix.Rows[2], 0, 2, 2, 3); // 02, 12, 22, 23(=0)
+
+    // last line
+    r.Rows[3] = _mm_mul_ps(r.Rows[0], VecSwizzle1(Matrix.Rows[3], 0));
+    r.Rows[3] = _mm_add_ps(r.Rows[3], _mm_mul_ps(r.Rows[1], VecSwizzle1(Matrix.Rows[3], 1)));
+    r.Rows[3] = _mm_add_ps(r.Rows[3], _mm_mul_ps(r.Rows[2], VecSwizzle1(Matrix.Rows[3], 2)));
+    r.Rows[3] = _mm_sub_ps(_mm_setr_ps(0.f, 0.f, 0.f, 1.f), r.Rows[3]);
+
+#else
+    assert(false);
+#endif 
+
+    return r;
+}
+
+#define SMALL_NUMBER		(1.e-8f)
+
+// Requires this matrix to be transform matrix
+HINLINE hmm_mat4
+HMM_Inverse(hmm_mat4 Matrix)
+{
+    hmm_mat4 r = HMM_Mat4();
+
+#ifdef HANDMADE_MATH__USE_SSE
+    // transpose 3x3, we know m03 = m13 = m23 = 0
+    __m128 t0 = VecShuffle_0101(Matrix.Rows[0], Matrix.Rows[1]); // 00, 01, 10, 11
+    __m128 t1 = VecShuffle_2323(Matrix.Rows[0], Matrix.Rows[1]); // 02, 03, 12, 13
+    r.Rows[0] = VecShuffle(t0, Matrix.Rows[2], 0, 2, 0, 3); // 00, 10, 20, 23(=0)
+    r.Rows[1] = VecShuffle(t0, Matrix.Rows[2], 1, 3, 1, 3); // 01, 11, 21, 23(=0)
+    r.Rows[2] = VecShuffle(t1, Matrix.Rows[2], 0, 2, 2, 3); // 02, 12, 22, 23(=0)
+
+    // (SizeSqr(Rows[0]), SizeSqr(Rows[1]), SizeSqr(Rows[2]), 0)
+    __m128 sizeSqr;
+    sizeSqr = _mm_mul_ps(r.Rows[0], r.Rows[0]);
+    sizeSqr = _mm_add_ps(sizeSqr, _mm_mul_ps(r.Rows[1], r.Rows[1]));
+    sizeSqr = _mm_add_ps(sizeSqr, _mm_mul_ps(r.Rows[2], r.Rows[2]));
+
+    // optional test to avoid divide by 0
+    __m128 one = _mm_set1_ps(1.f);
+    // for each component, if(sizeSqr < SMALL_NUMBER) sizeSqr = 1;
+    __m128 rSizeSqr = _mm_blendv_ps(
+        _mm_div_ps(one, sizeSqr),
+        one,
+        _mm_cmplt_ps(sizeSqr, _mm_set1_ps(SMALL_NUMBER))
+    );
+
+    r.Rows[0] = _mm_mul_ps(r.Rows[0], rSizeSqr);
+    r.Rows[1] = _mm_mul_ps(r.Rows[1], rSizeSqr);
+    r.Rows[2] = _mm_mul_ps(r.Rows[2], rSizeSqr);
+
+    // last line
+    r.Rows[3] = _mm_mul_ps(r.Rows[0], VecSwizzle1(Matrix.Rows[3], 0));
+    r.Rows[3] = _mm_add_ps(r.Rows[3], _mm_mul_ps(r.Rows[1], VecSwizzle1(Matrix.Rows[3], 1)));
+    r.Rows[3] = _mm_add_ps(r.Rows[3], _mm_mul_ps(r.Rows[2], VecSwizzle1(Matrix.Rows[3], 2)));
+    r.Rows[3] = _mm_sub_ps(_mm_setr_ps(0.f, 0.f, 0.f, 1.f), r.Rows[3]);
+#else
+    assert(false);
+#endif
+
+    return r;
 }
 
 HINLINE hmm_mat4

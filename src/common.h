@@ -55,3 +55,16 @@ using fMat3Data = b3Matrix3x3Data;
 #define WINDOW_START_HEIGHT 480
 
 #define COL_WHITE static_cast<uint32>(-1)
+
+struct InputStuff
+{
+	float mouse_dx{ 0.0f };
+	float mouse_dy{ 0.0f };
+
+	bool up{ false };
+	bool down{ false };
+	bool left{ false };
+	bool right{ false };
+};
+
+extern InputStuff inputStuff;

@@ -13,7 +13,7 @@ namespace Core
 		namespace DImGui
 		{
 			void Init();
-			void Setup(ecs::entity_id _renderEnt);
+			void Setup();
 			void Render();
 			void Cleanup();
 			void Event(sapp_event const* _event);

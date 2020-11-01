@@ -67,7 +67,7 @@ namespace Core
 
 				Core::Render::DImGui::AddMenuItem("GL", "Text Debug", &fsTest.showImguiWin);
 
-				ecs::make_system<ecs::opts::group<Sys::IMGUI>>([](Core::Render::DImGui::ImGuiData& _id)
+				ecs::make_system<ecs::opts::group<Sys::IMGUI>>([](Core::MT_Only&, Core::GlobalWorkaround_Tag)
 				{
 					if (fsTest.showImguiWin)
 					{
@@ -81,16 +81,8 @@ namespace Core
 						ImGui::End();
 					}
 				});
-#endif
-			}
 
-			void Render
-			(
-				int _w,
-				int _h
-			)
-			{
-#if TEXT_TEST
+				ecs::make_system<ecs::opts::group<Sys::TEXT>>([](Core::MT_Only&, Core::GlobalWorkaround_Tag)
 				{
 					fonsClearState(fonsContext);
 
@@ -103,9 +95,16 @@ namespace Core
 					{
 						fonsDrawDebug(fonsContext, fsTest.pos.x, fsTest.pos.y);
 					}
-				}
+				});
 #endif
+			}
 
+			void Render
+			(
+				int _w,
+				int _h
+			)
+			{
 				// Draw the text
 				sgl_defaults();
 

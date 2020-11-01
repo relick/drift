@@ -12,8 +12,15 @@ namespace Core
 	{
 		ecs_flags(ecs::flag::tag);
 	};
+
+	// Empty global component, take by ref in any system group that needs to run without parallelisation.
+	struct MT_Only
+	{
+		ecs_flags(ecs::flag::global);
+	};
 }
 
+#include "components/Core/Camera.h"
 #include "components/Core/Frame.h"
 #include "components/Core/Render.h"
 #include "components/Core/Transform.h"

@@ -13,5 +13,6 @@ namespace Core
 
 		// shorthand accessor
 		fTrans& T() { return m_transform; }
+		fTrans const& T() const { return m_transform; }
 	};
 }

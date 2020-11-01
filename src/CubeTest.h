@@ -32,7 +32,6 @@ struct
 	sg_bindings bind;
 } CubeTestState;
 
-
 namespace Core
 {
 	namespace Render

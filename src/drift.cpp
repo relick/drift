@@ -1,13 +1,12 @@
 ﻿#include "common.h"
 
-InputStuff inputStuff{};
-
 #include "components.h"
 #include "systems.h"
 
 #include <ecs/ecs.h>
 
 #include "managers/EntityManager.h"
+#include "managers/Input.h"
 
 #define HANDMADE_MATH_IMPLEMENTATION
 #define HANDMADE_MATH_CPP_MODE
@@ -41,6 +40,15 @@ void initialise_cb()
 	// lock mouse
 	sapp_lock_mouse(true);
 
+	Core::Input::Setup();
+	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::GlobalWorkaround_Tag)
+	{
+		if (Core::Input::Pressed(Core::Input::Action::Quit))
+		{
+			sapp_request_quit();
+		}
+	});
+
 	// Setup entity manager
 	ecs::entity_id global = Core::CreateEntity();
 	ecs::add_component(global, Core::GlobalWorkaround_Tag());
@@ -60,10 +68,19 @@ void initialise_cb()
 	// debug camera control
 	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::FrameData const& _fd, Core::Render::Camera& _cam, Core::Transform& _t, Core::Render::DebugCameraControl_Tag)
 	{
-		_cam.angle.x -= inputStuff.mouse_dy * 0.01f;
-		_cam.angle.y -= inputStuff.mouse_dx * 0.01f;
+		if (Core::Input::Pressed(Core::Input::Action::Debug_AimCamera))
+		{
+			sapp_lock_mouse(true);
+			fVec2 const mouseDelta = Core::Input::GetMouseDelta();
+			_cam.angle.x -= mouseDelta.y * 0.0005f;
+			_cam.angle.y -= mouseDelta.x * 0.0005f;
 
-		_t.T().getBasis().setEulerZYX(_cam.angle.x, _cam.angle.y, 0.0f);
+			_t.T().getBasis().setEulerZYX(_cam.angle.x, _cam.angle.y, 0.0f);
+		}
+		else
+		{
+			sapp_lock_mouse(false);
+		}
 
 		fVec3 front;
 		front.z = -cos(_cam.angle.y) * cos(_cam.angle.x);
@@ -74,14 +91,22 @@ void initialise_cb()
 		fVec3 right = front.cross(LoadVec3(0.0f, 1.0f, 0.0f)).normalize();  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
 
 		float velocity = 0.8f * _fd.dt;
-		if (inputStuff.up)
+		if (Core::Input::Pressed(Core::Input::Action::Forward))
+		{
 			_t.T().getOrigin() += front * velocity;
-		if (inputStuff.down)
+		}
+		if (Core::Input::Pressed(Core::Input::Action::Back))
+		{
 			_t.T().getOrigin() -= front * velocity;
-		if (inputStuff.left)
+		}
+		if (Core::Input::Pressed(Core::Input::Action::Left))
+		{
 			_t.T().getOrigin() -= right * velocity;
-		if (inputStuff.right)
+		}
+		if (Core::Input::Pressed(Core::Input::Action::Right))
+		{
 			_t.T().getOrigin() += right * velocity;
+		}
 	});
 
 	ecs::make_system<ecs::opts::group<Sys::FRAME_START>>([](Core::FrameData& _fd, Core::GlobalWorkaround_Tag)
@@ -143,16 +168,9 @@ void initialise_cb()
 
 }
 
-bool receivedMouseEvent = true;
-
 void frame_cb()
 {
-	if (!receivedMouseEvent)
-	{
-		inputStuff.mouse_dx = 0.0f;
-		inputStuff.mouse_dy = 0.0f;
-	}
-	receivedMouseEvent = false;
+	Core::Input::Update();
 	ecs::update();
 }
 
@@ -166,76 +184,7 @@ void cleanup_cb()
 void event_cb(sapp_event const* _event)
 {
 	Core::Render::DImGui::Event(_event);
-
-	switch (_event->type)
-	{
-	case SAPP_EVENTTYPE_KEY_DOWN:
-	{
-		switch (_event->key_code)
-		{
-		case SAPP_KEYCODE_ESCAPE:
-		{
-			sapp_request_quit();
-			break;
-		}
-		case SAPP_KEYCODE_W:
-		{
-			inputStuff.up = true;
-			break;
-		}
-		case SAPP_KEYCODE_A:
-		{
-			inputStuff.left = true;
-			break;
-		}
-		case SAPP_KEYCODE_S:
-		{
-			inputStuff.down = true;
-			break;
-		}
-		case SAPP_KEYCODE_D:
-		{
-			inputStuff.right = true;
-			break;
-		}
-		}
-		break;
-	}
-	case SAPP_EVENTTYPE_KEY_UP:
-	{
-		switch (_event->key_code)
-		{
-		case SAPP_KEYCODE_W:
-		{
-			inputStuff.up = false;
-			break;
-		}
-		case SAPP_KEYCODE_A:
-		{
-			inputStuff.left = false;
-			break;
-		}
-		case SAPP_KEYCODE_S:
-		{
-			inputStuff.down = false;
-			break;
-		}
-		case SAPP_KEYCODE_D:
-		{
-			inputStuff.right = false;
-			break;
-		}
-		}
-		break;
-	}
-	case SAPP_EVENTTYPE_MOUSE_MOVE:
-		receivedMouseEvent = true;
-		inputStuff.mouse_dx = _event->mouse_dx;
-		inputStuff.mouse_dy = _event->mouse_dy;
-		break;
-	default:
-		break;
-	}
+	Core::Input::Event(_event);
 }
 
 void fail_cb(char const* _error)

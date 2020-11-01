@@ -2,8 +2,6 @@
 
 #include "common.h"
 
-#include <ecs/entity_id.h>
-
 struct sapp_event;
 
 namespace Core

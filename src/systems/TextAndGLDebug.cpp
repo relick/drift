@@ -2,6 +2,7 @@
 
 #include "components.h"
 #include "SystemOrdering.h"
+#include "ImGui.h"
 
 #include <sokol_app.h>
 #include <sokol_gfx.h>
@@ -21,60 +22,91 @@
 #define SOKOL_FONTSTASH_IMPL
 #include <util/sokol_fontstash.h>
 
+#include <imgui.h>
 #include <ecs/ecs.h>
 
+FONScontext* fonsContext{ nullptr };
+uint32 fonsFontCount = 0;
+
+#define TEXT_TEST _DEBUG
+
+#if TEXT_TEST
 struct FontTest
 {
-	FONScontext* fonsContext;
 	int fontNormal;
-	float dx = 10, dy = 100;
-	unsigned int white = sfons_rgba(255, 255, 255, 255);
+	fVec2 pos{ 10, 100 };
+	fVec2 sizes{ 124.0f, 24.0f };
 	unsigned int brown = sfons_rgba(192, 128, 0, 128);
+	bool showImguiWin = false;
+	bool showText = false;
+	bool showDebug = false;
 } fsTest;
+#endif
 
 namespace Core
 {
 	namespace Render
 	{
-		void TextAndGLDebugSetup()
+		namespace TextAndGLDebug
 		{
-			// gl for debug + text
-			sgl_desc_t glDesc{};
-			glDesc.color_format = static_cast<sg_pixel_format>(sapp_color_format());
-			glDesc.depth_format = static_cast<sg_pixel_format>(sapp_depth_format());
-			glDesc.sample_count = sapp_sample_count();
-			sgl_setup(&glDesc);
-
-			fsTest.fonsContext = sfons_create(512, 512, FONS_ZERO_TOPLEFT);
-
-			// text test
-			// Add font to stash.
-			fsTest.fontNormal = fonsAddFont(fsTest.fonsContext, "roboto", "assets/fonts/Roboto-Light.ttf");
-		}
-
-		void TextAndGLDebugRender
-		(
-			int _w,
-			int _h
-		)
-		{
-			// text test
+			void Init()
 			{
-				fonsClearState(fsTest.fonsContext);
+				// gl for debug + text
+				sgl_desc_t glDesc{};
+				glDesc.color_format = static_cast<sg_pixel_format>(sapp_color_format());
+				glDesc.depth_format = static_cast<sg_pixel_format>(sapp_depth_format());
+				glDesc.sample_count = sapp_sample_count();
+				sgl_setup(&glDesc);
 
-				fonsSetFont(fsTest.fonsContext, fsTest.fontNormal);
-				fonsSetSize(fsTest.fonsContext, 124.0f);
-				fonsSetColor(fsTest.fonsContext, fsTest.white);
-				fonsDrawText(fsTest.fonsContext, fsTest.dx, fsTest.dy, "The big ", NULL);
+				fonsContext = sfons_create(512, 512, FONS_ZERO_TOPLEFT);
 
-				fonsSetSize(fsTest.fonsContext, 24.0f);
-				fonsSetColor(fsTest.fonsContext, fsTest.brown);
-				fonsDrawText(fsTest.fonsContext, fsTest.dx, fsTest.dy, "brown fox", NULL);
+#if TEXT_TEST
+				// Add font to stash.
+				fsTest.fontNormal = fonsAddFont(fonsContext, "roboto", "assets/fonts/Roboto-Light.ttf");
+				fonsFontCount++;
 
-				fonsDrawDebug(fsTest.fonsContext, -2.0, -2.0);
+				Core::Render::DImGui::AddMenuItem("GL", "Text Debug", &fsTest.showImguiWin);
+
+				ecs::make_system<ecs::opts::group<Sys::IMGUI>>([](Core::Render::DImGui::ImGuiData& _id)
+				{
+					if (fsTest.showImguiWin)
+					{
+						if (ImGui::Begin("Text Debug", &fsTest.showImguiWin, 0))
+						{
+							ImGui::Checkbox("Show Text", &fsTest.showText);
+							ImGui::DragFloat2("Text sizes", fsTest.sizes.m_floats, 10.0f, 0.0f, 124.0f);
+							ImGui::Checkbox("Show Debug", &fsTest.showDebug);
+							ImGui::DragFloat2("Positions", fsTest.pos.m_floats, 0.1f, 0.0f, 640.0f);
+						}
+						ImGui::End();
+					}
+				});
+#endif
 			}
 
+			void Render
+			(
+				int _w,
+				int _h
+			)
 			{
+#if TEXT_TEST
+				{
+					fonsClearState(fonsContext);
+
+					if (fsTest.showText)
+					{
+						RenderText(fsTest.fontNormal, fsTest.pos, "The big ", fsTest.sizes.m_floats[0]);
+						RenderText(fsTest.fontNormal, fsTest.pos, "brown fox", fsTest.sizes.m_floats[1], fsTest.brown);
+					}
+					if (fsTest.showDebug)
+					{
+						fonsDrawDebug(fonsContext, fsTest.pos.x, fsTest.pos.y);
+					}
+				}
+#endif
+
+				// Draw the text
 				sgl_defaults();
 
 				sgl_matrix_mode_projection();
@@ -84,15 +116,42 @@ namespace Core
 				sgl_matrix_mode_modelview();
 				sgl_load_identity();
 
-				sfons_flush(fsTest.fonsContext);
+				sfons_flush(fonsContext);
+				sgl_draw();
 			}
-			sgl_draw();
-		}
 
-		void TextAndGLDebugCleanup()
-		{
-			sfons_destroy(fsTest.fonsContext);
-			sgl_shutdown();
+			void Cleanup()
+			{
+				sfons_destroy(fonsContext);
+				fonsContext = nullptr;
+				sgl_shutdown();
+			}
+
+			bool RenderText
+			(
+				int32 _fontI,
+				fVec2 _tlPos,
+				char const* _text,
+				float _size,
+				uint32 _col
+			)
+			{
+				if (!fonsContext)
+				{
+					return false;
+				}
+				if (_fontI >= fonsFontCount)
+				{
+					return false;
+				}
+
+				fonsSetFont(fonsContext, _fontI);
+				fonsSetSize(fonsContext, _size);
+				fonsSetColor(fonsContext, _col);
+				fonsDrawText(fonsContext, _tlPos.x, _tlPos.y, _text, NULL);
+
+				return true;
+			}
 		}
 	}
 }

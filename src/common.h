@@ -28,6 +28,17 @@ using usize = std::size_t;
 #include <Bullet3Common/b3Quaternion.h>
 
 // f == float
+union fVec2
+{
+	float m_floats[2];
+	struct
+	{
+		float x;
+		float y;
+	};
+
+	fVec2(float _x, float _y) : x(_x), y(_y) {}
+};
 using fVec3 = b3Vector3;
 using fVec3Data = b3Vector3Data;
 #define LoadVec3 b3MakeVector3
@@ -42,3 +53,5 @@ using fMat3Data = b3Matrix3x3Data;
 
 #define WINDOW_START_WIDTH 640
 #define WINDOW_START_HEIGHT 480
+
+#define COL_WHITE static_cast<uint32>(-1)

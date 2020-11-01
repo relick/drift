@@ -29,8 +29,8 @@ void initialise_cb()
 		sg_desc gfxDesc{};
 		gfxDesc.context = sapp_sgcontext();
 		sg_setup(&gfxDesc);
-		Core::Render::TextAndGLDebugSetup();
-		Core::Render::ImGuiSetup();
+		Core::Render::TextAndGLDebug::Init();
+		Core::Render::DImGui::Init();
 		stm_setup();
 	}
 	// sokol setup done
@@ -43,6 +43,7 @@ void initialise_cb()
 	ecs::entity_id renderEntity = Core::CreateEntity();
 	ecs::add_component(renderEntity, Core::Render::Frame_Tag());
 	ecs::add_component(renderEntity, Core::Render::DefaultPass_Tag());
+	Core::Render::DImGui::Setup(renderEntity);
 
 	// Setup entity initialisers
 	setup_cube();
@@ -92,8 +93,8 @@ void initialise_cb()
 	{
 		// End of the default pass -
 		// 3D scene drawn already, text layer next, imgui last.
-		Core::Render::TextAndGLDebugRender(_rfd.w, _rfd.h);
-		Core::Render::ImGuiRender();
+		Core::Render::TextAndGLDebug::Render(_rfd.w, _rfd.h);
+		Core::Render::DImGui::Render();
 		sg_end_pass();
 	});
 
@@ -114,14 +115,14 @@ void frame_cb()
 
 void cleanup_cb()
 {
-	Core::Render::ImGuiCleanup();
-	Core::Render::TextAndGLDebugCleanup();
+	Core::Render::DImGui::Cleanup();
+	Core::Render::TextAndGLDebug::Cleanup();
 	sg_shutdown();
 }
 
 void event_cb(sapp_event const* _event)
 {
-	Core::Render::ImGuiEvent(_event);
+	Core::Render::DImGui::Event(_event);
 }
 
 void fail_cb(char const* _error)

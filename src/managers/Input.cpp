@@ -27,12 +27,7 @@ namespace Core
 
 		InputState inputState{};
 
-		struct ActionData
-		{
-			KeyType keyType{ KeyType::Keyboard };
-			int key{ SAPP_KEYCODE_INVALID };
-		};
-		std::array<std::array<ActionData, 2>, static_cast<usize>(Action::Count)> actions;
+		std::array<std::array<ActionKey, 2>, static_cast<usize>(Action::Count)> actions;
 
 		void Setup()
 		{
@@ -138,18 +133,22 @@ namespace Core
 			}
 		}
 
-		void SetActionKey(Action _action, int _index, KeyType _keyType, int _key)
+		void SetActionKey(Action _action, int _index, ActionKey _actionKey)
 		{
-			ActionData& data = actions[static_cast<usize>(_action)][_index];
-			data.keyType = _keyType;
-			data.key = _key;
+			ActionKey& data = actions[static_cast<usize>(_action)][_index];
+			data = _actionKey;
+		}
+
+		ActionKey GetActionKey(Action _action, int _index)
+		{
+			return actions[static_cast<usize>(_action)][_index];
 		}
 
 		// Check against state after remapping actions to buttons.
 		bool Pressed(Action _action)
 		{
 			bool isPressed = false;
-			for (ActionData const& data : actions[static_cast<usize>(_action)])
+			for (ActionKey const& data : actions[static_cast<usize>(_action)])
 			{
 				switch (data.keyType)
 				{

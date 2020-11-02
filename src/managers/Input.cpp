@@ -82,6 +82,12 @@ namespace Core
 			actions[static_cast<usize>(Action::Debug_AimCamera)][0].keyType = KeyType::Mouse;
 			actions[static_cast<usize>(Action::Debug_AimCamera)][0].key = SAPP_MOUSEBUTTON_MIDDLE;
 
+			actions[static_cast<usize>(Action::Debug_RaiseCamera)][0].keyType = KeyType::Keyboard;
+			actions[static_cast<usize>(Action::Debug_RaiseCamera)][0].key = SAPP_KEYCODE_E;
+
+			actions[static_cast<usize>(Action::Debug_LowerCamera)][0].keyType = KeyType::Keyboard;
+			actions[static_cast<usize>(Action::Debug_LowerCamera)][0].key = SAPP_KEYCODE_Q;
+
 		}
 
 		// Run every frame

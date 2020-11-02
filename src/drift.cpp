@@ -89,6 +89,7 @@ void initialise_cb()
 		front.normalize();
 		// also re-calculate the Right and Up vector
 		fVec3 right = front.cross(LoadVec3(0.0f, 1.0f, 0.0f)).normalize();  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+		fVec3 up = right.cross(front);  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
 
 		float velocity = 0.8f * _fd.dt;
 		if (Core::Input::Pressed(Core::Input::Action::Forward))
@@ -106,6 +107,14 @@ void initialise_cb()
 		if (Core::Input::Pressed(Core::Input::Action::Right))
 		{
 			_t.T().getOrigin() += right * velocity;
+		}
+		if (Core::Input::Pressed(Core::Input::Action::Debug_RaiseCamera))
+		{
+			_t.T().getOrigin() += up * velocity;
+		}
+		if (Core::Input::Pressed(Core::Input::Action::Debug_LowerCamera))
+		{
+			_t.T().getOrigin() -= up * velocity;
 		}
 	});
 
@@ -203,7 +212,7 @@ sapp_desc sokol_main(int argc, char* argv[])
 
 	desc.width = WINDOW_START_WIDTH;
 	desc.height = WINDOW_START_HEIGHT;
-	desc.sample_count = 4;
+	desc.sample_count = 0;
 	desc.window_title = "drift";
 
 	return desc;

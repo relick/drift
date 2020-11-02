@@ -21,6 +21,8 @@ namespace Core
 			Right,
 
 			Debug_AimCamera,
+			Debug_RaiseCamera,
+			Debug_LowerCamera,
 
 			Count,
 		};
@@ -33,7 +35,7 @@ namespace Core
 		struct ActionKey
 		{
 			KeyType keyType{ KeyType::Keyboard };
-			int key{ SAPP_KEYCODE_INVALID };
+			int key{ 0 /* keycode invalid */ };
 		};
 
 		void Setup();

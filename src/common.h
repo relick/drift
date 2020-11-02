@@ -1,11 +1,6 @@
 #pragma once
 
-#ifndef _DEBUG
-#define DEBUG 0
-#endif
-
-#define IMGUI_DEBUG_ENABLED _DEBUG
-#define SOKOL_GLCORE33
+#define IMGUI_DEBUG_ENABLED DEBUG_TOOLS
 
 // Define some number types
 #include <cstddef>
@@ -56,6 +51,10 @@ using fMat3Data = b3Matrix3x3Data;
 
 #define COL_WHITE static_cast<uint32>(-1)
 
+#if DEBUG_TOOLS
 #include <assert.h>
 // Nothing special yet but maybe one day
 #define ASSERT(TEST) assert( TEST ) 
+#else
+#define ASSERT(TEST)
+#endif

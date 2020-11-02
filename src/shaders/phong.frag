@@ -1,10 +1,11 @@
-#version 330 core
 in vec3 FragPos;
 in vec3 Normal;
 
-uniform vec3 objectColor;
-uniform vec3 lightColor;
-uniform vec3 lightPos;
+uniform fs_params {
+    vec3 objectColor;
+    vec3 lightColor;
+    vec3 lightPos;
+};
 
 out vec4 FragColor;
 

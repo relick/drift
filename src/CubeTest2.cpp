@@ -14,27 +14,8 @@
 #define HANDMADE_MATH_CPP_MODE
 #include "HandmadeMath.h"
 
-struct PhongVSParams
-{
-	hmm_mat4 model;
-	hmm_mat4 normal;
-	hmm_mat4 view;
-	hmm_mat4 projection;
-};
-
-struct UnlitVSParams
-{
-	hmm_mat4 model;
-	hmm_mat4 view;
-	hmm_mat4 projection;
-};
-
-struct PhongFSParams
-{
-	hmm_vec3 objectColor;
-	hmm_vec3 lightColor;
-	hmm_vec3 lightPos;
-};
+#include "shaders/phong.h"
+#include "shaders/unlit.h"
 
 struct
 {
@@ -125,95 +106,16 @@ void setup_cube2()
 	sg_buffer ibuf = sg_make_buffer(&cubeindices);
 
 	/* create shader */
-	sg_shader_desc shaderdesc{};
-	sg_shader_attr_desc posdesc{};
-	posdesc.name = "aPos";
-	posdesc.sem_name = "POSITION";
-	shaderdesc.attrs[0] = posdesc;
-	sg_shader_attr_desc normaldesc{};
-	normaldesc.name = "aNormal";
-	normaldesc.sem_name = "NORMAL";
-	shaderdesc.attrs[1] = normaldesc;
-	sg_shader_uniform_block_desc vsunifblockdesc{};
-	vsunifblockdesc.size = sizeof(PhongVSParams);
-
-	vsunifblockdesc.uniforms[0].name = "model";
-	vsunifblockdesc.uniforms[0].type = SG_UNIFORMTYPE_MAT4;
-	vsunifblockdesc.uniforms[1].name = "normal";
-	vsunifblockdesc.uniforms[1].type = SG_UNIFORMTYPE_MAT4;
-	vsunifblockdesc.uniforms[2].name = "view";
-	vsunifblockdesc.uniforms[2].type = SG_UNIFORMTYPE_MAT4;
-	vsunifblockdesc.uniforms[3].name = "projection";
-	vsunifblockdesc.uniforms[3].type = SG_UNIFORMTYPE_MAT4;
-
-	std::string vs_src;
-	{
-		std::ifstream file{ "src/shaders/phong.vert" };
-		vs_src = static_cast<std::ostringstream&&>(std::ostringstream{} << file.rdbuf()).str();
-	}
-
-	sg_shader_uniform_block_desc fsunifblockdesc{};
-	fsunifblockdesc.size = sizeof(PhongFSParams);
-
-	fsunifblockdesc.uniforms[0].name = "objectColor";
-	fsunifblockdesc.uniforms[0].type = SG_UNIFORMTYPE_FLOAT3;
-	fsunifblockdesc.uniforms[1].name = "lightColor";
-	fsunifblockdesc.uniforms[1].type = SG_UNIFORMTYPE_FLOAT3;
-	fsunifblockdesc.uniforms[2].name = "lightPos";
-	fsunifblockdesc.uniforms[2].type = SG_UNIFORMTYPE_FLOAT3;
-
-	std::string fs_src;
-	{
-		std::ifstream file{ "src/shaders/phong.frag" };
-		fs_src = static_cast<std::ostringstream&&>(std::ostringstream{} << file.rdbuf()).str();
-	}
-
-	shaderdesc.vs.uniform_blocks[0] = vsunifblockdesc;
-	shaderdesc.vs.source = vs_src.c_str();
-	shaderdesc.fs.uniform_blocks[0] = fsunifblockdesc;
-	shaderdesc.fs.source = fs_src.c_str();
-	shaderdesc.label = "phong-shader";
-
-	sg_shader shd = sg_make_shader(&shaderdesc);
-
-
-	std::string unlit_vs_src;
-	{
-		std::ifstream file{ "src/shaders/unlit.vert" };
-		unlit_vs_src = static_cast<std::ostringstream&&>(std::ostringstream{} << file.rdbuf()).str();
-	}
-
-	std::string unlit_fs_src;
-	{
-		std::ifstream file{ "src/shaders/unlit.frag" };
-		unlit_fs_src = static_cast<std::ostringstream&&>(std::ostringstream{} << file.rdbuf()).str();
-	}
-
-	sg_shader_uniform_block_desc unlitVsUnifBlockDesc{};
-	unlitVsUnifBlockDesc.size = sizeof(UnlitVSParams);
-	unlitVsUnifBlockDesc.uniforms[0].name = "model";
-	unlitVsUnifBlockDesc.uniforms[0].type = SG_UNIFORMTYPE_MAT4;
-	unlitVsUnifBlockDesc.uniforms[1].name = "view";
-	unlitVsUnifBlockDesc.uniforms[1].type = SG_UNIFORMTYPE_MAT4;
-	unlitVsUnifBlockDesc.uniforms[2].name = "projection";
-	unlitVsUnifBlockDesc.uniforms[2].type = SG_UNIFORMTYPE_MAT4;
-
-	sg_shader_desc unlitShaderDesc{};
-	unlitShaderDesc.attrs[0] = posdesc;
-	unlitShaderDesc.vs.uniform_blocks[0] = unlitVsUnifBlockDesc;
-	unlitShaderDesc.vs.source = unlit_vs_src.c_str();
-	unlitShaderDesc.fs.source = unlit_fs_src.c_str();
-	unlitShaderDesc.label = "unlit-shader";
-
-	sg_shader unlit_shd = sg_make_shader(&unlitShaderDesc);
+	sg_shader shd = sg_make_shader(phong_sg_shader_desc());
+	sg_shader unlit_shd = sg_make_shader(unlit_sg_shader_desc());
 
 
 	/* create pipeline object */
 	sg_layout_desc layoutdesc{};
 	/* test to provide buffer stride, but no attr offsets */
 	layoutdesc.buffers[0].stride = 6 * sizeof(float);
-	layoutdesc.attrs[0].format = SG_VERTEXFORMAT_FLOAT3;
-	layoutdesc.attrs[1].format = SG_VERTEXFORMAT_FLOAT3;
+	layoutdesc.attrs[ATTR_phong_vs_aPos].format = SG_VERTEXFORMAT_FLOAT3;
+	layoutdesc.attrs[ATTR_phong_vs_aNormal].format = SG_VERTEXFORMAT_FLOAT3;
 
 	sg_pipeline_desc pipelinedesc{};
 	pipelinedesc.layout = layoutdesc;
@@ -232,7 +134,7 @@ void setup_cube2()
 	sg_layout_desc unlitlayoutdesc{};
 	/* test to provide buffer stride, but no attr offsets */
 	unlitlayoutdesc.buffers[0].stride = 6 * sizeof(float);
-	unlitlayoutdesc.attrs[0].format = SG_VERTEXFORMAT_FLOAT3;
+	unlitlayoutdesc.attrs[ATTR_unlit_vs_aPos].format = SG_VERTEXFORMAT_FLOAT3;
 	unlitPipelineDesc.layout = unlitlayoutdesc;
 	unlitPipelineDesc.shader = unlit_shd;
 	unlitPipelineDesc.index_type = SG_INDEXTYPE_UINT16;
@@ -294,14 +196,14 @@ void setup_cube2()
 	{
 		hmm_vec3 lightPos = HMM_Vec3(1.2f, 1.0f, 2.0f);
 
-		PhongFSParams fs_params;
+		phong_fs_params_t fs_params;
 		fs_params.objectColor = HMM_Vec3(1.0f, 0.5f, 0.31f);
 		fs_params.lightColor = HMM_Vec3(1.0f, 1.0f, 1.0f);
 		fs_params.lightPos = (camera_state.view * HMM_Vec4v(lightPos, 1.0f)).XYZ;
 
 		if (!_cubeTest.isLightCube)
 		{
-			PhongVSParams vs_params;
+			phong_vs_params_t vs_params;
 			fTrans const cubeTrans = _t.CalculateWorldTransform();
 			fVec3 const& pos = cubeTrans.getOrigin();
 			fQuat quat;
@@ -321,8 +223,8 @@ void setup_cube2()
 
 			sg_apply_pipeline(CubeTestState.pip);
 			sg_apply_bindings(&CubeTestState.bind);
-			sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, &vs_params, sizeof(vs_params));
-			sg_apply_uniforms(SG_SHADERSTAGE_FS, 0, &fs_params, sizeof(fs_params));
+			sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_phong_vs_params, &vs_params, sizeof(vs_params));
+			sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_phong_fs_params, &fs_params, sizeof(fs_params));
 			sg_draw(0, 36, 1);
 		}
 		else
@@ -330,14 +232,14 @@ void setup_cube2()
 			hmm_mat4 lightCubeModel = HMM_Translate(lightPos);
 			lightCubeModel = lightCubeModel * HMM_Scale(HMM_Vec3(0.2f, 0.2f, 0.2f));
 
-			UnlitVSParams vs_params;
+			unlit_vs_params_t vs_params;
 			vs_params.model = lightCubeModel;
 			vs_params.view = camera_state.view;
 			vs_params.projection = camera_state.proj;
 
 			sg_apply_pipeline(CubeTestState.lightCubePip);
 			sg_apply_bindings(&CubeTestState.lightCubeBind);
-			sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, &vs_params, sizeof(vs_params));
+			sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_unlit_vs_params, &vs_params, sizeof(vs_params));
 			sg_draw(0, 36, 1);
 		}
 	});

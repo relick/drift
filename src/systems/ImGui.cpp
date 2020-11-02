@@ -121,6 +121,12 @@ namespace Core
 
 						ImGui::Text("FPS: %i", lastFPS);
 						ImGui::Separator();
+#if SOKOL_D3D11
+						ImGui::TextUnformatted("Direct3D 11");
+#elif SOKOL_GLCORE33
+						ImGui::TextUnformatted("OpenGL Core 3.30");
+#endif
+						ImGui::Separator();
 
 						ImGui::EndMainMenuBar();
 					}

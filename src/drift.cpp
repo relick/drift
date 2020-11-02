@@ -14,7 +14,9 @@
 
 // sokol app+gfx
 #define SOKOL_IMPL
+#if DEBUG_TOOLS
 #define SOKOL_TRACE_HOOKS
+#endif
 #include <sokol_app.h>
 #include <sokol_gfx.h>
 #include <sokol_glue.h>

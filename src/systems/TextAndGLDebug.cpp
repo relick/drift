@@ -28,7 +28,7 @@
 FONScontext* fonsContext{ nullptr };
 uint32 fonsFontCount = 0;
 
-#define TEXT_TEST _DEBUG
+#define TEXT_TEST DEBUG_TOOLS
 
 #if TEXT_TEST
 struct FontTest

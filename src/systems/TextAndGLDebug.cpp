@@ -101,8 +101,8 @@ namespace Core
 
 			void Render
 			(
-				int _w,
-				int _h
+				float _w,
+				float _h
 			)
 			{
 				// Draw the text
@@ -128,7 +128,7 @@ namespace Core
 
 			bool RenderText
 			(
-				int32 _fontI,
+				uint32 _fontI,
 				fVec2 _tlPos,
 				char const* _text,
 				float _size,

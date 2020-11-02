@@ -4,7 +4,7 @@ namespace Core
 {
 	ecs::entity_id nextID = 0;
 
-	ecs::entity_id CreateEntity()
+	EntityID CreateEntity()
 	{
 		return nextID++;
 	}

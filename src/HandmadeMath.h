@@ -1636,7 +1636,7 @@ HMM_InverseNoScale(hmm_mat4 Matrix)
     r.Rows[3] = _mm_sub_ps(_mm_setr_ps(0.f, 0.f, 0.f, 1.f), r.Rows[3]);
 
 #else
-    assert(false);
+    ASSERT(false);
 #endif 
 
     return r;
@@ -1683,7 +1683,7 @@ HMM_Inverse(hmm_mat4 Matrix)
     r.Rows[3] = _mm_add_ps(r.Rows[3], _mm_mul_ps(r.Rows[2], VecSwizzle1(Matrix.Rows[3], 2)));
     r.Rows[3] = _mm_sub_ps(_mm_setr_ps(0.f, 0.f, 0.f, 1.f), r.Rows[3]);
 #else
-    assert(false);
+    ASSERT(false);
 #endif
 
     return r;

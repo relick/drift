@@ -55,3 +55,7 @@ using fMat3Data = b3Matrix3x3Data;
 #define WINDOW_START_HEIGHT 480
 
 #define COL_WHITE static_cast<uint32>(-1)
+
+#include <assert.h>
+// Nothing special yet but maybe one day
+#define ASSERT(TEST) assert( TEST ) 

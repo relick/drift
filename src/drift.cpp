@@ -50,15 +50,15 @@ void initialise_cb()
 	});
 
 	// Setup entity manager
-	ecs::entity_id global = Core::CreateEntity();
-	ecs::add_component(global, Core::GlobalWorkaround_Tag());
+	Core::EntityID global = Core::CreateEntity();
+	ecs::add_component(global.GetValue(), Core::GlobalWorkaround_Tag());
 
-	ecs::entity_id renderEntity = Core::CreateEntity();
-	ecs::add_component(renderEntity, Core::Render::Frame_Tag());
-	ecs::add_component(renderEntity, Core::Render::DefaultPass_Tag());
-	ecs::add_component(renderEntity, Core::Transform(fQuat::getIdentity(), LoadVec3(1.4f, 1.5f, 4.0f))); // camera transform
-	ecs::add_component(renderEntity, Core::Render::Camera());
-	ecs::add_component(renderEntity, Core::Render::DebugCameraControl_Tag());
+	Core::EntityID renderEntity = Core::CreateEntity();
+	ecs::add_component(renderEntity.GetValue(), Core::Render::Frame_Tag());
+	ecs::add_component(renderEntity.GetValue(), Core::Render::DefaultPass_Tag());
+	ecs::add_component(renderEntity.GetValue(), Core::Transform(fQuat::getIdentity(), LoadVec3(1.4f, 1.5f, 4.0f))); // camera transform
+	ecs::add_component(renderEntity.GetValue(), Core::Render::Camera());
+	ecs::add_component(renderEntity.GetValue(), Core::Render::DebugCameraControl_Tag());
 	Core::Render::DImGui::Setup();
 
 	// Setup entity initialisers
@@ -108,6 +108,7 @@ void initialise_cb()
 		{
 			_t.T().getOrigin() += right * velocity;
 		}
+		// should this up really be used? or world up?
 		if (Core::Input::Pressed(Core::Input::Action::Debug_RaiseCamera))
 		{
 			_t.T().getOrigin() += up * velocity;
@@ -162,7 +163,7 @@ void initialise_cb()
 	{
 		// End of the default pass -
 		// 3D scene drawn already, text layer next, imgui last.
-		Core::Render::TextAndGLDebug::Render(_rfd.w, _rfd.h);
+		Core::Render::TextAndGLDebug::Render(_rfd.fW, _rfd.fH);
 		Core::Render::DImGui::Render();
 		sg_end_pass();
 	});

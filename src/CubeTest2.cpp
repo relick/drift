@@ -257,17 +257,17 @@ void setup_cube2()
 	CubeTestState.bind = binds;
 	CubeTestState.lightCubeBind = lightCubeBinds;
 
-	ecs::entity_id cube = Core::CreateEntity();
-	ecs::add_component(cube, Core::Transform(fQuat::getIdentity(), LoadVec3(0.0f, 0.0f, 0.0f)));
-	ecs::add_component(cube, Core::Render::CubeTest{false, 0.0f, 0.0f});
+	Core::EntityID cube = Core::CreateEntity();
+	ecs::add_component(cube.GetValue(), Core::Transform(fQuat::getIdentity(), LoadVec3(0.0f, 0.0f, 0.0f)));
+	ecs::add_component(cube.GetValue(), Core::Render::CubeTest{false, 0.0f, 0.0f});
 
-	ecs::entity_id cube2 = Core::CreateEntity();
-	ecs::add_component(cube2, Core::Transform(fQuat::getIdentity(), LoadVec3(-1.0f, 1.0f, 0.0f)));
-	ecs::add_component(cube2, Core::Render::CubeTest{false, 0.0f, 0.0f});
+	Core::EntityID cube2 = Core::CreateEntity();
+	ecs::add_component(cube2.GetValue(), Core::Transform(fQuat::getIdentity(), LoadVec3(-1.0f, 1.0f, 0.0f), cube));
+	ecs::add_component(cube2.GetValue(), Core::Render::CubeTest{false, 0.0f, 0.0f});
 
-	ecs::entity_id lightCube = Core::CreateEntity();
-	ecs::add_component(lightCube, Core::Transform(fQuat::getIdentity(), LoadVec3(1.2f, 1.0f, 2.0f)));
-	ecs::add_component(lightCube, Core::Render::CubeTest{ true, 0.0f, 0.0f });
+	Core::EntityID lightCube = Core::CreateEntity();
+	ecs::add_component(lightCube.GetValue(), Core::Transform(fQuat::getIdentity(), LoadVec3(1.2f, 1.0f, 2.0f)));
+	ecs::add_component(lightCube.GetValue(), Core::Render::CubeTest{ true, 0.0f, 0.0f });
 
 	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::FrameData const& _fd, Core::Render::CubeTest& _cubeTest, Core::Transform& _t)
 	{
@@ -302,9 +302,10 @@ void setup_cube2()
 		if (!_cubeTest.isLightCube)
 		{
 			PhongVSParams vs_params;
-			fVec3 const& pos = _t.T().getOrigin();
+			fTrans const cubeTrans = _t.CalculateWorldTransform();
+			fVec3 const& pos = cubeTrans.getOrigin();
 			fQuat quat;
-			_t.T().getBasis().getRotation(quat);
+			cubeTrans.getBasis().getRotation(quat);
 
 
 			hmm_vec3 position = HMM_Vec3(pos.x, pos.y, pos.z);

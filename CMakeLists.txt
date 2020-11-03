@@ -18,6 +18,7 @@ endif()
 
 set (TOOLS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tools")
 set (SHADERS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/shaders")
+set (SHADERS_COMPILED "")
 
 foreach(Shader IN LISTS Shaders)
 	add_custom_command(
@@ -26,6 +27,7 @@ foreach(Shader IN LISTS Shaders)
 		DEPENDS ${SHADERS_DIR}/${Shader}.glsl
 		WORKING_DIRECTORY ${TOOLS_DIR}
 	)
+	set (SHADERS_COMPILED "${SHADERS_COMPILED} ${Shader}.h")
 endforeach()
 
 
@@ -77,8 +79,7 @@ add_executable (drift
 "src/managers/Input.h"
 "src/managers/Input.cpp"
 "src/Entity.h"
-"src/shaders/phong.h"
-"src/shaders/unlit.h"
+${SHADERS_COMPILED}
 )
 
 target_link_libraries(drift PRIVATE LinearMath Bullet3Common BulletDynamics BulletSoftBody)

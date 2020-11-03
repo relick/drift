@@ -27,7 +27,7 @@ foreach(Shader IN LISTS Shaders)
 		DEPENDS ${SHADERS_DIR}/${Shader}.glsl
 		WORKING_DIRECTORY ${TOOLS_DIR}
 	)
-	set (SHADERS_COMPILED "${SHADERS_COMPILED} ${Shader}.h")
+	set (SHADERS_COMPILED ${SHADERS_COMPILED} "${SHADERS_DIR}/${Shader}.h")
 endforeach()
 
 

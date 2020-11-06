@@ -55,7 +55,7 @@ namespace Core
 					simgui_new_frame(_rfd.w, _rfd.h, _fd.unscaled_ddt > 0.0 ? _fd.unscaled_ddt : DBL_EPSILON);
 				});
 
-				ecs::make_system<ecs::opts::group<Sys::IMGUI>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::GlobalWorkaround_Tag)
+				ecs::make_system<ecs::opts::group<Sys::IMGUI>>([](Core::MT_Only&, Core::FrameData const& _fd, Core::Render::FrameData const& _rfd, Core::GlobalWorkaround_Tag)
 				{
 					// Draw gfx debug UI
 					sg_imgui_draw(&gfxImGuiState);
@@ -126,6 +126,9 @@ namespace Core
 #elif SOKOL_GLCORE33
 						ImGui::TextUnformatted("OpenGL Core 3.30");
 #endif
+						ImGui::Separator();
+
+						ImGui::Text("Speed: %.2fx", _fd.m_scale);
 						ImGui::Separator();
 
 						ImGui::EndMainMenuBar();

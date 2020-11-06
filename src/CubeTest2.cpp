@@ -260,10 +260,9 @@ void setup_cube2()
 			hmm_quaternion quaternion = HMM_Quaternion(quat.x(), quat.y(), quat.z(), quat.w());
 			hmm_mat4 rotation = HMM_QuaternionToMat4(quaternion);
 
-			vs_params.model = translation * rotation;
-			vs_params.model = vs_params.model * HMM_Scale(HMM_Vec3(0.5f, 0.5f, 0.5f));
-			vs_params.view = camera_state.view;
-			vs_params.normal = HMM_Transpose(HMM_Inverse(vs_params.view * vs_params.model));
+			hmm_mat4 const model = translation * rotation * HMM_Scale(HMM_Vec3(0.5f, 0.5f, 0.5f));
+			vs_params.view_model = camera_state.view * model;
+			vs_params.normal = HMM_Transpose(HMM_Inverse(vs_params.view_model));
 			vs_params.projection = camera_state.proj;
 
 			sg_apply_pipeline(CubeTestState.pip);
@@ -278,8 +277,7 @@ void setup_cube2()
 			lightCubeModel = lightCubeModel * HMM_Scale(HMM_Vec3(0.2f, 0.2f, 0.2f));
 
 			unlit_vs_params_t vs_params;
-			vs_params.model = lightCubeModel;
-			vs_params.view = camera_state.view;
+			vs_params.view_model = camera_state.view * lightCubeModel;
 			vs_params.projection = camera_state.proj;
 
 			sg_apply_pipeline(CubeTestState.lightCubePip);
@@ -310,10 +308,9 @@ void setup_cube2()
 		hmm_quaternion quaternion = HMM_Quaternion(quat.x(), quat.y(), quat.z(), quat.w());
 		hmm_mat4 rotation = HMM_QuaternionToMat4(quaternion);
 
-		vs_params.model = translation * rotation;
-		vs_params.model = vs_params.model * HMM_Scale(HMM_Vec3(50.0f, 1.0f, 50.0f));
-		vs_params.view = camera_state.view;
-		vs_params.normal = HMM_Transpose(HMM_Inverse(vs_params.view * vs_params.model));
+		hmm_mat4 const model = translation * rotation * HMM_Scale(HMM_Vec3(50.0f, 1.0f, 50.0f));
+		vs_params.view_model = camera_state.view * model;
+		vs_params.normal = HMM_Transpose(HMM_Inverse(vs_params.view_model));
 		vs_params.projection = camera_state.proj;
 
 		sg_apply_pipeline(CubeTestState.pip);

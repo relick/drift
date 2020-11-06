@@ -185,6 +185,7 @@ namespace Core
 #endif
 			});
 
+#if PHYSICS_DEBUG
 			Core::Render::DImGui::AddMenuItem("Physics", "Physics worlds", &imGuiData.showImguiWin);
 
 			ecs::make_system<ecs::opts::group<Sys::IMGUI>>([](Core::MT_Only&, Core::GlobalWorkaround_Tag)
@@ -204,7 +205,7 @@ namespace Core
 					ImGui::End();
 				}
 			});
-
+#endif
 
 			// Physics propogating transforms
 			// Just reading and throwing into the transform components so should be parallel.

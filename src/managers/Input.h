@@ -11,6 +11,7 @@ namespace Core
 		enum class Action : uint16
 		{
 			Quit,
+			Pause,
 			Select,
 			Cancel,
 			Jump,

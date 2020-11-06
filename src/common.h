@@ -58,3 +58,5 @@ using fMat3Data = b3Matrix3x3Data;
 #else
 #define ASSERT(TEST)
 #endif
+
+#define SafeDelete(OBJ) delete OBJ; OBJ = nullptr;

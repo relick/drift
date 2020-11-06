@@ -20,8 +20,12 @@ namespace Core
 	};
 }
 
+// Required for Add/RemoveComponent overloads
+#include "managers/EntityManager.h"
+
 #include "components/Core/Camera.h"
 #include "components/Core/Frame.h"
+#include "components/Core/Physics.h"
 #include "components/Core/Render.h"
 #include "components/Core/Transform.h"
 

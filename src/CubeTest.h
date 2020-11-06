@@ -158,12 +158,12 @@ void setup_cube()
 	CubeTestState.bind = binds;
 
 	ecs::entity_id cube = Core::CreateEntity();
-	ecs::add_component(cube, Core::Transform(fQuat::getIdentity(), LoadVec3(0.0f, 1.0f, 0.0f)));
-	ecs::add_component(cube, Core::Render::CubeTest{});
+	Core::AddComponent(cube, Core::Transform(fQuat::getIdentity(), LoadVec3(0.0f, 1.0f, 0.0f)));
+	Core::AddComponent(cube, Core::Render::CubeTest{});
 
 	ecs::entity_id cube2 = Core::CreateEntity();
-	ecs::add_component(cube2, Core::Transform(fQuat::getIdentity(), LoadVec3(0.0f, -1.0f, 0.0f)));
-	ecs::add_component(cube2, Core::Render::CubeTest{});
+	Core::AddComponent(cube2, Core::Transform(fQuat::getIdentity(), LoadVec3(0.0f, -1.0f, 0.0f)));
+	Core::AddComponent(cube2, Core::Render::CubeTest{});
 
 	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::FrameData const& _fd, Core::Render::CubeTest& _cubeTest, Core::Transform& _t)
 	{

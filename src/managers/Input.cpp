@@ -36,6 +36,9 @@ namespace Core
 			actions[static_cast<usize>(Action::Quit)][0].keyType = KeyType::Keyboard;
 			actions[static_cast<usize>(Action::Quit)][0].key = SAPP_KEYCODE_ESCAPE;
 
+			actions[static_cast<usize>(Action::Pause)][0].keyType = KeyType::Keyboard;
+			actions[static_cast<usize>(Action::Pause)][0].key = SAPP_KEYCODE_P;
+
 			{
 				actions[static_cast<usize>(Action::Select)][0].keyType = KeyType::Mouse;
 				actions[static_cast<usize>(Action::Select)][0].key = SAPP_MOUSEBUTTON_LEFT;

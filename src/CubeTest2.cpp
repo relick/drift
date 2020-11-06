@@ -7,9 +7,9 @@
 #include <sokol_gfx.h>
 
 #include <ecs/ecs.h>
+#include "managers/EntityManager.h"
 #include "components.h"
 #include "systems.h"
-#include "managers/EntityManager.h"
 
 #define HANDMADE_MATH_CPP_MODE
 #include "HandmadeMath.h"
@@ -22,7 +22,6 @@ struct
 	sg_pipeline pip;
 	sg_bindings bind;
 	sg_pipeline lightCubePip;
-	sg_bindings lightCubeBind;
 } CubeTestState;
 
 namespace Core
@@ -34,6 +33,10 @@ namespace Core
 			bool isLightCube;
 			float rx{ 0.0f };
 			float ry{ 0.0f };
+		};
+
+		struct GroundTest
+		{
 		};
 	}
 }
@@ -85,7 +88,6 @@ void setup_cube2()
 	cubeverts.label = "cube-vertices";
 
 	sg_buffer vbuf = sg_make_buffer(&cubeverts);
-	sg_buffer lightCubevbuf = sg_make_buffer(&cubeverts);
 
 	/* create an index buffer for the cube */
 	uint16_t indices[] = {
@@ -152,24 +154,67 @@ void setup_cube2()
 	binds.vertex_buffers[0] = vbuf;
 	binds.index_buffer = ibuf;
 
-	sg_bindings lightCubeBinds{};
-	lightCubeBinds.vertex_buffers[0] = lightCubevbuf;
-	lightCubeBinds.index_buffer = ibuf;
-
 	CubeTestState.bind = binds;
-	CubeTestState.lightCubeBind = lightCubeBinds;
+
+	Core::EntityID const testPhysicsWorld = Core::CreateEntity();
+	Core::AddComponent(testPhysicsWorld, Core::Physics::World{});
+	ecs::commit_changes();
+
+	Core::EntityID ground = Core::CreateEntity();
+	Core::AddComponent(ground, Core::Transform(fQuat::getIdentity(), LoadVec3(0.0f, -2.0f, 0.0f)));
+	Core::AddComponent(ground, Core::Render::GroundTest{});
+	{
+		Core::Physics::RigidBodyDesc rbDesc{};
+		rbDesc.m_shapeType = Core::Physics::ShapeType::Box;
+		rbDesc.m_boxDimensions = btVector3(50.0f, 1.0f, 50.0f);
+		rbDesc.m_mass = 0.0f;
+		btTransform groundTransform;
+		groundTransform.setIdentity();
+		groundTransform.setOrigin(btVector3(0, -2, 0));
+		rbDesc.m_startTransform = groundTransform;
+		rbDesc.m_physicsWorld = Core::EntityID(testPhysicsWorld);
+
+		Core::AddComponent(ground, rbDesc);
+	}
+
 
 	Core::EntityID cube = Core::CreateEntity();
-	ecs::add_component(cube.GetValue(), Core::Transform(fQuat::getIdentity(), LoadVec3(0.0f, 0.0f, 0.0f)));
-	ecs::add_component(cube.GetValue(), Core::Render::CubeTest{false, 0.0f, 0.0f});
+	Core::AddComponent(cube, Core::Transform(fQuat::getIdentity(), LoadVec3(0.0f, 0.0f, 0.0f)));
+	Core::AddComponent(cube, Core::Render::CubeTest{false, 0.0f, 0.0f});
+	{
+		Core::Physics::RigidBodyDesc rbDesc{};
+		rbDesc.m_shapeType = Core::Physics::ShapeType::Box;
+		rbDesc.m_boxDimensions = btVector3(0.5f, 0.5f, 0.5f);
+		rbDesc.m_mass = 1.0f;
+		btTransform cubeTransform;
+		cubeTransform.setIdentity();
+		cubeTransform.setOrigin(btVector3(0, 0, 0));
+		rbDesc.m_startTransform = cubeTransform;
+		rbDesc.m_physicsWorld = Core::EntityID(testPhysicsWorld);
+
+		Core::AddComponent(cube, rbDesc);
+	}
 
 	Core::EntityID cube2 = Core::CreateEntity();
-	ecs::add_component(cube2.GetValue(), Core::Transform(fQuat::getIdentity(), LoadVec3(-1.0f, 1.0f, 0.0f), cube));
-	ecs::add_component(cube2.GetValue(), Core::Render::CubeTest{false, 0.0f, 0.0f});
+	Core::AddComponent(cube2, Core::Transform(fQuat::getIdentity(), LoadVec3(-0.5f, 1.5f, 0.0f)));
+	Core::AddComponent(cube2, Core::Render::CubeTest{false, 0.0f, 0.0f});
+	{
+		Core::Physics::RigidBodyDesc rbDesc{};
+		rbDesc.m_shapeType = Core::Physics::ShapeType::Box;
+		rbDesc.m_boxDimensions = btVector3(0.5f, 0.5f, 0.5f);
+		rbDesc.m_mass = 1.0f;
+		btTransform cubeTransform;
+		cubeTransform.setIdentity();
+		cubeTransform.setOrigin(btVector3(-0.5f, 1.5f, 0.0f));
+		rbDesc.m_startTransform = cubeTransform;
+		rbDesc.m_physicsWorld = Core::EntityID(testPhysicsWorld);
+
+		Core::AddComponent(cube2, rbDesc);
+	}
 
 	Core::EntityID lightCube = Core::CreateEntity();
-	ecs::add_component(lightCube.GetValue(), Core::Transform(fQuat::getIdentity(), LoadVec3(1.2f, 1.0f, 2.0f)));
-	ecs::add_component(lightCube.GetValue(), Core::Render::CubeTest{ true, 0.0f, 0.0f });
+	Core::AddComponent(lightCube, Core::Transform(fQuat::getIdentity(), LoadVec3(1.2f, 1.0f, 2.0f)));
+	Core::AddComponent(lightCube, Core::Render::CubeTest{ true, 0.0f, 0.0f });
 
 	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::FrameData const& _fd, Core::Render::CubeTest& _cubeTest, Core::Transform& _t)
 	{
@@ -180,7 +225,7 @@ void setup_cube2()
 
 	ecs::make_system<ecs::opts::group<Sys::DEFAULT_PASS_START>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _t, Core::Render::DefaultPass_Tag)
 	{
-		camera_state.proj = HMM_Perspective(60.0f, _rfd.fW / _rfd.fH, 0.01f, 10.0f);
+		camera_state.proj = HMM_Perspective(60.0f, _rfd.fW / _rfd.fH, 0.01f, 1000.0f);
 
 		fVec3 const& pos = _t.T().getOrigin();
 		hmm_vec3 position = HMM_Vec3(pos.x, pos.y, pos.z);
@@ -238,9 +283,43 @@ void setup_cube2()
 			vs_params.projection = camera_state.proj;
 
 			sg_apply_pipeline(CubeTestState.lightCubePip);
-			sg_apply_bindings(&CubeTestState.lightCubeBind);
+			sg_apply_bindings(&CubeTestState.bind);
 			sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_unlit_vs_params, &vs_params, sizeof(vs_params));
 			sg_draw(0, 36, 1);
 		}
+	});
+
+	ecs::make_system<ecs::opts::group<Sys::DEFAULT_PASS>, ecs::opts::not_parallel>([](Core::MT_Only&, Core::Render::FrameData const& _fd, Core::Render::GroundTest const&, Core::Transform const& _t)
+	{
+		hmm_vec3 lightPos = HMM_Vec3(1.2f, 1.0f, 2.0f);
+
+		phong_fs_params_t fs_params;
+		fs_params.objectColor = HMM_Vec3(1.0f, 0.5f, 0.31f);
+		fs_params.lightColor = HMM_Vec3(1.0f, 1.0f, 1.0f);
+		fs_params.lightPos = (camera_state.view * HMM_Vec4v(lightPos, 1.0f)).XYZ;
+
+		phong_vs_params_t vs_params;
+		fTrans const cubeTrans = _t.CalculateWorldTransform();
+		fVec3 const& pos = cubeTrans.getOrigin();
+		fQuat quat;
+		cubeTrans.getBasis().getRotation(quat);
+
+
+		hmm_vec3 position = HMM_Vec3(pos.x, pos.y, pos.z);
+		hmm_mat4 translation = HMM_Translate(position);
+		hmm_quaternion quaternion = HMM_Quaternion(quat.x, quat.y, quat.z, quat.w);
+		hmm_mat4 rotation = HMM_QuaternionToMat4(quaternion);
+
+		vs_params.model = translation * rotation;
+		vs_params.model = vs_params.model * HMM_Scale(HMM_Vec3(50.0f, 1.0f, 50.0f));
+		vs_params.view = camera_state.view;
+		vs_params.normal = HMM_Transpose(HMM_Inverse(vs_params.view * vs_params.model));
+		vs_params.projection = camera_state.proj;
+
+		sg_apply_pipeline(CubeTestState.pip);
+		sg_apply_bindings(&CubeTestState.bind);
+		sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_phong_vs_params, &vs_params, sizeof(vs_params));
+		sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_phong_fs_params, &fs_params, sizeof(fs_params));
+		sg_draw(0, 36, 1);
 	});
 }

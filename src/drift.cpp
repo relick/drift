@@ -1,12 +1,13 @@
 ﻿#include "common.h"
 
+#include "managers/EntityManager.h"
+#include "managers/Input.h"
+
 #include "components.h"
 #include "systems.h"
 
 #include <ecs/ecs.h>
 
-#include "managers/EntityManager.h"
-#include "managers/Input.h"
 
 #define HANDMADE_MATH_IMPLEMENTATION
 #define HANDMADE_MATH_CPP_MODE
@@ -35,16 +36,38 @@ void initialise_cb()
 		sg_setup(&gfxDesc);
 		Core::Render::TextAndGLDebug::Init();
 		Core::Render::DImGui::Init();
+		Core::Physics::Init();
 		stm_setup();
 	}
 	// sokol setup done
 
+	// temporary physics world setup
+	Core::EntityID const physicsWorld = Core::CreateEntity();
+	Core::AddComponent(physicsWorld, Core::Physics::World{});
+	ecs::commit_changes();
+
+
 	// lock mouse
 	sapp_lock_mouse(true);
 
+	Core::Physics::Setup();
 	Core::Input::Setup();
 	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::GlobalWorkaround_Tag)
 	{
+		static bool pressedLastFrame = false;
+		if (Core::Input::Pressed(Core::Input::Action::Pause))
+		{
+			if (!pressedLastFrame)
+			{
+				Core::FrameData& fd = ecs::get_global_component<Core::FrameData>();
+				fd.m_scale = (fd.m_scale == 0.0 ? 1.0 : 0.0);
+				pressedLastFrame = true;
+			}
+		}
+		else
+		{
+			pressedLastFrame = false;
+		}
 		if (Core::Input::Pressed(Core::Input::Action::Quit))
 		{
 			sapp_request_quit();
@@ -52,15 +75,15 @@ void initialise_cb()
 	});
 
 	// Setup entity manager
-	Core::EntityID global = Core::CreateEntity();
-	ecs::add_component(global.GetValue(), Core::GlobalWorkaround_Tag());
+	Core::EntityID const global = Core::CreateEntity();
+	Core::AddComponent(global, Core::GlobalWorkaround_Tag());
 
-	Core::EntityID renderEntity = Core::CreateEntity();
-	ecs::add_component(renderEntity.GetValue(), Core::Render::Frame_Tag());
-	ecs::add_component(renderEntity.GetValue(), Core::Render::DefaultPass_Tag());
-	ecs::add_component(renderEntity.GetValue(), Core::Transform(fQuat::getIdentity(), LoadVec3(1.4f, 1.5f, 4.0f))); // camera transform
-	ecs::add_component(renderEntity.GetValue(), Core::Render::Camera());
-	ecs::add_component(renderEntity.GetValue(), Core::Render::DebugCameraControl_Tag());
+	Core::EntityID const renderEntity = Core::CreateEntity();
+	Core::AddComponent(renderEntity, Core::Render::Frame_Tag());
+	Core::AddComponent(renderEntity, Core::Render::DefaultPass_Tag());
+	Core::AddComponent(renderEntity, Core::Transform(fQuat::getIdentity(), LoadVec3(1.4f, 1.5f, 4.0f))); // camera transform
+	Core::AddComponent(renderEntity, Core::Render::Camera());
+	Core::AddComponent(renderEntity, Core::Render::DebugCameraControl_Tag());
 	Core::Render::DImGui::Setup();
 
 	// Setup entity initialisers
@@ -93,7 +116,7 @@ void initialise_cb()
 		fVec3 right = front.cross(LoadVec3(0.0f, 1.0f, 0.0f)).normalize();  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
 		fVec3 up = right.cross(front);  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
 
-		float velocity = 0.8f * _fd.dt;
+		float velocity = 0.8f * _fd.unscaled_dt;
 		if (Core::Input::Pressed(Core::Input::Action::Forward))
 		{
 			_t.T().getOrigin() += front * velocity;
@@ -119,16 +142,6 @@ void initialise_cb()
 		{
 			_t.T().getOrigin() -= up * velocity;
 		}
-	});
-
-	ecs::make_system<ecs::opts::group<Sys::FRAME_START>>([](Core::FrameData& _fd, Core::GlobalWorkaround_Tag)
-	{
-		uint64 const lappedTicks = stm_laptime(&_fd.m_lastFrameTicks);
-		// stm_round_to_common_refresh_rate?
-		_fd.unscaled_ddt = stm_sec(lappedTicks);
-		_fd.unscaled_dt = static_cast<float>(_fd.unscaled_ddt);
-		_fd.ddt = _fd.m_scale * _fd.unscaled_ddt;
-		_fd.dt = static_cast<float>(_fd.ddt);
 	});
 
 	ecs::make_system<ecs::opts::group<Sys::RENDER_START>>([](Core::MT_Only&, Core::Render::FrameData& _rfd, Core::GlobalWorkaround_Tag)
@@ -182,12 +195,23 @@ void initialise_cb()
 
 void frame_cb()
 {
+	{
+		Core::FrameData& fd = ecs::get_global_component<Core::FrameData>();
+		uint64 const lappedTicks = stm_laptime(&fd.m_lastFrameTicks);
+		// stm_round_to_common_refresh_rate?
+		fd.unscaled_ddt = stm_sec(lappedTicks);
+		fd.unscaled_dt = static_cast<float>(fd.unscaled_ddt);
+		fd.ddt = fd.m_scale * fd.unscaled_ddt;
+		fd.dt = static_cast<float>(fd.ddt);
+	}
+
 	Core::Input::Update();
 	ecs::update();
 }
 
 void cleanup_cb()
 {
+	Core::Physics::Cleanup();
 	Core::Render::DImGui::Cleanup();
 	Core::Render::TextAndGLDebug::Cleanup();
 	sg_shutdown();
@@ -215,7 +239,7 @@ sapp_desc sokol_main(int argc, char* argv[])
 
 	desc.width = WINDOW_START_WIDTH;
 	desc.height = WINDOW_START_HEIGHT;
-	desc.sample_count = 0;
+	desc.sample_count = 8;
 	desc.window_title = "drift";
 
 	return desc;

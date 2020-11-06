@@ -57,29 +57,9 @@ include_directories(${BULLET_INCLUDE_DIR})
 include_directories("src" "ecs/include" "ecs/tls/include" "sokol" "imgui" "fontstash/src")
 
 # Add source to this project's executable.
-add_executable (drift
-"imgui/imgui.cpp"
-"imgui/imgui_demo.cpp"
-"imgui/imgui_draw.cpp"
-"imgui/imgui_widgets.cpp"
-"src/drift.cpp"
-"src/managers/EntityManager.cpp"
-"src/systems/SystemOrdering.h"
-"src/HandmadeMath.h"
-"src/components/Core/Render.h"
-"src/CubeTest.h"
-"src/systems/ImGui.h"
-"src/systems/ImGui.cpp"
-"src/components/Core/Frame.h"
-"src/systems/TextAndGLDebug.h"
-"src/systems/TextAndGLDebug.cpp"
-"src/CubeTest2.h"
-"src/CubeTest2.cpp"
-"src/components/Core/Camera.h"
-"src/managers/Input.h"
-"src/managers/Input.cpp"
-"src/Entity.h"
-${SHADERS_COMPILED}
-)
+set (SOURCE_H "src/systems/SystemOrdering.h" "src/HandmadeMath.h" "src/components/Core/Render.h" "src/CubeTest.h" "src/systems/ImGui.h" "src/components/Core/Frame.h" "src/systems/TextAndGLDebug.h" "src/CubeTest2.h" "src/components/Core/Camera.h" "src/managers/Input.h" "src/Entity.h" "src/components/Core/Physics.h" "src/systems/Physics.h")
+set (SOURCE_CPP "imgui/imgui.cpp" "imgui/imgui_demo.cpp" "imgui/imgui_draw.cpp" "imgui/imgui_widgets.cpp" "src/drift.cpp" "src/managers/EntityManager.cpp" "src/systems/ImGui.cpp" "src/systems/TextAndGLDebug.cpp" "src/CubeTest2.cpp" "src/managers/Input.cpp" "src/systems/Physics.cpp" "src/components/Core/Physics.cpp")
 
-target_link_libraries(drift PRIVATE LinearMath Bullet3Common BulletDynamics BulletSoftBody)
+add_executable (drift ${SOURCE_H} ${SOURCE_CPP} ${SHADERS_COMPILED})
+
+target_link_libraries(drift PRIVATE ${BULLET_LIBRARIES})

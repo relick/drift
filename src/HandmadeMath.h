@@ -603,6 +603,7 @@ extern "C"
 }
 #endif
 
+#define HANDMADE_MATH_CPP_MODE
 #ifdef HANDMADE_MATH_CPP_MODE
 
 HMMDEF float HMM_Length(hmm_vec2 A);

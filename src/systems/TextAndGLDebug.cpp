@@ -25,6 +25,8 @@
 #include <imgui.h>
 #include <ecs/ecs.h>
 
+#include "HandmadeMath.h"
+
 FONScontext* fonsContext{ nullptr };
 uint32 fonsFontCount = 0;
 
@@ -59,6 +61,50 @@ namespace Core
 				sgl_setup(&glDesc);
 
 				fonsContext = sfons_create(512, 512, FONS_ZERO_TOPLEFT);
+			}
+
+			void Setup()
+			{
+				// Prepare GL matrices.
+				ecs::make_system<ecs::opts::group<Sys::GL_START>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _camT, Core::Render::DefaultPass_Tag)
+				{
+					// update sgl viewport
+					sgl_viewport(0, 0, _rfd.w, _rfd.h, true);
+					sgl_scissor_rect(0, 0, _rfd.w, _rfd.h, true);
+
+					sgl_defaults();
+					sgl_matrix_mode_projection();
+					sgl_load_identity();
+					sgl_perspective(60.0f, _rfd.fW / _rfd.fH, 0.01f, 1000.0f);
+
+					sgl_matrix_mode_modelview();
+					sgl_load_identity();
+
+					fVec3 const& pos = _camT.T().getOrigin();
+					fQuat quat;
+					_camT.T().getBasis().getRotation(quat);
+					hmm_mat4 const rotation = HMM_QuaternionToMat4(HMM_Quaternion(quat.x(), quat.y(), quat.z(), quat.w()));
+					union
+					{
+						hmm_mat4 hmmForm;
+						float arrForm[16];
+					} matrixToLoad;
+					matrixToLoad.hmmForm = HMM_InverseNoScale(HMM_Translate(HMM_Vec3(pos.x(), pos.y(), pos.z())) * rotation);
+					sgl_load_matrix(matrixToLoad.arrForm);
+				});
+
+				// Prepare text matrices.
+				ecs::make_system<ecs::opts::group<Sys::TEXT_START>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _camT, Core::Render::DefaultPass_Tag)
+				{
+					sgl_defaults();
+
+					sgl_matrix_mode_projection();
+					sgl_load_identity();
+					sgl_ortho(0, _rfd.fW, _rfd.fH, 0, -1, 1);
+
+					sgl_matrix_mode_modelview();
+					sgl_load_identity();
+				});
 
 #if TEXT_TEST
 				// Add font to stash.
@@ -99,22 +145,9 @@ namespace Core
 #endif
 			}
 
-			void Render
-			(
-				float _w,
-				float _h
-			)
+			void Render()
 			{
-				// Draw the text
-				sgl_defaults();
-
-				sgl_matrix_mode_projection();
-				sgl_load_identity();
-				sgl_ortho(0, _w, _h, 0, -1, 1);
-
-				sgl_matrix_mode_modelview();
-				sgl_load_identity();
-
+				// Flush the text before drawing
 				sfons_flush(fonsContext);
 				sgl_draw();
 			}

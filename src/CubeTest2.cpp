@@ -11,7 +11,6 @@
 #include "components.h"
 #include "systems.h"
 
-#define HANDMADE_MATH_CPP_MODE
 #include "HandmadeMath.h"
 
 #include "shaders/phong.h"

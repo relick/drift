@@ -1,5 +1,7 @@
 #include "Physics.h"
 
+#include "systems/Physics.h"
+
 namespace Core
 {
 	template<>
@@ -30,6 +32,10 @@ namespace Core
 		ASSERT(!newComponent.m_dynamicsWorld);
 		newComponent.m_dynamicsWorld = new btDiscreteDynamicsWorld(newComponent.m_dispatcher, newComponent.m_overlappingPairCache, newComponent.m_solver, newComponent.m_collisionConfiguration);
 		newComponent.m_dynamicsWorld->setGravity(btVector3(0, -8.0f, 0));
+
+#if DEBUG_TOOLS
+		newComponent.m_dynamicsWorld->setDebugDrawer(Physics::GetDebugDrawer());
+#endif
 
 		ecs::add_component(_entity.GetValue(), newComponent);
 	}

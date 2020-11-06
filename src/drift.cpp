@@ -50,6 +50,7 @@ void initialise_cb()
 	// lock mouse
 	sapp_lock_mouse(true);
 
+	Core::Render::TextAndGLDebug::Setup();
 	Core::Physics::Setup();
 	Core::Input::Setup();
 	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::GlobalWorkaround_Tag)
@@ -152,14 +153,6 @@ void initialise_cb()
 		_rfd.fH = static_cast<float>(_rfd.h);
 	});
 
-	ecs::make_system<ecs::opts::group<Sys::RENDER_START>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::Frame_Tag)
-	{
-		// update sgl viewport
-		sgl_viewport(0, 0, _rfd.w, _rfd.h, true);
-		sgl_scissor_rect(0, 0, _rfd.w, _rfd.h, true);
-
-	});
-
 	ecs::make_system<ecs::opts::group<Sys::DEFAULT_PASS_START>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::DefaultPass_Tag)
 	{
 		sg_pass_action pass_action{};
@@ -178,7 +171,7 @@ void initialise_cb()
 	{
 		// End of the default pass -
 		// 3D scene drawn already, text layer next, imgui last.
-		Core::Render::TextAndGLDebug::Render(_rfd.fW, _rfd.fH);
+		Core::Render::TextAndGLDebug::Render();
 		Core::Render::DImGui::Render();
 		sg_end_pass();
 	});

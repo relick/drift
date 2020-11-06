@@ -161,7 +161,7 @@ void setup_cube2()
 	ecs::commit_changes();
 
 	Core::EntityID ground = Core::CreateEntity();
-	Core::AddComponent(ground, Core::Transform(fQuat::getIdentity(), LoadVec3(0.0f, -2.0f, 0.0f)));
+	Core::AddComponent(ground, Core::Transform(fQuat::getIdentity(), fVec3(0.0f, -2.0f, 0.0f)));
 	Core::AddComponent(ground, Core::Render::GroundTest{});
 	{
 		Core::Physics::RigidBodyDesc rbDesc{};
@@ -179,13 +179,14 @@ void setup_cube2()
 
 
 	Core::EntityID cube = Core::CreateEntity();
-	Core::AddComponent(cube, Core::Transform(fQuat::getIdentity(), LoadVec3(0.0f, 0.0f, 0.0f)));
+	Core::AddComponent(cube, Core::Transform(fQuat::getIdentity(), fVec3(0.0f, 0.0f, 0.0f)));
 	Core::AddComponent(cube, Core::Render::CubeTest{false, 0.0f, 0.0f});
 	{
 		Core::Physics::RigidBodyDesc rbDesc{};
 		rbDesc.m_shapeType = Core::Physics::ShapeType::Box;
 		rbDesc.m_boxDimensions = btVector3(0.5f, 0.5f, 0.5f);
 		rbDesc.m_mass = 1.0f;
+		rbDesc.m_isKinematic = true;
 		btTransform cubeTransform;
 		cubeTransform.setIdentity();
 		cubeTransform.setOrigin(btVector3(0, 0, 0));
@@ -196,7 +197,7 @@ void setup_cube2()
 	}
 
 	Core::EntityID cube2 = Core::CreateEntity();
-	Core::AddComponent(cube2, Core::Transform(fQuat::getIdentity(), LoadVec3(-0.5f, 1.5f, 0.0f)));
+	Core::AddComponent(cube2, Core::Transform(fQuat::getIdentity(), fVec3(-0.5f, 1.5f, 0.0f)));
 	Core::AddComponent(cube2, Core::Render::CubeTest{false, 0.0f, 0.0f});
 	{
 		Core::Physics::RigidBodyDesc rbDesc{};
@@ -213,7 +214,7 @@ void setup_cube2()
 	}
 
 	Core::EntityID lightCube = Core::CreateEntity();
-	Core::AddComponent(lightCube, Core::Transform(fQuat::getIdentity(), LoadVec3(1.2f, 1.0f, 2.0f)));
+	Core::AddComponent(lightCube, Core::Transform(fQuat::getIdentity(), fVec3(1.2f, 1.0f, 2.0f)));
 	Core::AddComponent(lightCube, Core::Render::CubeTest{ true, 0.0f, 0.0f });
 
 	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::FrameData const& _fd, Core::Render::CubeTest& _cubeTest, Core::Transform& _t)
@@ -228,10 +229,10 @@ void setup_cube2()
 		camera_state.proj = HMM_Perspective(60.0f, _rfd.fW / _rfd.fH, 0.01f, 1000.0f);
 
 		fVec3 const& pos = _t.T().getOrigin();
-		hmm_vec3 position = HMM_Vec3(pos.x, pos.y, pos.z);
+		hmm_vec3 position = HMM_Vec3(pos.x(), pos.y(), pos.z());
 		fQuat quat;
 		_t.T().getBasis().getRotation(quat);
-		hmm_quaternion quaternion = HMM_Quaternion(quat.x, quat.y, quat.z, quat.w);
+		hmm_quaternion quaternion = HMM_Quaternion(quat.x(), quat.y(), quat.z(), quat.w());
 		hmm_mat4 rotation = HMM_QuaternionToMat4(quaternion);
 
 		camera_state.view = HMM_InverseNoScale(HMM_Translate(position) * rotation);
@@ -255,9 +256,9 @@ void setup_cube2()
 			cubeTrans.getBasis().getRotation(quat);
 
 
-			hmm_vec3 position = HMM_Vec3(pos.x, pos.y, pos.z);
+			hmm_vec3 position = HMM_Vec3(pos.x(), pos.y(), pos.z());
 			hmm_mat4 translation = HMM_Translate(position);
-			hmm_quaternion quaternion = HMM_Quaternion(quat.x, quat.y, quat.z, quat.w);
+			hmm_quaternion quaternion = HMM_Quaternion(quat.x(), quat.y(), quat.z(), quat.w());
 			hmm_mat4 rotation = HMM_QuaternionToMat4(quaternion);
 
 			vs_params.model = translation * rotation;
@@ -305,9 +306,9 @@ void setup_cube2()
 		cubeTrans.getBasis().getRotation(quat);
 
 
-		hmm_vec3 position = HMM_Vec3(pos.x, pos.y, pos.z);
+		hmm_vec3 position = HMM_Vec3(pos.x(), pos.y(), pos.z());
 		hmm_mat4 translation = HMM_Translate(position);
-		hmm_quaternion quaternion = HMM_Quaternion(quat.x, quat.y, quat.z, quat.w);
+		hmm_quaternion quaternion = HMM_Quaternion(quat.x(), quat.y(), quat.z(), quat.w());
 		hmm_mat4 rotation = HMM_QuaternionToMat4(quaternion);
 
 		vs_params.model = translation * rotation;

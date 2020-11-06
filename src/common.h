@@ -17,10 +17,10 @@ using isize = std::ptrdiff_t;
 using usize = std::size_t;
 
 // Define some maths types
-#include <Bullet3Common/b3Vector3.h>
-#include <Bullet3Common/b3Matrix3x3.h>
-#include <Bullet3Common/b3Transform.h>
-#include <Bullet3Common/b3Quaternion.h>
+#include <LinearMath/btVector3.h>
+#include <LinearMath/btMatrix3x3.h>
+#include <LinearMath/btTransform.h>
+#include <LinearMath/btQuaternion.h>
 
 // f == float
 union fVec2
@@ -34,17 +34,16 @@ union fVec2
 
 	fVec2(float _x, float _y) : x(_x), y(_y) {}
 };
-using fVec3 = b3Vector3;
-using fVec3Data = b3Vector3Data;
-#define LoadVec3 b3MakeVector3
-using fVec4 = b3Vector4;
-using fVec4Data = b3Vector3Data;
-#define LoadVec4 b3MakeVector4
-using fQuat = b3Quaternion;
-using fTrans = b3Transform;
-using fTransData = b3TransformData;
-using fMat3 = b3Matrix3x3;
-using fMat3Data = b3Matrix3x3Data;
+using fVec3 = btVector3;
+using fVec3Data = btVector3Data;
+using fVec4 = btVector4;
+using fVec4Data = btVector3Data;
+using fQuat = btQuaternion;
+using fTrans = btTransform;
+using fTransData = btTransformData;
+using fMat3 = btMatrix3x3;
+using fMat3Data = btMatrix3x3Data;
+
 
 #define WINDOW_START_WIDTH 640
 #define WINDOW_START_HEIGHT 480

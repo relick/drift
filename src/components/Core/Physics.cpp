@@ -86,6 +86,12 @@ namespace Core
 		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, newComponent.m_motionState, newComponent.m_shape, localInertia);
 		newComponent.m_body = new btRigidBody(rbInfo);
 
+		if (_desc.m_isKinematic)
+		{
+			int const existingFlags = newComponent.m_body->getCollisionFlags();
+			newComponent.m_body->setCollisionFlags(existingFlags | btCollisionObject::CF_KINEMATIC_OBJECT);
+		}
+
 		// Add to physics world
 		Core::Physics::World& physicsWorld = Physics::GetWorld(newComponent.m_physicsWorld);
 		physicsWorld.m_dynamicsWorld->addRigidBody(newComponent.m_body);

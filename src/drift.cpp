@@ -81,7 +81,7 @@ void initialise_cb()
 	Core::EntityID const renderEntity = Core::CreateEntity();
 	Core::AddComponent(renderEntity, Core::Render::Frame_Tag());
 	Core::AddComponent(renderEntity, Core::Render::DefaultPass_Tag());
-	Core::AddComponent(renderEntity, Core::Transform(fQuat::getIdentity(), LoadVec3(1.4f, 1.5f, 4.0f))); // camera transform
+	Core::AddComponent(renderEntity, Core::Transform(fQuat::getIdentity(), fVec3(1.4f, 1.5f, 4.0f))); // camera transform
 	Core::AddComponent(renderEntity, Core::Render::Camera());
 	Core::AddComponent(renderEntity, Core::Render::DebugCameraControl_Tag());
 	Core::Render::DImGui::Setup();
@@ -108,12 +108,12 @@ void initialise_cb()
 		}
 
 		fVec3 front;
-		front.z = -cos(_cam.angle.y) * cos(_cam.angle.x);
-		front.y = sin(_cam.angle.x);
-		front.x = -sin(_cam.angle.y) * cos(_cam.angle.x);
+		front.setZ(-cos(_cam.angle.y) * cos(_cam.angle.x));
+		front.setY(sin(_cam.angle.x));
+		front.setX(-sin(_cam.angle.y) * cos(_cam.angle.x));
 		front.normalize();
 		// also re-calculate the Right and Up vector
-		fVec3 right = front.cross(LoadVec3(0.0f, 1.0f, 0.0f)).normalize();  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+		fVec3 right = front.cross(fVec3(0.0f, 1.0f, 0.0f)).normalize();  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
 		fVec3 up = right.cross(front);  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
 
 		float velocity = 0.8f * _fd.unscaled_dt;

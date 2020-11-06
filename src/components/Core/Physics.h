@@ -30,6 +30,7 @@ namespace Core
 		{
 			EntityID m_physicsWorld{};
 
+			bool m_isKinematic{ false };
 			btScalar m_mass{ 0 };
 			ShapeType m_shapeType{ ShapeType::Box };
 			btTransform m_startTransform{};

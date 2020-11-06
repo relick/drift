@@ -17,23 +17,11 @@ namespace Core
 			// Serial to prevent (unconfirmed?) issues
 			ecs::make_system<ecs::opts::group<Sys::PHYSICS_TRANSFORMS_IN>, ecs::opts::not_parallel>([](Core::Physics::RigidBody& _rb, Core::Transform const& _t)
 			{
-				fTrans const worldTrans = _t.CalculateWorldTransform();
-
-				// this part is kind of ridiculous. why is b3 different from bt?
-				b3Quaternion rot;
-				worldTrans.getBasis().getRotation(rot);
-				b3Vector3 const pos = worldTrans.getOrigin();
-				btTransform physicsTrans;
-				physicsTrans.setRotation(btQuaternion(rot.x, rot.y, rot.z, rot.w));
-				physicsTrans.setOrigin(btVector3(pos.x, pos.y, pos.z));
-
-				if (_rb.m_body->getMotionState())
+				// Can't set transforms for active non-kinematic bodies.
+				if (!_rb.m_body->isActive() || _rb.m_body->isKinematicObject())
 				{
-					_rb.m_body->getMotionState()->setWorldTransform(physicsTrans);
-				}
-				else
-				{
-					_rb.m_body->setWorldTransform(physicsTrans);
+					fTrans const worldTrans = _t.CalculateWorldTransform();
+					_rb.m_motionState->setWorldTransform(worldTrans);
 				}
 			});
 
@@ -58,14 +46,7 @@ namespace Core
 					trans = _rb.m_body->getWorldTransform();
 				}
 
-				btQuaternion rot;
-				trans.getBasis().getRotation(rot);
-				btVector3 const pos = trans.getOrigin();
-				fTrans worldTrans;
-				worldTrans.setRotation(fQuat(rot.x(), rot.y(), rot.z(), rot.w()));
-				worldTrans.setOrigin(LoadVec3(pos.x(), pos.y(), pos.z()));
-
-				_t.T() = _t.CalculateLocalTransform(worldTrans);
+				_t.T() = _t.CalculateLocalTransform(trans);
 			});
 		}
 

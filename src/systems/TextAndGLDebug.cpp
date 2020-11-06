@@ -68,14 +68,10 @@ namespace Core
 				// Prepare GL matrices.
 				ecs::make_system<ecs::opts::group<Sys::GL_START>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _camT, Core::Render::DefaultPass_Tag)
 				{
-					// update sgl viewport
-					sgl_viewport(0, 0, _rfd.w, _rfd.h, true);
-					sgl_scissor_rect(0, 0, _rfd.w, _rfd.h, true);
-
 					sgl_defaults();
 					sgl_matrix_mode_projection();
 					sgl_load_identity();
-					sgl_perspective(60.0f, _rfd.fW / _rfd.fH, 0.01f, 1000.0f);
+					sgl_perspective(1.0472f, _rfd.fW / _rfd.fH, 0.01f, 1000.0f);
 
 					sgl_matrix_mode_modelview();
 					sgl_load_identity();

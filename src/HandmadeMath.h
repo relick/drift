@@ -576,7 +576,7 @@ extern "C"
     HMMDEF hmm_mat4 HMM_Inverse(hmm_mat4 Matrix);
 
     HMMDEF hmm_mat4 HMM_Orthographic(float Left, float Right, float Bottom, float Top, float Near, float Far);
-    HMMDEF hmm_mat4 HMM_Perspective(float FOV, float AspectRatio, float Near, float Far);
+    HMMDEF hmm_mat4 HMM_Perspective(float FOVY, float AspectRatio, float Near, float Far);
 
     HMMDEF hmm_mat4 HMM_Translate(hmm_vec3 Translation);
     HMMDEF hmm_mat4 HMM_Rotate(float Angle, hmm_vec3 Axis);
@@ -1707,14 +1707,14 @@ HMM_Orthographic(float Left, float Right, float Bottom, float Top, float Near, f
 }
 
 HINLINE hmm_mat4
-HMM_Perspective(float FOV, float AspectRatio, float Near, float Far)
+HMM_Perspective(float FOVY, float AspectRatio, float Near, float Far)
 {
     hmm_mat4 Result = HMM_Mat4d(1.0f);
 
-    float TanThetaOver2 = HMM_TanF(FOV * (HMM_PI32 / 360.0f));
+    float CoTanThetaOver2 = 1.0f / HMM_TanF(FOVY * (HMM_PI32 / 360.0f));
 
-    Result.Elements[0][0] = 1.0f / TanThetaOver2;
-    Result.Elements[1][1] = AspectRatio / TanThetaOver2;
+    Result.Elements[0][0] = CoTanThetaOver2 / AspectRatio;
+    Result.Elements[1][1] = CoTanThetaOver2;
     Result.Elements[2][3] = -1.0f;
     Result.Elements[2][2] = (Near + Far) / (Near - Far);
     Result.Elements[3][2] = (2.0f * Near * Far) / (Near - Far);

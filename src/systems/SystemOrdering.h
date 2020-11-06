@@ -5,7 +5,7 @@ namespace Sys
 	enum SystemOrdering
 	{
 	FRAME_START,
-		GL_START, // GL debug drawing can happen anywhere between here and GL_END
+		GL_START, // GL drawing can happen anywhere between here and GL_END
 		// Game section - can be parallel
 		GAME_START,
 			GAME,
@@ -17,7 +17,7 @@ namespace Sys
 		// Render section - can NOT be parallel. Use MT_Only global component as non-const ref to force serial
 		RENDER_START,
 			IMGUI,
-			GL_END, // Don't do any more GL debug drawing after this until GL_START
+			GL_END, // Don't do any more GL drawing after this until GL_START
 			TEXT_START, // sets up matrices
 			TEXT,
 			DEFAULT_PASS_START,

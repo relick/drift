@@ -88,7 +88,7 @@ namespace Core
 				if (sz)
 				{
 					sgl_begin_lines();
-					sgl_c3b(m_currentLineColor.x(), m_currentLineColor.y(), m_currentLineColor.z());
+					sgl_c3f(m_currentLineColor.x(), m_currentLineColor.y(), m_currentLineColor.z());
 					for (fVec3 const& lineP : m_linePoints)
 					{
 						sgl_v3f(lineP.x(), lineP.y(), lineP.z());
@@ -109,7 +109,14 @@ namespace Core
 		void Init()
 		{
 #if PHYSICS_DEBUG
+
+			btIDebugDraw::DefaultColors colours;
+			colours.m_aabb = fVec3(1.0f, 0.0f, 0.0f);
+			colours.m_contactPoint = fVec3(0.0f, 1.0f, 0.0f);
+			colours.m_activeObject = fVec3(0.0f, 0.0f, 1.0f);
+
 			debugDrawer = std::make_unique<DebugDrawer>();
+			debugDrawer->setDefaultColors(colours);
 #endif
 		}
 
@@ -119,8 +126,8 @@ namespace Core
 			// Serial to prevent (unconfirmed?) issues
 			ecs::make_system<ecs::opts::group<Sys::PHYSICS_TRANSFORMS_IN>, ecs::opts::not_parallel>([](Core::Physics::RigidBody& _rb, Core::Transform const& _t)
 			{
-				// Can't set transforms for active non-kinematic bodies.
-				if (!_rb.m_body->isActive() || _rb.m_body->isKinematicObject())
+				// Can't set transforms for non-kinematic bodies.
+				if (_rb.m_body->isKinematicObject())
 				{
 					fTrans const worldTrans = _t.CalculateWorldTransform();
 					_rb.m_motionState->setWorldTransform(worldTrans);

@@ -1,3 +1,4 @@
+//#version 330
 in vec3 FragPos;
 in vec3 Normal;
 
@@ -23,10 +24,15 @@ void main()
     float specularStrength = 0.5;
     
     vec3 viewDir = normalize(-FragPos);
+    vec3 halfwayDir = normalize(lightDir + viewDir);
     vec3 reflectDir = reflect(-lightDir, norm);
 
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 256);
-    vec3 specular = specularStrength * spec * lightColor;
+    float specularIntensity =
+        //dot(viewDir, reflectDir) // phong
+        dot(norm, halfwayDir) // blinn
+    ;
+    specularIntensity = pow(clamp(specularIntensity, 0.0, 1.0), 128.0);
+    vec3 specular = specularStrength * specularIntensity * lightColor;
 
     vec3 result = (ambient + diffuse + specular) * objectColor;
     FragColor = vec4(result, 1.0);

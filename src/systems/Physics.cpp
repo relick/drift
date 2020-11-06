@@ -7,16 +7,28 @@
 
 #include <memory>
 
-#define PHYSICS_DEBUG DEBUG_TOOLS
-
 #if PHYSICS_DEBUG
 #include <sokol_gfx.h>
 #include <util/sokol_gl.h>
 #define BT_LINE_BATCH_SIZE 512
+#include "ImGui.h"
+#include <imgui.h>
 
 std::unique_ptr<btIDebugDraw> debugDrawer;
-#endif
 
+struct ImGuiWorldData
+{
+	Core::EntityID worldEntity;
+	bool showDebugDraw{ false };
+};
+
+struct ImGuiData
+{
+	bool showImguiWin = false;
+	std::vector<ImGuiWorldData> physicsWorlds;
+} imGuiData;
+
+#endif
 namespace Core
 {
 	namespace Physics
@@ -104,6 +116,23 @@ namespace Core
 		{
 			return debugDrawer.get();
 		}
+
+		void AddPhysicsWorld(Core::EntityID _entity)
+		{
+			imGuiData.physicsWorlds.push_back(ImGuiWorldData{ _entity });
+		}
+
+		void RemovePhysicsWorld(Core::EntityID _entity)
+		{
+			for (auto worldI = imGuiData.physicsWorlds.begin(); worldI != imGuiData.physicsWorlds.end(); ++worldI)
+			{
+				if (worldI->worldEntity == _entity)
+				{
+					imGuiData.physicsWorlds.erase(worldI);
+					return;
+				}
+			}
+		}
 #endif
 
 		void Init()
@@ -136,13 +165,46 @@ namespace Core
 
 			// Physics update step
 			// Multiple worlds can run I guess
-			ecs::make_system<ecs::opts::group<Sys::PHYSICS_STEP>>([](Core::FrameData const& _fd, Core::Physics::World& _pw)
+			ecs::make_system<ecs::opts::group<Sys::PHYSICS_STEP>
+#if PHYSICS_DEBUG
+			, ecs::opts::not_parallel>([](ecs::entity_id _entity,
+#else
+			>([](
+#endif 
+				Core::FrameData const& _fd, Core::Physics::World& _pw)
 			{
 				_pw.m_dynamicsWorld->stepSimulation(_fd.dt, 10);
 #if PHYSICS_DEBUG
-				_pw.m_dynamicsWorld->debugDrawWorld();
+				for (ImGuiWorldData const& world : imGuiData.physicsWorlds)
+				{
+					if (world.worldEntity == _entity && world.showDebugDraw)
+					{
+						_pw.m_dynamicsWorld->debugDrawWorld();
+					}
+				}
 #endif
 			});
+
+			Core::Render::DImGui::AddMenuItem("Physics", "Physics worlds", &imGuiData.showImguiWin);
+
+			ecs::make_system<ecs::opts::group<Sys::IMGUI>>([](Core::MT_Only&, Core::GlobalWorkaround_Tag)
+			{
+				if (imGuiData.showImguiWin)
+				{
+					if (ImGui::Begin("Physics worlds", &imGuiData.showImguiWin, 0))
+					{
+						for (ImGuiWorldData& world : imGuiData.physicsWorlds)
+						{
+							ImGui::PushID(world.worldEntity.GetValue());
+							ImGui::Text("World %u", (uint32)world.worldEntity.GetValue());
+							ImGui::Checkbox("- Show Debug", &world.showDebugDraw);
+							ImGui::PopID();
+						}
+					}
+					ImGui::End();
+				}
+			});
+
 
 			// Physics propogating transforms
 			// Just reading and throwing into the transform components so should be parallel.

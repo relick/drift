@@ -33,8 +33,9 @@ namespace Core
 		newComponent.m_dynamicsWorld = new btDiscreteDynamicsWorld(newComponent.m_dispatcher, newComponent.m_overlappingPairCache, newComponent.m_solver, newComponent.m_collisionConfiguration);
 		newComponent.m_dynamicsWorld->setGravity(btVector3(0, -8.0f, 0));
 
-#if DEBUG_TOOLS
+#if PHYSICS_DEBUG
 		newComponent.m_dynamicsWorld->setDebugDrawer(Physics::GetDebugDrawer());
+		Physics::AddPhysicsWorld(_entity);
 #endif
 
 		ecs::add_component(_entity.GetValue(), newComponent);
@@ -50,6 +51,10 @@ namespace Core
 		SafeDelete(oldComponent->m_overlappingPairCache);
 		SafeDelete(oldComponent->m_solver);
 		SafeDelete(oldComponent->m_dynamicsWorld);
+
+#if PHYSICS_DEBUG
+		Physics::RemovePhysicsWorld(_entity);
+#endif
 
 		ecs::remove_component<Physics::World>(_entity.GetValue());
 	}

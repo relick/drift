@@ -1,8 +1,11 @@
 #pragma once
 
+#include "Entity.h"
 #include "common.h"
 
 class btIDebugDraw;
+
+#define PHYSICS_DEBUG DEBUG_TOOLS
 
 namespace Core
 {
@@ -12,8 +15,10 @@ namespace Core
 		void Setup();
 		void Cleanup();
 
-#if DEBUG_TOOLS
+#if PHYSICS_DEBUG
 		btIDebugDraw* GetDebugDrawer();
+		void AddPhysicsWorld(Core::EntityID _entity);
+		void RemovePhysicsWorld(Core::EntityID _entity);
 #endif
 	}
 }

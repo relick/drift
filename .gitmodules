@@ -10,3 +10,6 @@
 [submodule "fontstash"]
 	path = fontstash
 	url = https://github.com/memononen/fontstash
+[submodule "stb"]
+	path = stb
+	url = https://github.com/nothings/stb

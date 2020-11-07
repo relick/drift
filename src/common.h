@@ -23,7 +23,7 @@ using usize = std::size_t;
 #include <LinearMath/btQuaternion.h>
 
 // f == float
-union fVec2
+union fVec2Data
 {
 	float m_floats[2];
 	struct
@@ -32,12 +32,42 @@ union fVec2
 		float y;
 	};
 
-	fVec2(float _x, float _y) : x(_x), y(_y) {}
+	fVec2Data() : x(0.0f), y(0.0f) {}
+	fVec2Data(float _x, float _y) : x(_x), y(_y) {}
 };
+
+union fVec3Data
+{
+	float m_floats[3];
+	struct
+	{
+		float x;
+		float y;
+		float z;
+	};
+
+	fVec3Data() : x(0.0f), y(0.0f), z(0.0f) {}
+	fVec3Data(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {}
+};
+
+union fVec4Data
+{
+	float m_floats[4];
+	struct
+	{
+		float x;
+		float y;
+		float z;
+		float w;
+	};
+
+	fVec4Data() : x(0.0f), y(0.0f), z(0.0f), w(0.0f) {}
+	fVec4Data(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w) {}
+};
+
+using fVec2 = fVec2Data; // no sse here
 using fVec3 = btVector3;
-using fVec3Data = btVector3Data;
 using fVec4 = btVector4;
-using fVec4Data = btVector3Data;
 using fQuat = btQuaternion;
 using fTrans = btTransform;
 using fTransData = btTransformData;

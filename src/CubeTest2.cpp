@@ -212,6 +212,14 @@ void setup_cube2()
 		Core::AddComponent(cube2, rbDesc);
 	}
 
+	Core::EntityID backpack = Core::CreateEntity();
+	Core::AddComponent(backpack, Core::Transform(fQuat::getIdentity(), fVec3(-0.5f, 1.5f, 0.0f)));
+	{
+		Core::Render::ModelDesc modelDesc{};
+		modelDesc.m_filePath = "assets/models/backpack/backpack.obj";
+		Core::AddComponent(cube2, modelDesc);
+	}
+
 	Core::EntityID lightCube = Core::CreateEntity();
 	Core::AddComponent(lightCube, Core::Transform(fQuat::getIdentity(), fVec3(1.2f, 1.0f, 2.0f)));
 	Core::AddComponent(lightCube, Core::Render::CubeTest{ true, 0.0f, 0.0f });

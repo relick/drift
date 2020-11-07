@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include "ID.h"
 
 #include <vector>
 #include <string>
@@ -10,28 +11,13 @@ struct aiNode;
 struct aiScene;
 struct aiMesh;
 
+#define USE_INTERLEAVED 1
+
 namespace Core
 {
 	namespace Resource
 	{
-		template<typename T_IDType, typename T_Value = uint32>
-		class ID
-		{
-			static constexpr T_Value null_id{ static_cast<T_Value>(-1) };
-			T_Value m_id{ null_id };
-		public:
-			using ValueType = T_Value;
-			T_Value GetValue() const { return m_id; }
-			bool IsValid() const { return m_id != null_id; }
-			bool IsNull() const { return m_id == null_id; }
-			template<typename T_OtherIDType>
-			bool operator==(ID<T_OtherIDType> const& _b) const { return _b.m_id == m_id; }
-
-			ID() = default;
-			ID(T_Value _idvalue) : m_id{ _idvalue } {}
-			template<typename T_OtherIDType>
-			ID& operator=(ID<T_OtherIDType> const& _b) { m_id = _b.m_id; return *this; }
-		};
+		void Init();
 
 		struct TextureIDType {};
 		using TextureID = ID<TextureIDType>;
@@ -66,17 +52,36 @@ namespace Core
 			std::vector<TextureID> m_textures;
 		};
 
+#if USE_INTERLEAVED
+		struct Vertex
+		{
+			fVec3Data position;
+			fVec3Data normal;
+			fVec2Data uv{ 0.0f, 0.0f };
+		};
+#endif
+
 		struct Mesh
 		{
+#if USE_INTERLEAVED
+			std::vector<Vertex> m_vertices;
+#else
 			// De-interleaved data.
 			std::vector<fVec3Data> m_vertexPositions;
 			std::vector<fVec3Data> m_vertexNormals;
 			std::vector<fVec2Data> m_vertexTexCoords;
+#endif
 
 			std::vector<uint16> m_indices;
 			Material m_material;
 
-			sg_bindings m_bindings;
+			sg_bindings m_bindings{};
+#if DEBUG_TOOLS
+			std::string _traceName_vertexPositions;
+			std::string _traceName_vertexNormals;
+			std::string _traceName_vertexTexCoords;
+			std::string _traceName_indices;
+#endif
 		};
 		
 		struct Model
@@ -92,17 +97,4 @@ namespace Core
 
 		bool LoadModel(std::string _path, ModelID& o_modelID);
 	}
-}
-
-namespace std
-{
-	template <typename T_IDType, typename T_Value>
-	struct hash<Core::Resource::ID<T_IDType, T_Value>>
-	{
-		std::size_t operator()(Core::Resource::ID<T_IDType, T_Value> const& _k) const
-		{
-			return hash<T_Value>()(_k.GetValue());
-		}
-	};
-
 }

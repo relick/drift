@@ -70,7 +70,7 @@ namespace Core
 			{
 				drawLine(_pointOnB, _pointOnB + _normalOnB * _distance, _colour);
 				btVector3 ncolor(0, 0, 0);
-				drawLine(_pointOnB, _pointOnB + _normalOnB * 0.01, ncolor);
+				drawLine(_pointOnB, _pointOnB + _normalOnB * 0.01f, ncolor);
 			}
 
 			void reportErrorWarning(char const* _warningString) override
@@ -96,8 +96,7 @@ namespace Core
 
 			void flushLines() override
 			{
-				int sz = m_linePoints.size();
-				if (sz)
+				if (!m_linePoints.empty())
 				{
 					sgl_begin_lines();
 					sgl_c3f(m_currentLineColor.x(), m_currentLineColor.y(), m_currentLineColor.z());
@@ -196,7 +195,7 @@ namespace Core
 					{
 						for (ImGuiWorldData& world : imGuiData.physicsWorlds)
 						{
-							ImGui::PushID(world.worldEntity.GetValue());
+							ImGui::PushID((int32)world.worldEntity.GetValue());
 							ImGui::Text("World %u", (uint32)world.worldEntity.GetValue());
 							ImGui::Checkbox("- Show Debug", &world.showDebugDraw);
 							ImGui::PopID();
@@ -231,5 +230,5 @@ namespace Core
 			debugDrawer.reset();
 #endif
 		}
-	}
+}
 }

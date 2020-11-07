@@ -40,13 +40,12 @@ namespace Core
 				simguiDesc.dpi_scale = sapp_dpi_scale();
 				simguiDesc.ini_filename = "ImGuiSettings.ini";
 				simgui_setup(&simguiDesc);
+				gfxImGuiState.buffers.num_slots;
 				sg_imgui_init(&gfxImGuiState);
 #endif
 			}
 
-			void Setup
-			(
-			)
+			void Setup()
 			{
 #if IMGUI_DEBUG_ENABLED
 

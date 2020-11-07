@@ -2,28 +2,21 @@
 
 #include "managers/EntityManager.h"
 #include "managers/Input.h"
+#include "managers/Resources.h"
 
 #include "components.h"
 #include "systems.h"
 
 #include <ecs/ecs.h>
 
-
 #define HANDMADE_MATH_IMPLEMENTATION
 #define HANDMADE_MATH_CPP_MODE
 #include "HandmadeMath.h"
 
-// sokol app+gfx
-#define SOKOL_IMPL
-#if DEBUG_TOOLS
-#define SOKOL_TRACE_HOOKS
-#endif
+// sokol
 #include <sokol_app.h>
 #include <sokol_gfx.h>
-#include <sokol_glue.h>
 #include <sokol_time.h>
-
-#include <util/sokol_gl.h>
 
 #include "CubeTest2.h"
 
@@ -31,9 +24,8 @@ void initialise_cb()
 {
 	// sokol setup start
 	{
-		sg_desc gfxDesc{};
-		gfxDesc.context = sapp_sgcontext();
-		sg_setup(&gfxDesc);
+		Core::Resource::Init();
+		Core::Render::Init();
 		Core::Render::TextAndGLDebug::Init();
 		Core::Render::DImGui::Init();
 		Core::Physics::Init();
@@ -41,16 +33,17 @@ void initialise_cb()
 	}
 	// sokol setup done
 
-	// temporary physics world setup
-	Core::EntityID const physicsWorld = Core::CreateEntity();
-	Core::AddComponent(physicsWorld, Core::Physics::World{});
+	// initial entity setup
+	Core::EntityID const primaryPhysicsWorld = Core::CreateEntity();
+	Core::AddComponent(primaryPhysicsWorld, Core::Physics::World{});
+
+	Core::EntityID const global = Core::CreateEntity();
+	Core::AddComponent(global, Core::GlobalWorkaround_Tag());
 	ecs::commit_changes();
 
-
-	// lock mouse
-	sapp_lock_mouse(true);
-
+	Core::Render::Setup();
 	Core::Render::TextAndGLDebug::Setup();
+	Core::Render::DImGui::Setup();
 	Core::Physics::Setup();
 	Core::Input::Setup();
 	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::GlobalWorkaround_Tag)
@@ -76,16 +69,12 @@ void initialise_cb()
 	});
 
 	// Setup entity manager
-	Core::EntityID const global = Core::CreateEntity();
-	Core::AddComponent(global, Core::GlobalWorkaround_Tag());
-
 	Core::EntityID const renderEntity = Core::CreateEntity();
 	Core::AddComponent(renderEntity, Core::Render::Frame_Tag());
 	Core::AddComponent(renderEntity, Core::Render::DefaultPass_Tag());
 	Core::AddComponent(renderEntity, Core::Transform(fQuat::getIdentity(), fVec3(1.4f, 1.5f, 4.0f))); // camera transform
 	Core::AddComponent(renderEntity, Core::Render::Camera());
 	Core::AddComponent(renderEntity, Core::Render::DebugCameraControl_Tag());
-	Core::Render::DImGui::Setup();
 
 	// Setup entity initialisers
 	setup_cube2();

@@ -8,7 +8,7 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
 project ("drift")
 
 ## Compile shaders
-list (APPEND Shaders phong unlit)
+list (APPEND Shaders phong unlit main)
 
 if(MSVC)
 	set (SOKOL_SDHC_COMPILER "msvc")
@@ -60,8 +60,8 @@ include_directories(assimp::assimp)
 include_directories("src" "ecs/include" "ecs/tls/include" "sokol" "imgui" "fontstash/src" "stb")
 
 # Add source to this project's executable.
-set (SOURCE_H "src/systems/SystemOrdering.h" "src/HandmadeMath.h" "src/components/Core/Render.h" "src/CubeTest.h" "src/systems/ImGui.h" "src/components/Core/Frame.h" "src/systems/TextAndGLDebug.h" "src/CubeTest2.h" "src/components/Core/Camera.h" "src/managers/Input.h" "src/Entity.h" "src/components/Core/Physics.h" "src/systems/Physics.h" "src/managers/Resources.h")
-set (SOURCE_CPP "imgui/imgui.cpp" "imgui/imgui_demo.cpp" "imgui/imgui_draw.cpp" "imgui/imgui_widgets.cpp" "src/drift.cpp" "src/managers/EntityManager.cpp" "src/systems/ImGui.cpp" "src/systems/TextAndGLDebug.cpp" "src/CubeTest2.cpp" "src/managers/Input.cpp" "src/systems/Physics.cpp" "src/components/Core/Physics.cpp" "src/managers/Resources.cpp" "src/components/Core/Render.cpp")
+set (SOURCE_H "src/systems/Core/SystemOrdering.h" "src/HandmadeMath.h" "src/systems/Core/Render.h" "src/CubeTest.h" "src/systems/Core/ImGui.h" "src/components/Core/Frame.h" "src/systems/Core/TextAndGLDebug.h" "src/CubeTest2.h" "src/components/Core/Camera.h" "src/managers/Input.h" "src/Entity.h" "src/systems/Core/Physics.h" "src/managers/Resources.h" "src/ID.h")
+set (SOURCE_CPP "imgui/imgui.cpp" "imgui/imgui_demo.cpp" "imgui/imgui_draw.cpp" "imgui/imgui_widgets.cpp" "src/drift.cpp" "src/managers/EntityManager.cpp" "src/systems/Core/ImGui.cpp" "src/systems/Core/TextAndGLDebug.cpp" "src/CubeTest2.cpp" "src/managers/Input.cpp" "src/systems/Core/Physics.cpp" "src/components/Core/Physics.cpp" "src/managers/Resources.cpp" "src/systems/Core/Render.cpp" "src/components/Core/Render.cpp")
 
 add_executable (drift ${SOURCE_H} ${SOURCE_CPP} ${SHADERS_COMPILED})
 

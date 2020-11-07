@@ -1,11 +1,12 @@
 #pragma once
 
 #include "common.h"
-#include "systems/SystemOrdering.h"
+#include "systems/Core/SystemOrdering.h"
 
 // Core
-#include "systems/ImGui.h"
-#include "systems/Physics.h"
-#include "systems/TextAndGLDebug.h"
+#include "systems/Core/ImGui.h"
+#include "systems/Core/Physics.h"
+#include "systems/Core/Render.h"
+#include "systems/Core/TextAndGLDebug.h"
 
 // Game

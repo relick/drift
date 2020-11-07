@@ -155,10 +155,6 @@ void setup_cube2()
 
 	CubeTestState.bind = binds;
 
-	Core::EntityID const testPhysicsWorld = Core::CreateEntity();
-	Core::AddComponent(testPhysicsWorld, Core::Physics::World{});
-	ecs::commit_changes();
-
 	Core::EntityID ground = Core::CreateEntity();
 	Core::AddComponent(ground, Core::Transform(fQuat::getIdentity(), fVec3(0.0f, -2.0f, 0.0f)));
 	Core::AddComponent(ground, Core::Render::GroundTest{});
@@ -171,7 +167,7 @@ void setup_cube2()
 		groundTransform.setIdentity();
 		groundTransform.setOrigin(btVector3(0, -2, 0));
 		rbDesc.m_startTransform = groundTransform;
-		rbDesc.m_physicsWorld = Core::EntityID(testPhysicsWorld);
+		rbDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
 
 		Core::AddComponent(ground, rbDesc);
 	}
@@ -190,7 +186,7 @@ void setup_cube2()
 		cubeTransform.setIdentity();
 		cubeTransform.setOrigin(btVector3(0, 0, 0));
 		rbDesc.m_startTransform = cubeTransform;
-		rbDesc.m_physicsWorld = Core::EntityID(testPhysicsWorld);
+		rbDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
 
 		Core::AddComponent(cube, rbDesc);
 	}
@@ -207,7 +203,7 @@ void setup_cube2()
 		cubeTransform.setIdentity();
 		cubeTransform.setOrigin(btVector3(-0.5f, 1.5f, 0.0f));
 		rbDesc.m_startTransform = cubeTransform;
-		rbDesc.m_physicsWorld = Core::EntityID(testPhysicsWorld);
+		rbDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
 
 		Core::AddComponent(cube2, rbDesc);
 	}
@@ -217,7 +213,7 @@ void setup_cube2()
 	{
 		Core::Render::ModelDesc modelDesc{};
 		modelDesc.m_filePath = "assets/models/backpack/backpack.obj";
-		Core::AddComponent(cube2, modelDesc);
+		Core::AddComponent(backpack, modelDesc);
 	}
 
 	Core::EntityID lightCube = Core::CreateEntity();

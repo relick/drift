@@ -53,6 +53,8 @@ namespace Core
 			btRigidBody* m_body{ nullptr };
 		};
 
+		Core::EntityID GetPrimaryWorldEntity();
+
 		inline Physics::World& GetWorld(EntityID const _physicsWorld)
 		{
 			Core::Physics::World* const physicsWorld = ecs::get_component<Core::Physics::World>(_physicsWorld.GetValue());

@@ -10,6 +10,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include "HandmadeMath.h"
+#include "shaders/main.h"
+
 Core::Resource::TextureID::ValueType nextTextureID = 0;
 Core::Resource::MeshID::ValueType nextMeshID = 0;
 Core::Resource::ModelID::ValueType nextModelID = 0;
@@ -22,6 +25,11 @@ namespace Core
 {
 	namespace Resource
 	{
+		void Init()
+		{
+			stbi_set_flip_vertically_on_load(true);
+		}
+
 		TextureID NewTextureID() { return nextTextureID++; }
 		MeshID NewMeshID() { return nextMeshID++; }
 		ModelID NewModelID() { return nextModelID++; }
@@ -81,7 +89,7 @@ namespace Core
 
 				//imageDesc.num_mipmaps = 4;
 				//glGenerateMipmap(GL_TEXTURE_2D);
-				imageDesc.min_filter = SG_FILTER_LINEAR_MIPMAP_LINEAR;
+				imageDesc.min_filter = SG_FILTER_LINEAR;// SG_FILTER_LINEAR_MIPMAP_LINEAR;
 				imageDesc.mag_filter = SG_FILTER_LINEAR;
 				imageDesc.wrap_u = SG_WRAP_REPEAT;
 				imageDesc.wrap_v = SG_WRAP_REPEAT;
@@ -163,32 +171,45 @@ namespace Core
 		{
 			Mesh newMesh;
 			// setup allocations
+#if USE_INTERLEAVED
+			newMesh.m_vertices.resize(_mesh->mNumVertices);
+#else
 			newMesh.m_vertexPositions.resize(_mesh->mNumVertices);
 			newMesh.m_vertexNormals.resize(_mesh->mNumVertices);
 			if (_mesh->mTextureCoords[0])
 			{
 				newMesh.m_vertexTexCoords.resize(_mesh->mNumVertices);
 			}
+#endif
 
-			static constexpr uint32 numIndicesPerFace = 3;
+			static constexpr usize numIndicesPerFace = 3u;
 			newMesh.m_indices.resize(_mesh->mNumFaces * numIndicesPerFace);
 
 			// process vertices
 			for (uint32 i = 0; i < _mesh->mNumVertices; i++)
 			{
-				newMesh.m_vertexPositions[i] = fVec3Data(_mesh->mVertices[i].x, _mesh->mVertices[i].y, _mesh->mVertices[i].z);
-				newMesh.m_vertexNormals.emplace_back(_mesh->mNormals[i].x, _mesh->mNormals[i].y, _mesh->mNormals[i].z);
+#if USE_INTERLEAVED
+				newMesh.m_vertices[i].position = fVec3Data(_mesh->mVertices[i].x, _mesh->mVertices[i].y, _mesh->mVertices[i].z);
+				newMesh.m_vertices[i].normal = fVec3Data(_mesh->mNormals[i].x, _mesh->mNormals[i].y, _mesh->mNormals[i].z);
 				if (_mesh->mTextureCoords[0])
 				{
-					newMesh.m_vertexTexCoords.emplace_back(_mesh->mTextureCoords[0][i].x, _mesh->mTextureCoords[0][i].y);
+					newMesh.m_vertices[i].uv = fVec2Data(_mesh->mTextureCoords[0][i].x, _mesh->mTextureCoords[0][i].y);
 				}
+#else
+				newMesh.m_vertexPositions[i] = fVec3Data(_mesh->mVertices[i].x, _mesh->mVertices[i].y, _mesh->mVertices[i].z);
+				newMesh.m_vertexNormals[i] = fVec3Data(_mesh->mNormals[i].x, _mesh->mNormals[i].y, _mesh->mNormals[i].z);
+				if (_mesh->mTextureCoords[0])
+				{
+					newMesh.m_vertexTexCoords[i] = fVec2Data(_mesh->mTextureCoords[0][i].x, _mesh->mTextureCoords[0][i].y);
+				}
+#endif
 			}
 
-			for (uint32 i = 0; i < _mesh->mNumFaces; i++)
+			for (usize i = 0; i < _mesh->mNumFaces; i++)
 			{
 				aiFace const& face = _mesh->mFaces[i];
 				ASSERT(face.mNumIndices == numIndicesPerFace);
-				for (unsigned int j = 0; j < face.mNumIndices; j++)
+				for (usize j = 0; j < face.mNumIndices; j++)
 				{
 					newMesh.m_indices[i * numIndicesPerFace + j] = static_cast<uint16>(face.mIndices[j]);
 				}
@@ -216,6 +237,91 @@ namespace Core
 
 				material->Get(AI_MATKEY_SHININESS, shininess);
 				newMaterial.m_shininess = shininess;
+			}
+
+			// now finalise by making bindings
+#if USE_INTERLEAVED
+			{
+				sg_buffer_desc vBufDesc{};
+				vBufDesc.type = SG_BUFFERTYPE_VERTEXBUFFER;
+				vBufDesc.size = static_cast<int>(newMesh.m_vertices.size() * sizeof(Vertex));
+				vBufDesc.content = &newMesh.m_vertices[0];
+#if DEBUG_TOOLS
+				newMesh._traceName_vertexPositions = _directory + "/vertices";
+				vBufDesc.label = newMesh._traceName_vertexPositions.c_str();
+#endif
+				newMesh.m_bindings.vertex_buffers[0] = sg_make_buffer(vBufDesc);
+			}
+#else
+			{
+				sg_buffer_desc posBufDesc{};
+				posBufDesc.type = SG_BUFFERTYPE_VERTEXBUFFER;
+				posBufDesc.size = static_cast<int>(newMesh.m_vertexPositions.size() * sizeof(float));
+				posBufDesc.content = &newMesh.m_vertexPositions.front();
+#if DEBUG_TOOLS
+				newMesh._traceName_vertexPositions = _directory + "/vPositions";
+				posBufDesc.label = newMesh._traceName_vertexPositions.c_str();
+#endif
+				newMesh.m_bindings.vertex_buffers[0] = sg_make_buffer(posBufDesc);
+			}
+			{
+				sg_buffer_desc normBufDesc{};
+				normBufDesc.type = SG_BUFFERTYPE_VERTEXBUFFER;
+				normBufDesc.size = static_cast<int>(newMesh.m_vertexNormals.size() * sizeof(float));
+				normBufDesc.content = &newMesh.m_vertexNormals.front();
+#if DEBUG_TOOLS
+				newMesh._traceName_vertexNormals = _directory + "/vNormals";
+				normBufDesc.label = newMesh._traceName_vertexNormals.c_str();
+#endif
+				newMesh.m_bindings.vertex_buffers[1] = sg_make_buffer(normBufDesc);
+			}
+			if(!newMesh.m_vertexTexCoords.empty())
+			{
+				sg_buffer_desc texBufDesc{};
+				texBufDesc.type = SG_BUFFERTYPE_VERTEXBUFFER;
+				texBufDesc.size = static_cast<int>(newMesh.m_vertexTexCoords.size() * sizeof(float));
+				texBufDesc.content = &newMesh.m_vertexTexCoords.front();
+#if DEBUG_TOOLS
+				newMesh._traceName_vertexTexCoords = _directory + "/vTexCoords";
+				texBufDesc.label = newMesh._traceName_vertexTexCoords.c_str();
+#endif
+				newMesh.m_bindings.vertex_buffers[2] = sg_make_buffer(texBufDesc);
+			}
+#endif
+			{
+				sg_buffer_desc indexDesc{};
+				indexDesc.type = SG_BUFFERTYPE_INDEXBUFFER;
+				indexDesc.size = static_cast<int>(newMesh.m_indices.size() * sizeof(uint16));
+				indexDesc.content = &newMesh.m_indices.front();
+#if DEBUG_TOOLS
+				newMesh._traceName_indices = _directory + "/indices";
+				indexDesc.label = newMesh._traceName_indices.c_str();
+#endif
+				newMesh.m_bindings.index_buffer = sg_make_buffer(indexDesc);
+			}
+
+			for (TextureID const& texID : newMesh.m_material.m_textures)
+			{
+				Texture const& tex = GetTexture(texID);
+				switch (tex.m_type)
+				{
+				case Texture::Type::Diffuse:
+				{
+					newMesh.m_bindings.fs_images[SLOT_main_mat_diffuseTex] = tex.m_texID;
+					break;
+				}
+				case Texture::Type::Specular:
+				{
+					newMesh.m_bindings.fs_images[SLOT_main_mat_specularTex] = tex.m_texID;
+					break;
+				}
+				case Texture::Type::Normal:
+				{
+					// not supported yet
+					//newMesh.m_bindings.fs_images[SLOT_main_mat_normalTex] = tex.m_texID;
+					break;
+				}
+				}
 			}
 
 			return newMesh;
@@ -252,7 +358,7 @@ namespace Core
 			}
 
 			Assimp::Importer import;
-			aiScene const* scene = import.ReadFile(_path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals | aiProcess_GenUVCoords);
+			aiScene const* scene = import.ReadFile(_path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenSmoothNormals | aiProcess_GenUVCoords | aiProcess_FlipWindingOrder);
 
 			if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 			{
@@ -261,8 +367,8 @@ namespace Core
 			}
 			std::string const directory = _path.substr(0, _path.find_last_of('/'));
 
-			ModelID const newModelID = NewModelID();
-			Model& newModel = models[newModelID];
+			o_modelID = NewModelID();
+			Model& newModel = models[o_modelID];
 			newModel.m_path = _path;
 			ProcessNode(directory, newModel, scene->mRootNode, scene);
 

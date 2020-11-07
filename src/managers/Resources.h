@@ -56,15 +56,24 @@ namespace Core
 			fVec2Data uv{ 0.0f, 0.0f };
 		};
 
-		using index_type = uint32;
+		using IndexType = uint32;
 
 		struct MeshData
 		{
 			std::vector<VertexData> m_vertices;
+			std::vector<IndexType> m_indices;
+
+			uint32 m_indexCount{ 0 };
+			MaterialData m_material;
 			sg_bindings m_bindings{};
 
-			std::vector<index_type> m_indices;
-			MaterialData m_material;
+			uint32 NumToDraw() const { return m_indexCount; }
+			void CleanData()
+			{
+				m_indexCount = static_cast<uint32>(m_indices.size());
+				m_vertices.clear();
+				m_indices.clear();
+			}
 		};
 		
 		struct ModelData

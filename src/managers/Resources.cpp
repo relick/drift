@@ -287,30 +287,41 @@ namespace Core
 
 			// Make bindings for model
 #if USE_INTERLEAVED
+			// First, fill scratch data.
 			uint32 meshVertexOffset = 0;
 			uint32 meshIndexOffset = 0;
+			uint32 totalVertexCount = 0;
+			uint32 totalIndexCount = 0;
+			for (MeshData const& mesh : newModel.m_meshes)
+			{
+				totalVertexCount += mesh.m_vertices.size();
+				totalIndexCount += mesh.m_indices.size();
+			}
+			newModel.m_vertexBufferData.reserve((sizeof(Resource::VertexData)/sizeof(float)) * totalVertexCount);
+			newModel.m_indexBufferData.reserve(totalIndexCount);
 			for (MeshData& mesh : newModel.m_meshes)
 			{
-				for (usize i = 0; i < mesh.m_vertices.size(); ++i)
+				for (VertexData const& vertex : mesh.m_vertices)
 				{
-					newModel.m_vertexBufferData.push_back(mesh.m_vertices[i].position.x);
-					newModel.m_vertexBufferData.push_back(mesh.m_vertices[i].position.y);
-					newModel.m_vertexBufferData.push_back(mesh.m_vertices[i].position.z);
-					newModel.m_vertexBufferData.push_back(mesh.m_vertices[i].normal.x);
-					newModel.m_vertexBufferData.push_back(mesh.m_vertices[i].normal.y);
-					newModel.m_vertexBufferData.push_back(mesh.m_vertices[i].normal.z);
-					newModel.m_vertexBufferData.push_back(mesh.m_vertices[i].uv.x);
-					newModel.m_vertexBufferData.push_back(mesh.m_vertices[i].uv.y);
+					newModel.m_vertexBufferData.push_back(vertex.position.x);
+					newModel.m_vertexBufferData.push_back(vertex.position.y);
+					newModel.m_vertexBufferData.push_back(vertex.position.z);
+					newModel.m_vertexBufferData.push_back(vertex.normal.x);
+					newModel.m_vertexBufferData.push_back(vertex.normal.y);
+					newModel.m_vertexBufferData.push_back(vertex.normal.z);
+					newModel.m_vertexBufferData.push_back(vertex.uv.x);
+					newModel.m_vertexBufferData.push_back(vertex.uv.y);
 				}
-				for (usize i = 0; i < mesh.m_indices.size(); ++i)
+				for (uint16 const& index : mesh.m_indices)
 				{
-					newModel.m_indexBufferData.push_back(meshVertexOffset + mesh.m_indices[i]);
+					newModel.m_indexBufferData.push_back(meshVertexOffset + index);
 				}
-				//mesh.m_bindings.vertex_buffer_offsets[0] = meshVertexOffset;
-				mesh.m_bindings.index_buffer_offset = meshIndexOffset * sizeof(index_type);
+				mesh.m_bindings.index_buffer_offset = meshIndexOffset * sizeof(Resource::IndexType);
 				meshVertexOffset += mesh.m_vertices.size();
 				meshIndexOffset += mesh.m_indices.size();
 			}
+
+			// Now, create buffers and bind to all meshes
 			sg_buffer vBuf{};
 			sg_buffer iBuf{};
 			{
@@ -328,7 +339,7 @@ namespace Core
 			{
 				sg_buffer_desc iBufDesc{};
 				iBufDesc.type = SG_BUFFERTYPE_INDEXBUFFER;
-				iBufDesc.size = static_cast<int>(newModel.m_indexBufferData.size() * sizeof(index_type));
+				iBufDesc.size = static_cast<int>(newModel.m_indexBufferData.size() * sizeof(Resource::IndexType));
 				iBufDesc.content = &newModel.m_indexBufferData[0];
 #if DEBUG_TOOLS
 				newModel._traceName_iBufData = directory + "/indices";
@@ -340,6 +351,14 @@ namespace Core
 			{
 				mesh.m_bindings.vertex_buffers[0] = vBuf;
 				mesh.m_bindings.index_buffer = iBuf;
+			}
+
+			// Clear all loaded data now it's in our gpu
+			newModel.m_vertexBufferData.clear();
+			newModel.m_indexBufferData.clear();
+			for (MeshData& mesh : newModel.m_meshes)
+			{
+				mesh.CleanData();
 			}
 #else
 			uint32 meshVertexOffset = 0;
@@ -362,7 +381,7 @@ namespace Core
 					newModel.m_indexBufferData.push_back(meshVertexOffset + mesh.m_indices[i]);
 				}
 				//mesh.m_bindings.vertex_buffer_offsets[0] = meshVertexOffset;
-				mesh.m_bindings.index_buffer_offset = meshIndexOffset * sizeof(index_type);
+				mesh.m_bindings.index_buffer_offset = meshIndexOffset * sizeof(Resource::IndexType);
 				meshVertexOffset += mesh.m_vertexPositions.size();
 				meshIndexOffset += mesh.m_indices.size();
 			}

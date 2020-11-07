@@ -129,7 +129,7 @@ namespace Core
 
 						sg_apply_bindings(mesh.m_bindings);
 						sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_main_material, &material, sizeof(material));
-						sg_draw(0, mesh.m_indices.size(), 1);
+						sg_draw(0, mesh.NumToDraw(), 1);
 					}
 				}
 			});

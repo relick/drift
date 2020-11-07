@@ -196,26 +196,26 @@ namespace Core
 				aiMaterial* material = _scene->mMaterials[_mesh->mMaterialIndex];
 
 				MaterialData& newMaterial = newMesh.m_material;
-				LoadMaterialTextures(_directory, material, newMaterial.m_textures);
+				LoadMaterialTextures(_directory, material, newMesh.m_textures);
 
 				aiColor3D colour(0.0f, 0.0f, 0.0f);
 				float shininess{ 0.0f };
 
 				material->Get(AI_MATKEY_COLOR_DIFFUSE, colour);
-				newMaterial.m_diffuseColour = fVec3Data(colour.r, colour.b, colour.g);
+				newMaterial.diffuseColour = fVec3Data(colour.r, colour.b, colour.g);
 
 				material->Get(AI_MATKEY_COLOR_AMBIENT, colour);
-				newMaterial.m_ambientColour = fVec3Data(colour.r, colour.b, colour.g);
+				newMaterial.ambientColour = fVec3Data(colour.r, colour.b, colour.g);
 
 				material->Get(AI_MATKEY_COLOR_SPECULAR, colour);
-				newMaterial.m_specularColour = fVec3Data(colour.r, colour.b, colour.g);
+				newMaterial.specularColour = fVec3Data(colour.r, colour.b, colour.g);
 
 				material->Get(AI_MATKEY_SHININESS, shininess);
-				newMaterial.m_shininess = shininess;
+				newMaterial.shininess = shininess;
 			}
 
 			// now finalise by making texture bindings
-			for (TextureID const& texID : newMesh.m_material.m_textures)
+			for (TextureID const& texID : newMesh.m_textures)
 			{
 				TextureData const& tex = GetTexture(texID);
 				switch (tex.m_type)

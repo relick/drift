@@ -76,16 +76,12 @@ namespace Core
 					sgl_matrix_mode_modelview();
 					sgl_load_identity();
 
-					fVec3 const& pos = _camT.T().getOrigin();
-					fQuat quat;
-					_camT.T().getBasis().getRotation(quat);
-					hmm_mat4 const rotation = HMM_QuaternionToMat4(HMM_Quaternion(quat.x(), quat.y(), quat.z(), quat.w()));
 					union
 					{
 						hmm_mat4 hmmForm;
 						float arrForm[16];
 					} matrixToLoad;
-					matrixToLoad.hmmForm = HMM_InverseNoScale(HMM_Translate(HMM_Vec3(pos.x(), pos.y(), pos.z())) * rotation);
+					matrixToLoad.hmmForm = HMM_InverseNoScale(HMM_Mat4FromfTrans(_camT.T()));
 					sgl_load_matrix(matrixToLoad.arrForm);
 				});
 

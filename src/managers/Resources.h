@@ -7,6 +7,8 @@
 #include <string>
 #include <sokol_gfx.h>
 
+#include "shaders/main.h"
+
 struct aiNode;
 struct aiScene;
 struct aiMesh;
@@ -39,16 +41,6 @@ namespace Core
 			std::string m_path;
 		};
 
-		struct MaterialData
-		{
-			fVec3Data m_diffuseColour;
-			fVec3Data m_specularColour;
-			fVec3Data m_ambientColour;
-			float m_shininess;
-
-			std::vector<TextureID> m_textures;
-		};
-
 		struct VertexData
 		{
 			fVec3Data position;
@@ -57,7 +49,7 @@ namespace Core
 		};
 
 		using IndexType = uint32;
-
+		using MaterialData = main_material_t;
 		struct MeshData
 		{
 			std::vector<VertexData> m_vertices;
@@ -65,6 +57,7 @@ namespace Core
 
 			uint32 m_indexCount{ 0 };
 			MaterialData m_material;
+			std::vector<TextureID> m_textures;
 			sg_bindings m_bindings{};
 
 			uint32 NumToDraw() const { return m_indexCount; }

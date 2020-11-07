@@ -18,7 +18,7 @@
 #include <sokol_gfx.h>
 #include <sokol_time.h>
 
-#include "CubeTest2.h"
+#include "CubeTest.h"
 
 void initialise_cb()
 {
@@ -77,7 +77,7 @@ void initialise_cb()
 	Core::AddComponent(renderEntity, Core::Render::DebugCameraControl_Tag());
 
 	// Setup entity initialisers
-	setup_cube2();
+	setup_cube();
 
 	// Setup systems
 	// debug camera control

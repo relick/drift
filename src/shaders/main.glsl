@@ -1,7 +1,8 @@
 @module main
 
 @ctype mat4 hmm_mat4
-@ctype vec3 hmm_vec3
+@ctype vec3 fVec3Data
+@ctype vec2 fVec2Data
 
 @vs vs
 @include main.vert

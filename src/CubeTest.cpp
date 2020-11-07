@@ -1,4 +1,4 @@
-#include "CubeTest2.h"
+#include "CubeTest.h"
 
 #include <fstream>
 #include <sstream>
@@ -46,7 +46,7 @@ struct
 	hmm_mat4 view{ HMM_LookAt(HMM_Vec3(1.4f, 1.5f, 4.0f), HMM_Vec3(0.0f, 0.0f, 0.0f), HMM_Vec3(0.0f, 1.0f, 0.0f)) };
 } camera_state;
 
-void setup_cube2()
+void setup_cube()
 {
 	/* cube vertex buffer */
 	float vertices[] = {
@@ -231,14 +231,8 @@ void setup_cube2()
 	{
 		camera_state.proj = HMM_Perspective(60.0f, _rfd.fW / _rfd.fH, 0.01f, 1000.0f);
 
-		fVec3 const& pos = _t.T().getOrigin();
-		hmm_vec3 position = HMM_Vec3(pos.x(), pos.y(), pos.z());
-		fQuat quat;
-		_t.T().getBasis().getRotation(quat);
-		hmm_quaternion quaternion = HMM_Quaternion(quat.x(), quat.y(), quat.z(), quat.w());
-		hmm_mat4 rotation = HMM_QuaternionToMat4(quaternion);
-
-		camera_state.view = HMM_InverseNoScale(HMM_Translate(position) * rotation);
+		hmm_mat4 const cameraMat = HMM_Mat4FromfTrans(_t.T());
+		camera_state.view = HMM_InverseNoScale(cameraMat);
 	});
 
 	ecs::make_system<ecs::opts::group<Sys::DEFAULT_PASS>, ecs::opts::not_parallel>([](Core::MT_Only&, Core::Render::FrameData const& _fd, Core::Render::CubeTest const& _cubeTest, Core::Transform const& _t)
@@ -254,17 +248,8 @@ void setup_cube2()
 		{
 			phong_vs_params_t vs_params;
 			fTrans const cubeTrans = _t.CalculateWorldTransform();
-			fVec3 const& pos = cubeTrans.getOrigin();
-			fQuat quat;
-			cubeTrans.getBasis().getRotation(quat);
-
-
-			hmm_vec3 position = HMM_Vec3(pos.x(), pos.y(), pos.z());
-			hmm_mat4 translation = HMM_Translate(position);
-			hmm_quaternion quaternion = HMM_Quaternion(quat.x(), quat.y(), quat.z(), quat.w());
-			hmm_mat4 rotation = HMM_QuaternionToMat4(quaternion);
-
-			hmm_mat4 const model = translation * rotation * HMM_Scale(HMM_Vec3(0.5f, 0.5f, 0.5f));
+			hmm_mat4 const modelMat = HMM_Mat4FromfTrans(cubeTrans);
+			hmm_mat4 const model = modelMat * HMM_Scale(HMM_Vec3(0.5f, 0.5f, 0.5f));
 			vs_params.view_model = camera_state.view * model;
 			vs_params.normal = HMM_Transpose(HMM_Inverse(vs_params.view_model));
 			vs_params.projection = camera_state.proj;
@@ -302,17 +287,8 @@ void setup_cube2()
 
 		phong_vs_params_t vs_params;
 		fTrans const cubeTrans = _t.CalculateWorldTransform();
-		fVec3 const& pos = cubeTrans.getOrigin();
-		fQuat quat;
-		cubeTrans.getBasis().getRotation(quat);
-
-
-		hmm_vec3 position = HMM_Vec3(pos.x(), pos.y(), pos.z());
-		hmm_mat4 translation = HMM_Translate(position);
-		hmm_quaternion quaternion = HMM_Quaternion(quat.x(), quat.y(), quat.z(), quat.w());
-		hmm_mat4 rotation = HMM_QuaternionToMat4(quaternion);
-
-		hmm_mat4 const model = translation * rotation * HMM_Scale(HMM_Vec3(50.0f, 1.0f, 50.0f));
+		hmm_mat4 const modelMat = HMM_Mat4FromfTrans(cubeTrans);
+		hmm_mat4 const model = modelMat * HMM_Scale(HMM_Vec3(50.0f, 1.0f, 50.0f));
 		vs_params.view_model = camera_state.view * model;
 		vs_params.normal = HMM_Transpose(HMM_Inverse(vs_params.view_model));
 		vs_params.projection = camera_state.proj;

@@ -5,6 +5,7 @@
 // Define some number types
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 using int8 = int8_t;
 using uint8 = uint8_t;
 using int16 = int16_t;
@@ -74,6 +75,40 @@ using fTransData = btTransformData;
 using fMat3 = btMatrix3x3;
 using fMat3Data = btMatrix3x3Data;
 
+#include "HandmadeMath.h"
+
+HINLINE hmm_mat4
+HMM_Mat4FromfTrans(fTrans const& _trans)
+{
+	// initialise directly
+	fVec3 const& col1 = _trans.getBasis().getRow(0);
+	fVec3 const& col2 = _trans.getBasis().getRow(1);
+	fVec3 const& col3 = _trans.getBasis().getRow(2);
+
+	fVec3 const& row4 = _trans.getOrigin();
+
+	hmm_mat4 Result{
+		col1.m_floats[0], col2.m_floats[0], col3.m_floats[0], 0.0f,
+		col1.m_floats[1], col2.m_floats[1], col3.m_floats[1], 0.0f,
+		col1.m_floats[2], col2.m_floats[2], col3.m_floats[2], 0.0f,
+		row4.m_floats[0], row4.m_floats[1], row4.m_floats[2], 1.0f,
+	};
+
+
+	/*// initialise then fill
+	hmm_mat4 Result = HMM_Mat4d(1.0f);
+	// copy in rotation
+	std::memcpy(&Result.Elements[0][0], &_trans.getBasis().getRow(0).m_floats[0], sizeof(float) * 12);
+	//_trans.getBasis().serializeFloat(*reinterpret_cast<btMatrix3x3FloatData*>(Result.Elements));
+	Result = HMM_Transpose(Result);
+	// copy in translation
+	std::memcpy(&Result.Elements[3][0], &_trans.getOrigin().m_floats[0], sizeof(float) * 3);
+	//_trans.getOrigin().serializeFloat(*reinterpret_cast<btVector3FloatData*>(&Result.Elements[3]));
+	// fill in final item that we haven't written.
+	Result.Elements[3][3] = 1.0f;*/
+
+	return (Result);
+}
 
 #define WINDOW_START_WIDTH 640
 #define WINDOW_START_HEIGHT 480

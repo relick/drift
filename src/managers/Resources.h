@@ -11,7 +11,7 @@ struct aiNode;
 struct aiScene;
 struct aiMesh;
 
-#define USE_INTERLEAVED 1
+#define USE_INTERLEAVED (1)
 
 namespace Core
 {
@@ -22,13 +22,10 @@ namespace Core
 		struct TextureIDType {};
 		using TextureID = ID<TextureIDType>;
 
-		struct MeshIDType {};
-		using MeshID = ID<MeshIDType>;
-
 		struct ModelIDType {};
 		using ModelID = ID<ModelIDType>;
 
-		struct Texture
+		struct TextureData
 		{
 			enum class Type
 			{
@@ -42,7 +39,7 @@ namespace Core
 			std::string m_path;
 		};
 
-		struct Material
+		struct MaterialData
 		{
 			fVec3Data m_diffuseColour;
 			fVec3Data m_specularColour;
@@ -52,48 +49,43 @@ namespace Core
 			std::vector<TextureID> m_textures;
 		};
 
-#if USE_INTERLEAVED
-		struct Vertex
+		struct VertexData
 		{
 			fVec3Data position;
 			fVec3Data normal;
 			fVec2Data uv{ 0.0f, 0.0f };
 		};
-#endif
 
-		struct Mesh
+		using index_type = uint32;
+
+		struct MeshData
 		{
-#if USE_INTERLEAVED
-			std::vector<Vertex> m_vertices;
-#else
-			// De-interleaved data.
-			std::vector<fVec3Data> m_vertexPositions;
-			std::vector<fVec3Data> m_vertexNormals;
-			std::vector<fVec2Data> m_vertexTexCoords;
-#endif
-
-			std::vector<uint16> m_indices;
-			Material m_material;
-
+			std::vector<VertexData> m_vertices;
 			sg_bindings m_bindings{};
+
+			std::vector<index_type> m_indices;
+			MaterialData m_material;
+		};
+		
+		struct ModelData
+		{
+			// for now just stores meshes, no transform tree
+			std::vector<MeshData> m_meshes;
+			std::vector<float> m_vertexBufferData;
+			std::vector<uint32> m_indexBufferData;
+			std::string m_path;
+
 #if DEBUG_TOOLS
 			std::string _traceName_vertexPositions;
 			std::string _traceName_vertexNormals;
 			std::string _traceName_vertexTexCoords;
-			std::string _traceName_indices;
+			std::string _traceName_vBufData;
+			std::string _traceName_iBufData;
 #endif
 		};
-		
-		struct Model
-		{
-			// for now just stores meshes, no transform tree
-			std::vector<MeshID> m_meshes;
-			std::string m_path;
-		};
 
-		Texture const& GetTexture(TextureID _texture);
-		Mesh const& GetMesh(MeshID _mesh);
-		Model const& GetModel(ModelID _model);
+		TextureData const& GetTexture(TextureID _texture);
+		ModelData const& GetModel(ModelID _model);
 
 		bool LoadModel(std::string _path, ModelID& o_modelID);
 	}

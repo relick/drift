@@ -47,25 +47,20 @@ namespace Core
 			mainLayoutDesc.attrs[ATTR_main_vs_aNormal].format = SG_VERTEXFORMAT_FLOAT3;
 			mainLayoutDesc.attrs[ATTR_main_vs_aTexCoord].format = SG_VERTEXFORMAT_FLOAT2;
 #if USE_INTERLEAVED
-			mainLayoutDesc.buffers[0].stride = sizeof(Resource::Vertex);
+			mainLayoutDesc.buffers[0].stride = sizeof(Resource::VertexData);
 			mainLayoutDesc.attrs[ATTR_main_vs_aPos].offset = 0;
 			mainLayoutDesc.attrs[ATTR_main_vs_aNormal].offset = sizeof(fVec3Data);
 			mainLayoutDesc.attrs[ATTR_main_vs_aTexCoord].offset = sizeof(fVec3Data) + sizeof(fVec3Data);
 #else
 			mainLayoutDesc.attrs[ATTR_main_vs_aPos].buffer_index = 0;
-			mainLayoutDesc.buffers[0].stride = sizeof(fVec3Data);
-
 			mainLayoutDesc.attrs[ATTR_main_vs_aNormal].buffer_index = 1;
-			mainLayoutDesc.buffers[1].stride = sizeof(fVec3Data);
-
 			mainLayoutDesc.attrs[ATTR_main_vs_aTexCoord].buffer_index = 2;
-			mainLayoutDesc.buffers[2].stride = sizeof(fVec2Data);
 #endif
 
 			sg_pipeline_desc mainPipeDesc{};
 			mainPipeDesc.layout = mainLayoutDesc;
 			mainPipeDesc.shader = sg_make_shader(main_sg_shader_desc());
-			mainPipeDesc.index_type = SG_INDEXTYPE_UINT16;
+			mainPipeDesc.index_type = SG_INDEXTYPE_UINT32;
 			mainPipeDesc.depth_stencil = {
 				.depth_compare_func = SG_COMPAREFUNC_LESS_EQUAL,
 				.depth_write_enabled = true,
@@ -97,10 +92,10 @@ namespace Core
 				if (_model.m_drawDefaultPass)
 				{
 					main_vs_params_t vs_params;
-					fTrans const cubeTrans = _t.CalculateWorldTransform();
-					fVec3 const& pos = cubeTrans.getOrigin();
+					fTrans const worldTransform = _t.CalculateWorldTransform();
+					fVec3 const& pos = worldTransform.getOrigin();
 					fQuat quat;
-					cubeTrans.getBasis().getRotation(quat);
+					worldTransform.getBasis().getRotation(quat);
 
 					hmm_vec3 position = HMM_Vec3(pos.x(), pos.y(), pos.z());
 					hmm_mat4 translation = HMM_Translate(position);
@@ -118,19 +113,18 @@ namespace Core
 					fs_params.lightColor = HMM_Vec3(1.0f, 1.0f, 1.0f);
 					fs_params.lightPos = (cameraState.view * HMM_Vec4v(lightPos, 1.0f)).XYZ;
 
-					Resource::Model const& model = Resource::GetModel(_model.m_modelID);
+					Resource::ModelData const& model = Resource::GetModel(_model.m_modelID);
 
 					sg_apply_pipeline(renderState.mainPipeline);
 					sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_main_vs_params, &vs_params, sizeof(vs_params));
 					sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_main_fs_params, &fs_params, sizeof(fs_params));
 
-					for (Resource::MeshID const& meshID : model.m_meshes)
+					for (Resource::MeshData const& mesh : model.m_meshes)
 					{
-						Resource::Mesh const& mesh = Resource::GetMesh(meshID);
-
 						main_material_t material;
 						material.diffuseColour = HMM_Vec3(mesh.m_material.m_diffuseColour.x, mesh.m_material.m_diffuseColour.y, mesh.m_material.m_diffuseColour.z);
 						material.specularColour = HMM_Vec3(mesh.m_material.m_specularColour.x, mesh.m_material.m_specularColour.y, mesh.m_material.m_specularColour.z);
+						material.ambientColour = HMM_Vec3(mesh.m_material.m_ambientColour.x, mesh.m_material.m_ambientColour.y, mesh.m_material.m_ambientColour.z);
 						material.shininess = mesh.m_material.m_shininess;
 
 						sg_apply_bindings(mesh.m_bindings);

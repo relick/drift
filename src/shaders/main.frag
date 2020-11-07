@@ -6,6 +6,7 @@ in vec2 TexCoord;
 uniform material {
     vec3 diffuseColour;
     vec3 specularColour;
+    vec3 ambientColour;
     float shininess;
 } Material;
 
@@ -21,10 +22,12 @@ out vec4 FragColor;
 
 void main()
 {
-    vec3 matDiffuse = vec3(texture(mat_diffuseTex, TexCoord)) * Material.diffuseColour;
+    vec3 diffuseSample = vec3(texture(mat_diffuseTex, TexCoord));
+    vec3 matAmbient = diffuseSample * Material.ambientColour;
+    vec3 matDiffuse = diffuseSample * Material.diffuseColour;
 
     float ambientStrength = 0.1;
-    vec3 ambient = lightColor * ambientStrength * matDiffuse;
+    vec3 ambient = lightColor * ambientStrength * matAmbient;
     
     vec3 norm = normalize(Normal);
     vec3 lightDir = normalize(lightPos - FragPos);

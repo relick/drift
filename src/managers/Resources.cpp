@@ -335,7 +335,7 @@ namespace Core
 				}
 				for (uint16 const& index : mesh.m_indices)
 				{
-					newModel.m_indexBufferData.push_back(meshVertexOffset + index);
+					newModel.m_indexBufferData.push_back(static_cast<uint32>(meshVertexOffset + index));
 				}
 				mesh.m_bindings.index_buffer_offset = static_cast<int>(meshIndexOffset * sizeof(Resource::IndexType));
 				meshVertexOffset += mesh.m_vertices.size();

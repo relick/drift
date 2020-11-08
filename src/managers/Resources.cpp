@@ -97,10 +97,8 @@ namespace Core
 				imageDesc.content.subimage[0][0].ptr = data;
 				imageDesc.content.subimage[0][0].size = imageDesc.width * imageDesc.height * nrComponents;
 
-				//imageDesc.num_mipmaps = 4;
-				//glGenerateMipmap(GL_TEXTURE_2D);
 				imageDesc.generateMipmaps = true;
-				imageDesc.min_filter = SG_FILTER_LINEAR_MIPMAP_LINEAR;// SG_FILTER_LINEAR_MIPMAP_LINEAR;
+				imageDesc.min_filter = SG_FILTER_LINEAR_MIPMAP_LINEAR;
 				imageDesc.mag_filter = SG_FILTER_LINEAR;
 				imageDesc.wrap_u = SG_WRAP_REPEAT;
 				imageDesc.wrap_v = SG_WRAP_REPEAT;

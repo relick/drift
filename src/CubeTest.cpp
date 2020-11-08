@@ -177,6 +177,11 @@ void setup_cube()
 	Core::AddComponent(cube, Core::Transform(fQuat::getIdentity(), fVec3(0.0f, 0.0f, 0.0f)));
 	Core::AddComponent(cube, Core::Render::CubeTest{false, 0.0f, 0.0f});
 	{
+		Core::Render::ModelDesc modelDesc{};
+		modelDesc.m_filePath = "assets/models/cube/bluecube.obj";
+		Core::AddComponent(cube, modelDesc);
+	}
+	{
 		Core::Physics::RigidBodyDesc rbDesc{};
 		rbDesc.m_shapeType = Core::Physics::ShapeType::Box;
 		rbDesc.m_boxDimensions = btVector3(0.5f, 0.5f, 0.5f);
@@ -195,6 +200,11 @@ void setup_cube()
 	Core::AddComponent(cube2, Core::Transform(fQuat::getIdentity(), fVec3(-0.5f, 1.5f, 0.0f)));
 	Core::AddComponent(cube2, Core::Render::CubeTest{false, 0.0f, 0.0f});
 	{
+		Core::Render::ModelDesc modelDesc{};
+		modelDesc.m_filePath = "assets/models/cube/bluecube.obj";
+		Core::AddComponent(cube2, modelDesc);
+	}
+	{
 		Core::Physics::RigidBodyDesc rbDesc{};
 		rbDesc.m_shapeType = Core::Physics::ShapeType::Box;
 		rbDesc.m_boxDimensions = btVector3(0.5f, 0.5f, 0.5f);
@@ -212,7 +222,7 @@ void setup_cube()
 	Core::AddComponent(backpack, Core::Transform(fQuat::getIdentity(), fVec3(-0.5f, 1.5f, 0.0f)));
 	{
 		Core::Render::ModelDesc modelDesc{};
-		modelDesc.m_filePath = "assets/models/cube/bluecube.obj";
+		modelDesc.m_filePath = "assets/models/backpack/backpack.obj";
 		Core::AddComponent(backpack, modelDesc);
 	}
 
@@ -244,23 +254,7 @@ void setup_cube()
 		fs_params.lightColor = HMM_Vec3(1.0f, 1.0f, 1.0f);
 		fs_params.lightPos = (camera_state.view * HMM_Vec4v(lightPos, 1.0f)).XYZ;
 
-		if (!_cubeTest.isLightCube)
-		{
-			phong_vs_params_t vs_params;
-			fTrans const cubeTrans = _t.CalculateWorldTransform();
-			hmm_mat4 const modelMat = HMM_Mat4FromfTrans(cubeTrans);
-			hmm_mat4 const model = modelMat * HMM_Scale(HMM_Vec3(0.5f, 0.5f, 0.5f));
-			vs_params.view_model = camera_state.view * model;
-			vs_params.normal = HMM_Transpose(HMM_Inverse(vs_params.view_model));
-			vs_params.projection = camera_state.proj;
-
-			sg_apply_pipeline(CubeTestState.pip);
-			sg_apply_bindings(&CubeTestState.bind);
-			sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_phong_vs_params, &vs_params, sizeof(vs_params));
-			sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_phong_fs_params, &fs_params, sizeof(fs_params));
-			sg_draw(0, 36, 1);
-		}
-		else
+		if (_cubeTest.isLightCube)
 		{
 			hmm_mat4 lightCubeModel = HMM_Translate(lightPos);
 			lightCubeModel = lightCubeModel * HMM_Scale(HMM_Vec3(0.2f, 0.2f, 0.2f));

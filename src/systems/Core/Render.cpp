@@ -32,6 +32,8 @@ namespace Core
 {
 	namespace Render
 	{
+		static constexpr int MAX_LIGHTS = 2;
+
 		void Init()
 		{
 			sg_desc gfxDesc{};
@@ -57,9 +59,16 @@ namespace Core
 			mainLayoutDesc.attrs[ATTR_main_vs_aTexCoord].buffer_index = 2;
 #endif
 
+			sg_buffer_desc uboDesc{};
+			uboDesc.type = SG_BUFFERTYPE_INDEXBUFFER;
+
 			sg_pipeline_desc mainPipeDesc{};
 			mainPipeDesc.layout = mainLayoutDesc;
-			mainPipeDesc.shader = sg_make_shader(main_sg_shader_desc());
+			sg_shader_desc mainShaderDesc{};
+			{
+				mainShaderDesc = *main_sg_shader_desc();
+			}
+			mainPipeDesc.shader = sg_make_shader(mainShaderDesc);
 			mainPipeDesc.index_type = SG_INDEXTYPE_UINT32;
 			mainPipeDesc.depth_stencil = {
 				.depth_compare_func = SG_COMPAREFUNC_LESS_EQUAL,
@@ -92,18 +101,19 @@ namespace Core
 					vs_params.normal = HMM_Transpose(HMM_InverseNoScale(vs_params.view_model));
 					vs_params.projection = cameraState.proj;
 
-
-					main_fs_params_t fs_params;
-					fs_params.lightColor = fVec3Data(1.0f, 1.0f, 1.0f);
+					main_lights_t lights{};
+					lights.ambient = fVec3Data(0.1f, 0.1f, 0.1f);
+					lights.numLights = 1.0f;
+					lights.Col[0] = fVec4Data(1.0f, 1.0f, 1.0f, 1.0f);
 					hmm_vec3 lightPos = HMM_Vec3(1.2f, 1.0f, 2.0f);
 					lightPos = (cameraState.view * HMM_Vec4v(lightPos, 1.0f)).XYZ;
-					fs_params.lightPos = fVec3Data(lightPos.X, lightPos.Y, lightPos.Z);
+					lights.Pos[0] = fVec4Data(lightPos.X, lightPos.Y, lightPos.Z, 1.0f);
 
 					Resource::ModelData const& model = Resource::GetModel(_model.m_modelID);
 
 					sg_apply_pipeline(renderState.mainPipeline);
 					sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_main_vs_params, &vs_params, sizeof(vs_params));
-					sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_main_fs_params, &fs_params, sizeof(fs_params));
+					sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_main_lights, &lights, sizeof(lights));
 
 					for (Resource::MeshData const& mesh : model.m_meshes)
 					{

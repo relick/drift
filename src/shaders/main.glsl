@@ -1,6 +1,7 @@
 @module main
 
 @ctype mat4 hmm_mat4
+@ctype vec4 fVec4Data
 @ctype vec3 fVec3Data
 @ctype vec2 fVec2Data
 

@@ -31,18 +31,19 @@ namespace Core
 		// Render objects
 		struct Light
 		{
-			enum class Type
+			enum class Type : uint8
 			{
 				Ambient,
 				Directional,
 				Point,
+				Spotlight,
 			};
 
 			Type m_type;
-			fVec3 m_colour;
+			fVec4Data m_colour; // w == intensity
 			float m_intensity;
-			fVec3 m_position; // point only
-			fVec3 m_direction; // directional + point only
+			fVec4Data m_position; // if w == 0, xyz == direction
+			fVec3Data m_direction; // for spotlights
 		};
 
 		struct ModelDesc

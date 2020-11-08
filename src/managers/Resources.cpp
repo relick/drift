@@ -99,7 +99,8 @@ namespace Core
 
 				//imageDesc.num_mipmaps = 4;
 				//glGenerateMipmap(GL_TEXTURE_2D);
-				imageDesc.min_filter = SG_FILTER_LINEAR;// SG_FILTER_LINEAR_MIPMAP_LINEAR;
+				imageDesc.generateMipmaps = true;
+				imageDesc.min_filter = SG_FILTER_LINEAR_MIPMAP_LINEAR;// SG_FILTER_LINEAR_MIPMAP_LINEAR;
 				imageDesc.mag_filter = SG_FILTER_LINEAR;
 				imageDesc.wrap_u = SG_WRAP_REPEAT;
 				imageDesc.wrap_v = SG_WRAP_REPEAT;
@@ -308,10 +309,10 @@ namespace Core
 			// Make bindings for model
 #if USE_INTERLEAVED
 			// First, fill scratch data.
-			uint32 meshVertexOffset = 0;
-			uint32 meshIndexOffset = 0;
-			uint32 totalVertexCount = 0;
-			uint32 totalIndexCount = 0;
+			usize meshVertexOffset = 0;
+			usize meshIndexOffset = 0;
+			usize totalVertexCount = 0;
+			usize totalIndexCount = 0;
 			for (MeshData const& mesh : newModel.m_meshes)
 			{
 				totalVertexCount += mesh.m_vertices.size();
@@ -336,7 +337,7 @@ namespace Core
 				{
 					newModel.m_indexBufferData.push_back(meshVertexOffset + index);
 				}
-				mesh.m_bindings.index_buffer_offset = meshIndexOffset * sizeof(Resource::IndexType);
+				mesh.m_bindings.index_buffer_offset = static_cast<int>(meshIndexOffset * sizeof(Resource::IndexType));
 				meshVertexOffset += mesh.m_vertices.size();
 				meshIndexOffset += mesh.m_indices.size();
 			}

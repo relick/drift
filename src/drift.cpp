@@ -22,7 +22,7 @@
 
 void initialise_cb()
 {
-	// sokol setup start
+	// initialisation
 	{
 		Core::Resource::Init();
 		Core::Render::Init();
@@ -31,21 +31,28 @@ void initialise_cb()
 		Core::Physics::Init();
 		stm_setup();
 	}
-	// sokol setup done
+
+	// system and data setup
+	{
+		Core::Resource::Setup();
+		Core::Render::Setup();
+		Core::Render::TextAndGLDebug::Setup();
+		Core::Render::DImGui::Setup();
+		Core::Physics::Setup();
+		Core::Input::Setup();
+	}
 
 	// initial entity setup
-	Core::EntityID const primaryPhysicsWorld = Core::CreateEntity();
-	Core::AddComponent(primaryPhysicsWorld, Core::Physics::World{});
+	{
+		Core::EntityID const primaryPhysicsWorld = Core::CreateEntity();
+		Core::AddComponent(primaryPhysicsWorld, Core::Physics::World{});
 
-	Core::EntityID const global = Core::CreateEntity();
-	Core::AddComponent(global, Core::GlobalWorkaround_Tag());
-	ecs::commit_changes();
+		Core::EntityID const global = Core::CreateEntity();
+		Core::AddComponent(global, Core::GlobalWorkaround_Tag());
+		ecs::commit_changes();
+	}
 
-	Core::Render::Setup();
-	Core::Render::TextAndGLDebug::Setup();
-	Core::Render::DImGui::Setup();
-	Core::Physics::Setup();
-	Core::Input::Setup();
+
 	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::GlobalWorkaround_Tag)
 	{
 		static bool pressedLastFrame = false;

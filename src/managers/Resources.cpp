@@ -16,6 +16,7 @@
 Core::Resource::TextureID::ValueType nextTextureID = 0;
 Core::Resource::ModelID::ValueType nextModelID = 0;
 
+sg_image defaultTextureID{}; // used for missing textures
 std::unordered_map<Core::Resource::TextureID, Core::Resource::TextureData> textures;
 std::unordered_map<Core::Resource::ModelID, Core::Resource::ModelData> models;
 
@@ -28,6 +29,22 @@ namespace Core
 			stbi_set_flip_vertically_on_load(true);
 		}
 
+		void Setup()
+		{
+			uint8 emptyTex[] = { 255, 255, 255, 255 };
+			sg_image_content emptyTexContent{};
+			emptyTexContent.subimage[0][0].ptr = emptyTex;
+			emptyTexContent.subimage[0][0].size = sizeof(emptyTex);
+			sg_image_desc emptyTexDesc{};
+			emptyTexDesc.content = emptyTexContent;
+			emptyTexDesc.height = 1;
+			emptyTexDesc.width = 1;
+			emptyTexDesc.min_filter = SG_FILTER_LINEAR;
+			emptyTexDesc.mag_filter = SG_FILTER_LINEAR;
+			emptyTexDesc.wrap_u = SG_WRAP_REPEAT;
+			emptyTexDesc.wrap_v = SG_WRAP_REPEAT;
+			defaultTextureID = sg_make_image(emptyTexDesc);
+		}
 		TextureID NewTextureID() { return nextTextureID++; }
 		ModelID NewModelID() { return nextModelID++; }
 
@@ -202,19 +219,22 @@ namespace Core
 				float shininess{ 0.0f };
 
 				material->Get(AI_MATKEY_COLOR_DIFFUSE, colour);
-				newMaterial.diffuseColour = fVec3Data(colour.r, colour.b, colour.g);
+				newMaterial.diffuseColour = fVec3Data(colour.r, colour.g, colour.b);
 
 				material->Get(AI_MATKEY_COLOR_AMBIENT, colour);
-				newMaterial.ambientColour = fVec3Data(colour.r, colour.b, colour.g);
+				newMaterial.ambientColour = fVec3Data(colour.r, colour.g, colour.b);
 
 				material->Get(AI_MATKEY_COLOR_SPECULAR, colour);
-				newMaterial.specularColour = fVec3Data(colour.r, colour.b, colour.g);
+				newMaterial.specularColour = fVec3Data(colour.r, colour.g, colour.b);
 
 				material->Get(AI_MATKEY_SHININESS, shininess);
 				newMaterial.shininess = shininess;
 			}
 
 			// now finalise by making texture bindings
+			newMesh.m_bindings.fs_images[SLOT_main_mat_diffuseTex] = defaultTextureID;
+			newMesh.m_bindings.fs_images[SLOT_main_mat_specularTex] = defaultTextureID;
+			//newMesh.m_bindings.fs_images[SLOT_main_mat_normalTex] = defaultTextureID;
 			for (TextureID const& texID : newMesh.m_textures)
 			{
 				TextureData const& tex = GetTexture(texID);

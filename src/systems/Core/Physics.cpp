@@ -210,17 +210,20 @@ namespace Core
 			// Just reading and throwing into the transform components so should be parallel.
 			ecs::make_system<ecs::opts::group<Sys::PHYSICS_TRANSFORMS_OUT>>([](Core::Physics::RigidBody const& _rb, Core::Transform& _t)
 			{
-				btTransform trans;
-				if (_rb.m_body->getMotionState())
+				if (_rb.m_body->isActive())
 				{
-					_rb.m_body->getMotionState()->getWorldTransform(trans);
-				}
-				else
-				{
-					trans = _rb.m_body->getWorldTransform();
-				}
+					btTransform trans;
+					if (_rb.m_body->getMotionState())
+					{
+						_rb.m_body->getMotionState()->getWorldTransform(trans);
+					}
+					else
+					{
+						trans = _rb.m_body->getWorldTransform();
+					}
 
-				_t.T() = _t.CalculateLocalTransform(trans);
+					_t.T() = _t.CalculateLocalTransform(trans);
+				}
 			});
 		}
 

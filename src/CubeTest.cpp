@@ -212,7 +212,7 @@ void setup_cube()
 	Core::AddComponent(backpack, Core::Transform(fQuat::getIdentity(), fVec3(-0.5f, 1.5f, 0.0f)));
 	{
 		Core::Render::ModelDesc modelDesc{};
-		modelDesc.m_filePath = "assets/models/backpack/backpack.obj";
+		modelDesc.m_filePath = "assets/models/cube/bluecube.obj";
 		Core::AddComponent(backpack, modelDesc);
 	}
 

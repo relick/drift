@@ -20,6 +20,7 @@ namespace Core
 	namespace Resource
 	{
 		void Init();
+		void Setup();
 
 		struct TextureIDType {};
 		using TextureID = ID<TextureIDType>;

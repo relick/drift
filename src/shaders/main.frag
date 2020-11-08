@@ -22,18 +22,22 @@ out vec4 FragColor;
 
 void main()
 {
-    vec3 diffuseSample = vec3(texture(mat_diffuseTex, TexCoord));
-    vec3 matAmbient = diffuseSample * Material.ambientColour;
-    vec3 matDiffuse = diffuseSample * Material.diffuseColour;
+    vec4 diffuseSample = texture(mat_diffuseTex, TexCoord);
+    if (diffuseSample.a < 0.01)
+    {
+        discard;
+    }
+    vec4 matAmbient = diffuseSample * vec4(Material.ambientColour, 1.0);
+    vec4 matDiffuse = diffuseSample * vec4(Material.diffuseColour, 1.0);
 
     float ambientStrength = 0.1;
-    vec3 ambient = lightColor * ambientStrength * matAmbient;
+    vec4 ambient = vec4(lightColor, 1.0) * ambientStrength * matAmbient;
     
     vec3 norm = normalize(Normal);
     vec3 lightDir = normalize(lightPos - FragPos);
 
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = lightColor * diff * matDiffuse;
+    vec4 diffuse = vec4(lightColor, 1.0) * diff * matDiffuse;
     
     vec3 viewDir = normalize(-FragPos);
     vec3 halfwayDir = normalize(lightDir + viewDir);
@@ -50,9 +54,16 @@ void main()
         //dot(viewDir, reflectDir) // phong
         dot(norm, halfwayDir) // blinn
     ;
-    specularIntensity = pow(max(specularIntensity, 0.0), Material.shininess);
+    if (Material.shininess > 0.0)
+    {
+        specularIntensity = pow(max(specularIntensity, 0.0), Material.shininess);
+    }
+    else
+    {
+        specularIntensity = 0.0;
+    }
     vec3 specular = lightColor * matSpecular * specularIntensity;
 
-    vec4 result = vec4(ambient + diffuse + specular, 1.0);
+    vec4 result = ambient + diffuse + vec4(specular, 1.0);
     FragColor = result;
 }

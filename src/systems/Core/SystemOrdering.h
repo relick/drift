@@ -21,7 +21,8 @@ namespace Sys
 			TEXT_START, // sets up matrices
 			TEXT,
 			DEFAULT_PASS_START,
-				DEFAULT_PASS,
+				RENDER_ADD, // fill in drawing data
+				RENDER_PASSES, // make draw calls for each pass
 			DEFAULT_PASS_END,
 		RENDER_END,
 	FRAME_END,

@@ -82,6 +82,9 @@ namespace Core
 				actions[static_cast<usize>(Action::Right)][1].key = SAPP_KEYCODE_RIGHT;
 			}
 
+			actions[static_cast<usize>(Action::Debug_SpeedUp)][0].keyType = KeyType::Keyboard;
+			actions[static_cast<usize>(Action::Debug_SpeedUp)][0].key = SAPP_KEYCODE_O;
+
 			actions[static_cast<usize>(Action::Debug_AimCamera)][0].keyType = KeyType::Mouse;
 			actions[static_cast<usize>(Action::Debug_AimCamera)][0].key = SAPP_MOUSEBUTTON_MIDDLE;
 

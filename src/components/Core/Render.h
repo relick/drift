@@ -40,10 +40,11 @@ namespace Core
 			};
 
 			Type m_type;
-			fVec4Data m_colour; // w == intensity
+			fVec3Data m_colour;
 			float m_intensity;
-			fVec4Data m_position; // if w == 0, xyz == direction
-			fVec3Data m_direction; // for spotlights
+			fVec3Data m_direction; // for directional + spotlights
+
+			// position and direction defined by transform component, which is required.
 		};
 
 		struct ModelDesc

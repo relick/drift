@@ -21,6 +21,7 @@ namespace Core
 			Left,
 			Right,
 
+			Debug_SpeedUp,
 			Debug_AimCamera,
 			Debug_RaiseCamera,
 			Debug_LowerCamera,

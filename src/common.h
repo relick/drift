@@ -49,7 +49,24 @@ union fVec3Data
 
 	fVec3Data() : x(0.0f), y(0.0f), z(0.0f) {}
 	fVec3Data(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {}
+
+	fVec3Data& operator*=(float _x)
+	{
+		x *= _x;
+		y *= _x;
+		z *= _x;
+		return *this;
+	}
+	fVec3Data& operator+=(fVec3Data const& _xyz)
+	{
+		x += _xyz.x;
+		y += _xyz.y;
+		z += _xyz.z;
+		return *this;
+	}
 };
+inline fVec3Data operator*(fVec3Data const& _xyz, float _x) { return (fVec3Data(_xyz) *= _x); }
+inline fVec3Data operator+(fVec3Data const& _xyz, fVec3Data const& _xyz2) { return (fVec3Data(_xyz) += _xyz2); }
 
 union fVec4Data
 {
@@ -64,6 +81,7 @@ union fVec4Data
 
 	fVec4Data() : x(0.0f), y(0.0f), z(0.0f), w(0.0f) {}
 	fVec4Data(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w) {}
+	fVec4Data(fVec3Data const& _xyz, float _w) : x(_xyz.x), y(_xyz.y), z(_xyz.z), w(_w) {}
 };
 
 using fVec2 = fVec2Data; // no sse here

@@ -9,12 +9,11 @@ namespace Core
 	struct Transform
 	{
 		// origin = position, basis = transform
-		fTrans m_transform;
+		fTrans m_transform{ fQuat::getIdentity() }; // identity
 		Core::EntityID m_parent;
 
 		Transform(Core::EntityID _parent = Core::EntityID{})
-			: m_transform{ fQuat::getIdentity() } // identity
-			, m_parent{ _parent }
+			: m_parent{ _parent }
 		{}
 		explicit Transform(fTrans const& _t, Core::EntityID _parent = Core::EntityID{})
 			: m_transform{ _t }

@@ -56,12 +56,24 @@ void initialise_cb()
 	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::GlobalWorkaround_Tag)
 	{
 		static bool pressedLastFrame = false;
-		if (Core::Input::Pressed(Core::Input::Action::Pause))
+		bool const pPressed = Core::Input::Pressed(Core::Input::Action::Pause);
+		bool const oPressed = Core::Input::Pressed(Core::Input::Action::Debug_SpeedUp);
+		static double speed = 1.0;
+		if (pPressed || oPressed)
 		{
 			if (!pressedLastFrame)
 			{
-				Core::FrameData& fd = ecs::get_global_component<Core::FrameData>();
-				fd.m_scale = (fd.m_scale == 0.0 ? 1.0 : 0.0);
+				if (pPressed)
+				{
+					Core::FrameData& fd = ecs::get_global_component<Core::FrameData>();
+					fd.m_scale = (fd.m_scale == 0.0 ? speed : 0.0);
+				}
+				if (oPressed)
+				{
+					speed = (speed == 1.0 ? 2.0 : (speed == 2.0 ? 5.0 : 1.0));
+					Core::FrameData& fd = ecs::get_global_component<Core::FrameData>();
+					fd.m_scale = (fd.m_scale == 0.0 ? 0.0 : speed);
+				}
 				pressedLastFrame = true;
 			}
 		}

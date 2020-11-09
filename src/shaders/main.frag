@@ -22,6 +22,7 @@ uniform lights {
 
     vec4 Col[MAX_LIGHTS];
     vec4 Pos[MAX_LIGHTS]; // if w is 0, then pos.xyz is direction for a directional light
+    vec4 Att[MAX_LIGHTS]; // constant, linear, quadratic
 
     // spotlight only
     vec4 Dir[MAX_LIGHTS];
@@ -46,12 +47,26 @@ void main()
 
     for(int i = 0; i < int(Lights.numLights); ++i)
     {
-        vec3 norm = normalize(Normal);
-        // directional or point?
-        vec3 lightDir = Lights.Pos[i].w == 0.0 ? normalize(-Lights.Pos[i].xyz) : normalize(Lights.Pos[i].xyz - FragPos);
+        float atten = 1.0;
+        vec3 lightDir;
 
+        // light type
+        if(Lights.Pos[i].w == 0.0)
+        {
+            // directional
+            lightDir =  normalize(-Lights.Pos[i].xyz);
+        }
+        else
+        {
+            // point
+            lightDir = normalize(Lights.Pos[i].xyz - FragPos);
+            float dist = length(Lights.Pos[i].xyz - FragPos);
+            atten = 1.0 / (Lights.Att[i].x + Lights.Att[i].y * dist + Lights.Att[i].z * (dist * dist));
+        }
+        
+        vec3 norm = normalize(Normal);
         float diff = max(dot(norm, lightDir), 0.0);
-        diffuse += vec4(Lights.Col[i].xyz, 1.0) * Lights.Col[i].w * diff * matDiffuse;
+        diffuse += (vec4(Lights.Col[i].xyz, 1.0) * Lights.Col[i].w * diff * matDiffuse) * atten;
         
         float specularIntensity = 0.0;
         if (Material.shininess > 0.0)
@@ -73,7 +88,7 @@ void main()
             ;
             specularIntensity = pow(max(specularIntensity, 0.0), Material.shininess);
                 
-            specular += Lights.Col[i].xyz * Lights.Col[i].w * matSpecular * specularIntensity;
+            specular += (Lights.Col[i].xyz * Lights.Col[i].w * matSpecular * specularIntensity) * atten;
         }
     }
 

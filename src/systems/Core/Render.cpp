@@ -23,6 +23,7 @@ struct LightSetter
 {
 	fVec4Data& Col;
 	fVec4Data& Pos;
+	fVec4Data& Att;
 	fVec4Data& Dir;
 };
 
@@ -46,7 +47,7 @@ public:
 			ASSERT(false); // run out of lights!!
 		}
 
-		return LightSetter{ lightData.Col[thisLightI], lightData.Pos[thisLightI], lightData.Dir[thisLightI], };
+		return LightSetter{ lightData.Col[thisLightI], lightData.Pos[thisLightI], lightData.Att[thisLightI], lightData.Dir[thisLightI], };
 	}
 	void Reset()
 	{
@@ -156,6 +157,8 @@ namespace Core
 					hmm_vec3 lightPos = HMM_Vec3(pos.x(), pos.y(), pos.z());
 					lightPos = (cameraState.view * HMM_Vec4v(lightPos, 1.0f)).XYZ;
 					lightSetter.Pos = fVec4Data(lightPos.X, lightPos.Y, lightPos.Z, 1.0f);
+
+					lightSetter.Att = fVec4Data(_light.m_attenuation, 0.0f);
 					break;
 				}
 				case Light::Type::Spotlight:
@@ -171,6 +174,8 @@ namespace Core
 					hmm_vec3 lightDir = HMM_Vec3(_light.m_direction.x, _light.m_direction.y, _light.m_direction.z);
 					lightDir = (cameraState.view * HMM_Vec4v(lightDir, 0.0f)).XYZ;
 					lightSetter.Dir = fVec4Data(lightDir.X, lightDir.Y, lightDir.Z, 1.0f);
+
+					lightSetter.Att = fVec4Data(_light.m_attenuation, 0.0f);
 					break;
 				}
 				}

@@ -241,10 +241,21 @@ void setup_cube()
 	Core::AddComponent(lightCube2, Core::Transform(lightCube));
 	{
 		Core::Render::Light lightComponent{};
-		lightComponent.m_colour = fVec3Data(0.0f, 1.0f, 1.0f);
-		lightComponent.m_intensity = 1.0f;
-		lightComponent.m_type = Core::Render::Light::Type::Point;
+		lightComponent.m_colour = fVec3Data(1.0f, 1.0f, 1.0f);
+		lightComponent.m_intensity = 5.0f;
+		lightComponent.m_direction = fVec3Data(0.0f, 0.0f, -1.0f);
+		lightComponent.m_attenuation = fVec3Data(1.0f, 0.07f, 0.18f);
+		lightComponent.m_type = Core::Render::Light::Type::Spotlight;
 		Core::AddComponent(lightCube2, lightComponent);
+	}
+	Core::EntityID lightCube3 = Core::CreateEntity();
+	Core::AddComponent(lightCube3, Core::Transform(lightCube2));
+	{
+		Core::Render::Light lightComponent{};
+		lightComponent.m_colour = fVec3Data(1.0f, 1.0f, 1.0f);
+		lightComponent.m_intensity = 0.3f;
+		lightComponent.m_type = Core::Render::Light::Type::Ambient;
+		Core::AddComponent(lightCube3, lightComponent);
 	}
 
 	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::FrameData const& _fd, Core::Render::CubeTest& _cubeTest, Core::Transform& _t)

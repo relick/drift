@@ -25,6 +25,7 @@ struct LightSetter
 	fVec4Data& Pos;
 	fVec4Data& Att;
 	fVec4Data& Dir;
+	fVec4Data& Cut;
 };
 
 class PassData
@@ -47,7 +48,7 @@ public:
 			ASSERT(false); // run out of lights!!
 		}
 
-		return LightSetter{ lightData.Col[thisLightI], lightData.Pos[thisLightI], lightData.Att[thisLightI], lightData.Dir[thisLightI], };
+		return LightSetter{ lightData.Col[thisLightI], lightData.Pos[thisLightI], lightData.Att[thisLightI], lightData.Dir[thisLightI], lightData.Cut[thisLightI], };
 	}
 	void Reset()
 	{
@@ -144,8 +145,8 @@ namespace Core
 					lightSetter.Col = fVec4Data(_light.m_colour, _light.m_intensity);
 
 					hmm_vec3 lightDir = HMM_Vec3(_light.m_direction.x, _light.m_direction.y, _light.m_direction.z);
-					lightDir = (cameraState.view * HMM_Vec4v(lightDir, 0.0f)).XYZ;
-					lightSetter.Pos = fVec4Data(lightDir.X, lightDir.Y, lightDir.Z, 0.0f);
+					lightDir = HMM_NormalizeVec3((cameraState.view * HMM_Vec4v(lightDir, 0.0f)).XYZ);
+					lightSetter.Pos = fVec4Data(-lightDir.X, -lightDir.Y, -lightDir.Z, 0.0f);
 					break;
 				}
 				case Light::Type::Point:
@@ -157,6 +158,10 @@ namespace Core
 					hmm_vec3 lightPos = HMM_Vec3(pos.x(), pos.y(), pos.z());
 					lightPos = (cameraState.view * HMM_Vec4v(lightPos, 1.0f)).XYZ;
 					lightSetter.Pos = fVec4Data(lightPos.X, lightPos.Y, lightPos.Z, 1.0f);
+
+					// set dir and cutoff values that allow for omnidirectional lighting.
+					lightSetter.Dir = fVec4Data(0.0f, 0.0f, 0.0f, 0.0f);
+					lightSetter.Cut = fVec4Data(0.0f, -1.1f, 0.0f, 0.0f); // all cosine values are greater than this.
 
 					lightSetter.Att = fVec4Data(_light.m_attenuation, 0.0f);
 					break;
@@ -172,8 +177,10 @@ namespace Core
 					lightSetter.Pos = fVec4Data(lightPos.X, lightPos.Y, lightPos.Z, 1.0f);
 
 					hmm_vec3 lightDir = HMM_Vec3(_light.m_direction.x, _light.m_direction.y, _light.m_direction.z);
-					lightDir = (cameraState.view * HMM_Vec4v(lightDir, 0.0f)).XYZ;
-					lightSetter.Dir = fVec4Data(lightDir.X, lightDir.Y, lightDir.Z, 1.0f);
+					lightDir = HMM_NormalizeVec3((cameraState.view * HMM_Vec4v(lightDir, 0.0f)).XYZ);
+					lightSetter.Dir = fVec4Data(-lightDir.X, -lightDir.Y, -lightDir.Z, 0.0f);
+
+					lightSetter.Cut = fVec4Data(_light.m_cutoffAngle, _light.m_outerCutoffAngle, 0.0f, 0.0f);
 
 					lightSetter.Att = fVec4Data(_light.m_attenuation, 0.0f);
 					break;

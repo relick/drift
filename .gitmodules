@@ -13,3 +13,6 @@
 [submodule "sokol"]
 	path = sokol
 	url = https://github.com/relick/sokol
+[submodule "glm"]
+	path = glm
+	url = https://github.com/g-truc/glm

@@ -11,8 +11,6 @@
 #include "components.h"
 #include "systems.h"
 
-#include "HandmadeMath.h"
-
 #include "shaders/phong.h"
 #include "shaders/unlit.h"
 
@@ -38,8 +36,8 @@ namespace Core
 
 struct
 {
-	hmm_mat4 proj{ HMM_Perspective(60.0f, 640.0f / 480.0f, 0.01f, 10.0f) };
-	hmm_mat4 view{ HMM_LookAt(HMM_Vec3(1.4f, 1.5f, 4.0f), HMM_Vec3(0.0f, 0.0f, 0.0f), HMM_Vec3(0.0f, 1.0f, 0.0f)) };
+	fMat4 proj{ glm::perspective(glm::radians(60.0f), 640.0f / 480.0f, 0.01f, 10.0f) };
+	fMat4 view{ glm::lookAt(fVec3(1.4f, 1.5f, 4.0f), fVec3(0.0f, 0.0f, 0.0f), fVec3(0.0f, 1.0f, 0.0f)) };
 } camera_state;
 
 void setup_cube()
@@ -152,7 +150,7 @@ void setup_cube()
 	CubeTestState.bind = binds;
 
 	Core::EntityID ground = Core::CreateEntity();
-	Core::AddComponent(ground, Core::Transform(fQuat::getIdentity(), fVec3(0.0f, -2.0f, 0.0f)));
+	Core::AddComponent(ground, Core::Transform(fQuat{}, fVec3(0.0f, -2.0f, 0.0f)));
 	{
 		Core::Render::ModelDesc modelDesc{};
 		modelDesc.m_filePath = "assets/models/cube/groundcube.obj";
@@ -174,7 +172,7 @@ void setup_cube()
 
 
 	Core::EntityID cube = Core::CreateEntity();
-	Core::AddComponent(cube, Core::Transform(fQuat::getIdentity(), fVec3(0.0f, 0.0f, 0.0f)));
+	Core::AddComponent(cube, Core::Transform(fQuat{}, fVec3(0.0f, 0.0f, 0.0f)));
 	Core::AddComponent(cube, Core::Render::CubeTest{false, 0.0f, 0.0f});
 	{
 		Core::Render::ModelDesc modelDesc{};
@@ -197,7 +195,7 @@ void setup_cube()
 	}
 
 	Core::EntityID cube2 = Core::CreateEntity();
-	Core::AddComponent(cube2, Core::Transform(fQuat::getIdentity(), fVec3(-0.5f, 1.5f, 0.0f)));
+	Core::AddComponent(cube2, Core::Transform(fQuat{}, fVec3(-0.5f, 1.5f, 0.0f)));
 	Core::AddComponent(cube2, Core::Render::CubeTest{false, 0.0f, 0.0f});
 	{
 		Core::Render::ModelDesc modelDesc{};
@@ -219,7 +217,7 @@ void setup_cube()
 	}
 
 	Core::EntityID backpack = Core::CreateEntity();
-	Core::AddComponent(backpack, Core::Transform(fQuat::getIdentity(), fVec3(-0.5f, 1.5f, 0.0f)));
+	Core::AddComponent(backpack, Core::Transform(fQuat{}, fVec3(-0.5f, 1.5f, 0.0f)));
 	{
 		Core::Render::ModelDesc modelDesc{};
 		modelDesc.m_filePath = "assets/models/backpack/backpack.obj";
@@ -227,24 +225,24 @@ void setup_cube()
 	}
 
 	Core::EntityID lightCube = Core::CreateEntity();
-	Core::AddComponent(lightCube, Core::Transform(fQuat::getIdentity(), fVec3(1.2f, 1.0f, 2.0f)));
-	Core::AddComponent(lightCube, Core::Render::CubeTest{ true, 0.0f, 0.0f });
+	Core::AddComponent(lightCube, Core::Transform(RotationFromForward(fVec3(-1.0f, -1.0f, 0.0f)), fVec3(1.2f, 1.0f, 2.0f)));
 	{
 		Core::Render::Light lightComponent{};
-		lightComponent.m_colour = fVec3Data(1.0f, 0.0f, 0.0f);
+		lightComponent.m_colour = fVec3(1.0f, 0.0f, 0.0f);
 		lightComponent.m_intensity = 1.0f;
-		lightComponent.m_direction = fVec3Data(-1.0f, -1.0f, 0.0f);
 		lightComponent.m_type = Core::Render::Light::Type::Directional;
 		Core::AddComponent(lightCube, lightComponent);
 	}
 	Core::EntityID lightCube2 = Core::CreateEntity();
-	Core::AddComponent(lightCube2, Core::Transform(lightCube));
+	Core::AddComponent(lightCube2, Core::Render::CubeTest{ true, 0.0f, 0.0f });
+
+	Core::AddComponent(lightCube2, Core::Transform(RotationFromForward(fVec3(0.0f, 0.0f, -1.0f)), fVec3(1.2f, 1.0f, 2.0f)));
 	{
 		Core::Render::Light lightComponent{};
-		lightComponent.m_colour = fVec3Data(1.0f, 1.0f, 1.0f);
+		lightComponent.m_colour = fVec3(1.0f, 1.0f, 1.0f);
 		lightComponent.m_intensity = 5.0f;
-		lightComponent.m_direction = fVec3Data(0.0f, 0.0f, -1.0f);
-		lightComponent.m_attenuation = fVec3Data(1.0f, 0.07f, 0.18f);
+		//lightComponent.m_direction = fVec3(0.0f, 0.0f, -1.0f);
+		lightComponent.m_attenuation = fVec3(1.0f, 0.07f, 0.18f);
 		lightComponent.m_type = Core::Render::Light::Type::Spotlight;
 		Core::AddComponent(lightCube2, lightComponent);
 	}
@@ -252,7 +250,7 @@ void setup_cube()
 	Core::AddComponent(lightCube3, Core::Transform(lightCube2));
 	{
 		Core::Render::Light lightComponent{};
-		lightComponent.m_colour = fVec3Data(1.0f, 1.0f, 1.0f);
+		lightComponent.m_colour = fVec3(1.0f, 1.0f, 1.0f);
 		lightComponent.m_intensity = 0.3f;
 		lightComponent.m_type = Core::Render::Light::Type::Ambient;
 		Core::AddComponent(lightCube3, lightComponent);
@@ -264,33 +262,33 @@ void setup_cube()
 		{
 			_cubeTest.rx += _fd.dt;
 			_cubeTest.ry = sin(_cubeTest.rx);
-			_t.T().getOrigin().setX(_cubeTest.ry);
+			_t.T().m_origin.x = 0.0f;
+			_t.T().m_basis = glm::yawPitchRoll(_cubeTest.rx, 0.0f, 0.0f);
 		}
 		else
 		{
-			_cubeTest.rx += 1.0f * _fd.dt;
-			_cubeTest.ry += 2.0f * _fd.dt;
-			_t.T().getBasis().setEulerYPR(_cubeTest.ry, 0.0f, _cubeTest.rx);
+			_cubeTest.rx -= 1.0f * _fd.dt;
+			_cubeTest.ry -= 2.0f * _fd.dt;
+			_t.T().m_basis = glm::yawPitchRoll(0.0f, _cubeTest.rx, _cubeTest.ry);
 		}
 	});
 
 	ecs::make_system<ecs::opts::group<Sys::DEFAULT_PASS_START>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _t, Core::Render::DefaultPass_Tag)
 	{
-		camera_state.proj = HMM_Perspective(60.0f, _rfd.fW / _rfd.fH, 0.01f, 1000.0f);
+		camera_state.proj = glm::perspective(glm::radians(_cam.m_povY), _rfd.fW / _rfd.fH, 0.01f, 1000.0f);
 
-		hmm_mat4 const cameraMat = HMM_Mat4FromfTrans(_t.T());
-		camera_state.view = HMM_InverseNoScale(cameraMat);
+		fMat4 const cameraMat = _t.T().GetRenderMatrix();
+		camera_state.view = glm::inverse(cameraMat);
 	});
 
 	ecs::make_system<ecs::opts::group<Sys::RENDER_PASSES>, ecs::opts::not_parallel>([](Core::MT_Only&, Core::Render::FrameData const& _fd, Core::Render::CubeTest const& _cubeTest, Core::Transform const& _t)
 	{
-		fVec3 const& pos = _t.T().getOrigin();
-		hmm_vec3 const lightPos = HMM_Vec3(pos.x(), pos.y(), pos.z());
+		fVec3 const& pos = _t.T().m_origin;
 
 		if (_cubeTest.isLightCube)
 		{
-			hmm_mat4 lightCubeModel = HMM_Translate(lightPos);
-			lightCubeModel = lightCubeModel * HMM_Scale(HMM_Vec3(0.2f, 0.2f, 0.2f));
+			fMat4 lightCubeModel = glm::translate(fMat4(1.0f), pos);
+			lightCubeModel = lightCubeModel * glm::scale(fMat4(1.0f), fVec3(0.2f, 0.2f, 0.2f));
 
 			unlit_vs_params_t vs_params;
 			vs_params.view_model = camera_state.view * lightCubeModel;

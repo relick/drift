@@ -25,8 +25,6 @@
 #include <imgui.h>
 #include <ecs/ecs.h>
 
-#include "HandmadeMath.h"
-
 FONScontext* fonsContext{ nullptr };
 uint32 fonsFontCount = 0;
 
@@ -71,18 +69,12 @@ namespace Core
 					sgl_defaults();
 					sgl_matrix_mode_projection();
 					sgl_load_identity();
-					sgl_perspective(1.0472f, _rfd.fW / _rfd.fH, 0.01f, 1000.0f);
+					sgl_perspective(glm::radians(_cam.m_povY), _rfd.fW / _rfd.fH, 0.01f, 1000.0f);
 
 					sgl_matrix_mode_modelview();
 					sgl_load_identity();
 
-					union
-					{
-						hmm_mat4 hmmForm;
-						float arrForm[16];
-					} matrixToLoad;
-					matrixToLoad.hmmForm = HMM_InverseNoScale(HMM_Mat4FromfTrans(_camT.T()));
-					sgl_load_matrix(matrixToLoad.arrForm);
+					sgl_load_matrix(&glm::inverse(_camT.T().GetRenderMatrix())[0][0]);
 				});
 
 				// Prepare text matrices.
@@ -112,9 +104,9 @@ namespace Core
 						if (ImGui::Begin("Text Debug", &fsTest.showImguiWin, 0))
 						{
 							ImGui::Checkbox("Show Text", &fsTest.showText);
-							ImGui::DragFloat2("Text sizes", fsTest.sizes.m_floats, 10.0f, 0.0f, 124.0f);
+							ImGui::DragFloat2("Text sizes", &fsTest.sizes[0], 10.0f, 0.0f, 124.0f);
 							ImGui::Checkbox("Show Debug", &fsTest.showDebug);
-							ImGui::DragFloat2("Positions", fsTest.pos.m_floats, 0.1f, 0.0f, 640.0f);
+							ImGui::DragFloat2("Positions", &fsTest.pos[0], 0.1f, 0.0f, 640.0f);
 						}
 						ImGui::End();
 					}
@@ -126,8 +118,8 @@ namespace Core
 
 					if (fsTest.showText)
 					{
-						RenderText(fsTest.fontNormal, fsTest.pos, "The big ", fsTest.sizes.m_floats[0]);
-						RenderText(fsTest.fontNormal, fsTest.pos, "brown fox", fsTest.sizes.m_floats[1], fsTest.brown);
+						RenderText(fsTest.fontNormal, fsTest.pos, "The big ", fsTest.sizes[0]);
+						RenderText(fsTest.fontNormal, fsTest.pos, "brown fox", fsTest.sizes[1], fsTest.brown);
 					}
 					if (fsTest.showDebug)
 					{

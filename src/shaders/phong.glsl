@@ -1,7 +1,7 @@
 @module phong
 
-@ctype mat4 hmm_mat4
-@ctype vec3 hmm_vec3
+@ctype mat4 fMat4
+@ctype vec3 fVec3
 
 @vs vs
 @include phong.vert

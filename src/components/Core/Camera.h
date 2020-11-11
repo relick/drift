@@ -12,6 +12,7 @@ namespace Core
 		struct Camera
 		{
 			fVec2 angle{ 0.0f, 0.0f };
+			float m_povY{ 60.0f }; // degrees
 		};
 
 		struct DebugCameraControl_Tag

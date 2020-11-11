@@ -10,7 +10,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-#include "HandmadeMath.h"
 #include "shaders/main.h"
 
 Core::Resource::TextureID::ValueType nextTextureID = 0;
@@ -188,11 +187,11 @@ namespace Core
 			// process vertices
 			for (uint32 i = 0; i < _mesh->mNumVertices; i++)
 			{
-				newMesh.m_vertices[i].position = fVec3Data(_mesh->mVertices[i].x, _mesh->mVertices[i].y, _mesh->mVertices[i].z);
-				newMesh.m_vertices[i].normal = fVec3Data(_mesh->mNormals[i].x, _mesh->mNormals[i].y, _mesh->mNormals[i].z);
+				newMesh.m_vertices[i].position = fVec3(_mesh->mVertices[i].x, _mesh->mVertices[i].y, _mesh->mVertices[i].z);
+				newMesh.m_vertices[i].normal = fVec3(_mesh->mNormals[i].x, _mesh->mNormals[i].y, _mesh->mNormals[i].z);
 				if (_mesh->mTextureCoords[0])
 				{
-					newMesh.m_vertices[i].uv = fVec2Data(_mesh->mTextureCoords[0][i].x, _mesh->mTextureCoords[0][i].y);
+					newMesh.m_vertices[i].uv = fVec2(_mesh->mTextureCoords[0][i].x, _mesh->mTextureCoords[0][i].y);
 				}
 			}
 
@@ -218,13 +217,13 @@ namespace Core
 				float shininess{ 0.0f };
 
 				material->Get(AI_MATKEY_COLOR_DIFFUSE, colour);
-				newMaterial.diffuseColour = fVec3Data(colour.r, colour.g, colour.b);
+				newMaterial.diffuseColour = fVec3(colour.r, colour.g, colour.b);
 
 				material->Get(AI_MATKEY_COLOR_AMBIENT, colour);
-				newMaterial.ambientColour = fVec3Data(colour.r, colour.g, colour.b);
+				newMaterial.ambientColour = fVec3(colour.r, colour.g, colour.b);
 
 				material->Get(AI_MATKEY_COLOR_SPECULAR, colour);
-				newMaterial.specularColour = fVec3Data(colour.r, colour.g, colour.b);
+				newMaterial.specularColour = fVec3(colour.r, colour.g, colour.b);
 
 				material->Get(AI_MATKEY_SHININESS, shininess);
 				newMaterial.shininess = shininess;

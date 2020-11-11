@@ -9,10 +9,6 @@
 
 #include <ecs/ecs.h>
 
-#define HANDMADE_MATH_IMPLEMENTATION
-#define HANDMADE_MATH_CPP_MODE
-#include "HandmadeMath.h"
-
 // sokol
 #include <sokol_app.h>
 #include <sokol_gfx.h>
@@ -91,7 +87,7 @@ void initialise_cb()
 	Core::EntityID const renderEntity = Core::CreateEntity();
 	Core::AddComponent(renderEntity, Core::Render::Frame_Tag());
 	Core::AddComponent(renderEntity, Core::Render::DefaultPass_Tag());
-	Core::AddComponent(renderEntity, Core::Transform(fQuat::getIdentity(), fVec3(1.4f, 1.5f, 4.0f))); // camera transform
+	Core::AddComponent(renderEntity, Core::Transform(fQuat{}, fVec3(1.4f, 1.5f, 4.0f))); // camera transform
 	Core::AddComponent(renderEntity, Core::Render::Camera());
 	Core::AddComponent(renderEntity, Core::Render::DebugCameraControl_Tag());
 
@@ -107,50 +103,102 @@ void initialise_cb()
 			sapp_lock_mouse(true);
 			fVec2 const mouseDelta = Core::Input::GetMouseDelta();
 			_cam.angle.x -= mouseDelta.y * 0.0005f;
-			_cam.angle.y -= mouseDelta.x * 0.0005f;
-
-			_t.T().getBasis().setEulerZYX(_cam.angle.x, _cam.angle.y, 0.0f);
+			_cam.angle.y += mouseDelta.x * 0.0005f;
 		}
 		else
 		{
 			sapp_lock_mouse(false);
 		}
 
-		fVec3 front;
-		front.setZ(-cos(_cam.angle.y) * cos(_cam.angle.x));
-		front.setY(sin(_cam.angle.x));
-		front.setX(-sin(_cam.angle.y) * cos(_cam.angle.x));
-		front.normalize();
+#define CHECK_AXES 0
+#if CHECK_AXES
+		_t.T().m_origin = fVec3(0, 0, 0);
+		if (Core::Input::Pressed(Core::Input::Action::Forward))
+		{
+			_t.T().m_origin += fVec3(0, 0, 1);
+		}
+		if (Core::Input::Pressed(Core::Input::Action::Back))
+		{
+			_t.T().m_origin += fVec3(0, 0, -1);
+		}
+		if (Core::Input::Pressed(Core::Input::Action::Left))
+		{
+			_t.T().m_origin += fVec3(-1, 0, 0);
+		}
+		if (Core::Input::Pressed(Core::Input::Action::Right))
+		{
+			_t.T().m_origin += fVec3(1, 0, 0);
+		}
+		if (Core::Input::Pressed(Core::Input::Action::Debug_RaiseCamera))
+		{
+			_t.T().m_origin += fVec3(0, 1, 0);
+		}
+		if (Core::Input::Pressed(Core::Input::Action::Debug_LowerCamera))
+		{
+			_t.T().m_origin += fVec3(0, -1, 0);
+		}
+
+		static bool pressedLastFrame = false;
+		if (Core::Input::Pressed(Core::Input::Action::Select))
+		{
+			if (!pressedLastFrame)
+			{
+				fVec3 const row0 = _t.T().m_basis[0];
+				_t.T().m_basis[0] = _t.T().m_basis[1];
+				_t.T().m_basis[1] = _t.T().m_basis[2];
+				_t.T().m_basis[2] = row0;
+			}
+			pressedLastFrame = true;
+		}
+		else
+		{
+			pressedLastFrame = false;
+		}
+#else
+		// when at identity, forward == z
+		float const yaw = _cam.angle.y;
+		float const pitch = _cam.angle.x;
+
+
+		fVec3 forward;
+		forward.x = cosf(yaw) * cosf(pitch);
+		forward.y = sinf(pitch);
+		forward.z = sinf(yaw) * cosf(pitch);
+		forward = glm::normalize(forward);
+
+		_t.T().m_basis = glm::lookAt(_t.T().m_origin, _t.T().m_origin + forward, fVec3(0.0f, 1.0f, 0.0f));
+
 		// also re-calculate the Right and Up vector
-		fVec3 right = front.cross(fVec3(0.0f, 1.0f, 0.0f)).normalize();  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
-		fVec3 up = right.cross(front);  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+		fVec3 right = glm::normalize(glm::cross(forward, fVec3(0.0f, 1.0f, 0.0f)));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+		fVec3 up = glm::normalize(glm::cross(right, forward));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
 
 		float velocity = 0.8f * _fd.unscaled_dt;
 		if (Core::Input::Pressed(Core::Input::Action::Forward))
 		{
-			_t.T().getOrigin() += front * velocity;
+			_t.T().m_origin += forward * velocity;
 		}
 		if (Core::Input::Pressed(Core::Input::Action::Back))
 		{
-			_t.T().getOrigin() -= front * velocity;
+			_t.T().m_origin -= forward * velocity;
 		}
 		if (Core::Input::Pressed(Core::Input::Action::Left))
 		{
-			_t.T().getOrigin() -= right * velocity;
+			_t.T().m_origin -= right * velocity;
 		}
 		if (Core::Input::Pressed(Core::Input::Action::Right))
 		{
-			_t.T().getOrigin() += right * velocity;
+			_t.T().m_origin += right * velocity;
 		}
 		// should this up really be used? or world up?
 		if (Core::Input::Pressed(Core::Input::Action::Debug_RaiseCamera))
 		{
-			_t.T().getOrigin() += up * velocity;
+			_t.T().m_origin += up * velocity;
 		}
 		if (Core::Input::Pressed(Core::Input::Action::Debug_LowerCamera))
 		{
-			_t.T().getOrigin() -= up * velocity;
+			_t.T().m_origin -= up * velocity;
 		}
+#endif
 	});
 
 	ecs::make_system<ecs::opts::group<Sys::RENDER_START>>([](Core::MT_Only&, Core::Render::FrameData& _rfd, Core::GlobalWorkaround_Tag)

@@ -38,9 +38,9 @@ namespace Core
 		{
 			int m_debugMode{ btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb | btIDebugDraw::DBG_DrawContactPoints };
 
-			std::vector<fVec3> m_linePoints;
+			std::vector<btVector3> m_linePoints;
 
-			fVec3 m_currentLineColor{ -1, -1, -1 };
+			btVector3 m_currentLineColor{ -1, -1, -1 };
 			DefaultColors m_ourColors;
 
 		public:
@@ -54,7 +54,7 @@ namespace Core
 				m_ourColors = _colours;
 			}
 
-			void drawLine(fVec3 const& _from, fVec3 const& _to, fVec3 const& _colour) override
+			void drawLine(btVector3 const& _from, btVector3 const& _to, btVector3 const& _colour) override
 			{
 				if (m_currentLineColor != _colour || m_linePoints.size() >= BT_LINE_BATCH_SIZE)
 				{
@@ -66,7 +66,7 @@ namespace Core
 				m_linePoints.push_back(_to);
 			}
 
-			void drawContactPoint(fVec3 const& _pointOnB, fVec3 const& _normalOnB, btScalar _distance, int _lifeTime, fVec3 const& _colour) override
+			void drawContactPoint(btVector3 const& _pointOnB, btVector3 const& _normalOnB, btScalar _distance, int _lifeTime, btVector3 const& _colour) override
 			{
 				drawLine(_pointOnB, _pointOnB + _normalOnB * _distance, _colour);
 				btVector3 ncolor(0, 0, 0);
@@ -76,7 +76,7 @@ namespace Core
 			void reportErrorWarning(char const* _warningString) override
 			{}
 
-			void draw3dText(fVec3 const& _location, char const* _textString) override
+			void draw3dText(btVector3 const& _location, char const* _textString) override
 			{}
 
 			void setDebugMode(int _debugMode) override
@@ -100,7 +100,7 @@ namespace Core
 				{
 					sgl_begin_lines();
 					sgl_c3f(m_currentLineColor.x(), m_currentLineColor.y(), m_currentLineColor.z());
-					for (fVec3 const& lineP : m_linePoints)
+					for (btVector3 const& lineP : m_linePoints)
 					{
 						sgl_v3f(lineP.x(), lineP.y(), lineP.z());
 					}
@@ -139,9 +139,9 @@ namespace Core
 #if PHYSICS_DEBUG
 
 			btIDebugDraw::DefaultColors colours;
-			colours.m_aabb = fVec3(1.0f, 0.0f, 0.0f);
-			colours.m_contactPoint = fVec3(0.0f, 1.0f, 0.0f);
-			colours.m_activeObject = fVec3(0.0f, 0.0f, 1.0f);
+			colours.m_aabb = btVector3(1.0f, 0.0f, 0.0f);
+			colours.m_contactPoint = btVector3(0.0f, 1.0f, 0.0f);
+			colours.m_activeObject = btVector3(0.0f, 0.0f, 1.0f);
 
 			debugDrawer = std::make_unique<DebugDrawer>();
 			debugDrawer->setDefaultColors(colours);
@@ -158,7 +158,7 @@ namespace Core
 				if (_rb.m_body->isKinematicObject())
 				{
 					fTrans const worldTrans = _t.CalculateWorldTransform();
-					_rb.m_motionState->setWorldTransform(worldTrans);
+					_rb.m_motionState->setWorldTransform(worldTrans.GetBulletTransform());
 				}
 			});
 
@@ -222,7 +222,7 @@ namespace Core
 						trans = _rb.m_body->getWorldTransform();
 					}
 
-					_t.T() = _t.CalculateLocalTransform(trans);
+					_t.T() = _t.CalculateLocalTransform(fTrans(trans));
 				}
 			});
 		}

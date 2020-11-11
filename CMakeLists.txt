@@ -57,10 +57,10 @@ include_directories(${BULLET_INCLUDE_DIR})
 find_package(Assimp CONFIG REQUIRED)
 include_directories(assimp::assimp)
 
-include_directories("src" "ecs/include" "ecs/tls/include" "sokol" "imgui" "fontstash/src" "stb")
+include_directories("src" "ecs/include" "ecs/tls/include" "sokol" "imgui" "fontstash/src" "stb" "glm")
 
 # Add source to this project's executable.
-set (SOURCE_H "src/systems/Core/SystemOrdering.h" "src/HandmadeMath.h" "src/systems/Core/Render.h"  "src/systems/Core/ImGui.h" "src/components/Core/Frame.h" "src/systems/Core/TextAndGLDebug.h" "src/CubeTest.h" "src/components/Core/Camera.h" "src/managers/Input.h" "src/Entity.h" "src/systems/Core/Physics.h" "src/managers/Resources.h" "src/ID.h")
+set (SOURCE_H "src/systems/Core/SystemOrdering.h" "src/systems/Core/Render.h"  "src/systems/Core/ImGui.h" "src/components/Core/Frame.h" "src/systems/Core/TextAndGLDebug.h" "src/CubeTest.h" "src/components/Core/Camera.h" "src/managers/Input.h" "src/Entity.h" "src/systems/Core/Physics.h" "src/managers/Resources.h" "src/ID.h" "src/components/Game/Character.h" "src/systems/Game/Character.h")
 set (SOURCE_CPP "imgui/imgui.cpp" "imgui/imgui_demo.cpp" "imgui/imgui_draw.cpp" "imgui/imgui_widgets.cpp" "src/drift.cpp" "src/managers/EntityManager.cpp" "src/systems/Core/ImGui.cpp" "src/systems/Core/TextAndGLDebug.cpp" "src/CubeTest.cpp" "src/managers/Input.cpp" "src/systems/Core/Physics.cpp" "src/components/Core/Physics.cpp" "src/managers/Resources.cpp" "src/systems/Core/Render.cpp" "src/components/Core/Render.cpp")
 
 add_executable (drift ${SOURCE_H} ${SOURCE_CPP} ${SHADERS_COMPILED})

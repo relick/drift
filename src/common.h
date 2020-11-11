@@ -18,114 +18,103 @@ using isize = std::ptrdiff_t;
 using usize = std::size_t;
 
 // Define some maths types
-#include <LinearMath/btVector3.h>
-#include <LinearMath/btMatrix3x3.h>
+#define GLM_FORCE_SWIZZLE
+#include <glm/glm.hpp>
+#include <glm/ext/matrix_common.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/quaternion_float.hpp>
+#include <glm/ext/quaternion_transform.hpp>
+#include <glm/gtx/euler_angles.hpp>
+
+using fVec2 = glm::vec2;
+using fVec3 = glm::vec3;
+using fVec4 = glm::vec4;
+using fMat3 = glm::mat3;
+using fMat4 = glm::mat4;
+using fQuat = glm::quat;
+
 #include <LinearMath/btTransform.h>
-#include <LinearMath/btQuaternion.h>
-
-// f == float
-union fVec2Data
+struct fTrans
 {
-	float m_floats[2];
-	struct
+	fMat3 m_basis{1.0f};
+	fVec3 m_origin{};
+
+	fTrans operator*(fTrans const& _t) const
 	{
-		float x;
-		float y;
-	};
+		return fTrans{ m_basis * _t.m_basis,
+			(*this)(_t.m_origin) };
+	}
 
-	fVec2Data() : x(0.0f), y(0.0f) {}
-	fVec2Data(float _x, float _y) : x(_x), y(_y) {}
-};
-
-union fVec3Data
-{
-	float m_floats[3];
-	struct
+	fVec3 operator()(fVec3 const& _v) const
 	{
-		float x;
-		float y;
-		float z;
-	};
+		return fVec3(glm::dot(_v, m_basis[0]), glm::dot(_v, m_basis[1]), glm::dot(_v, m_basis[2])) + m_origin;
+	}
 
-	fVec3Data() : x(0.0f), y(0.0f), z(0.0f) {}
-	fVec3Data(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {}
-
-	fVec3Data& operator*=(float _x)
+	fTrans& operator*=(fTrans const& _t)
 	{
-		x *= _x;
-		y *= _x;
-		z *= _x;
+		m_origin += m_basis * _t.m_origin;
+		m_basis *= _t.m_basis;
 		return *this;
 	}
-	fVec3Data& operator+=(fVec3Data const& _xyz)
+
+	fMat4 GetRenderMatrix() const
 	{
-		x += _xyz.x;
-		y += _xyz.y;
-		z += _xyz.z;
-		return *this;
+		// initialise directly
+		fVec3 const& col1 = m_basis[0];
+		fVec3 const& col2 = m_basis[1];
+		fVec3 const& col3 = m_basis[2];
+
+		fVec3 const& row4 = m_origin;
+
+		return {
+			col1[0], col2[0], col3[0], 0.0f,
+			col1[1], col2[1], col3[1], 0.0f,
+			col1[2], col2[2], col3[2], 0.0f,
+			row4[0], row4[1], row4[2], 1.0f,
+		};
 	}
-};
-inline fVec3Data operator*(fVec3Data const& _xyz, float _x) { return (fVec3Data(_xyz) *= _x); }
-inline fVec3Data operator+(fVec3Data const& _xyz, fVec3Data const& _xyz2) { return (fVec3Data(_xyz) += _xyz2); }
 
-union fVec4Data
-{
-	float m_floats[4];
-	struct
+	btTransform GetBulletTransform() const
 	{
-		float x;
-		float y;
-		float z;
-		float w;
-	};
+		// initialise directly
+		return btTransform(
+			btMatrix3x3(
+				m_basis[0][0], m_basis[0][1], m_basis[0][2], 
+				m_basis[1][0], m_basis[1][1], m_basis[1][2], 
+				m_basis[2][0], m_basis[2][1], m_basis[2][2]),
+			btVector3(m_origin[0], m_origin[1], m_origin[2])
+		);
+	}
 
-	fVec4Data() : x(0.0f), y(0.0f), z(0.0f), w(0.0f) {}
-	fVec4Data(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w) {}
-	fVec4Data(fVec3Data const& _xyz, float _w) : x(_xyz.x), y(_xyz.y), z(_xyz.z), w(_w) {}
+	fTrans() = default;
+	fTrans(fMat3 const& _b, fVec3 const& _o = fVec3(0.0f))
+		: m_basis(_b)
+		, m_origin(_o)
+	{}
+
+	explicit fTrans(btTransform const& _t)
+		: m_basis{
+		_t.getBasis().getRow(0).x(), _t.getBasis().getRow(0).y(), _t.getBasis().getRow(0).z(),
+		_t.getBasis().getRow(1).x(), _t.getBasis().getRow(1).y(), _t.getBasis().getRow(1).z(),
+		_t.getBasis().getRow(2).x(), _t.getBasis().getRow(2).y(), _t.getBasis().getRow(2).z(),
+	}
+		, m_origin{
+		_t.getOrigin().x(), _t.getOrigin().y(), _t.getOrigin().z()
+	}
+	{}
 };
 
-using fVec2 = fVec2Data; // no sse here
-using fVec3 = btVector3;
-using fVec4 = btVector4;
-using fQuat = btQuaternion;
-using fTrans = btTransform;
-using fTransData = btTransformData;
-using fMat3 = btMatrix3x3;
-using fMat3Data = btMatrix3x3Data;
-
-#include "HandmadeMath.h"
-
-HINLINE hmm_mat4
-HMM_Mat4FromfTrans(fTrans const& _trans)
+inline fMat3 RotationFromForward(fVec3 const& _f)
 {
-	// initialise directly
-	fVec3 const& col1 = _trans.getBasis().getRow(0);
-	fVec3 const& col2 = _trans.getBasis().getRow(1);
-	fVec3 const& col3 = _trans.getBasis().getRow(2);
-
-	fVec3 const& row4 = _trans.getOrigin();
-
-	hmm_mat4 Result{
-		col1.m_floats[0], col2.m_floats[0], col3.m_floats[0], 0.0f,
-		col1.m_floats[1], col2.m_floats[1], col3.m_floats[1], 0.0f,
-		col1.m_floats[2], col2.m_floats[2], col3.m_floats[2], 0.0f,
-		row4.m_floats[0], row4.m_floats[1], row4.m_floats[2], 1.0f,
+	fVec3 const normF = glm::normalize(_f);
+	fVec3 const right = glm::normalize(glm::cross(normF, fVec3(0.0f, 1.0f, 0.0f)));
+	fVec3 const up = glm::normalize(glm::cross(right, normF));
+	return fMat3{
+		right.x,	right.y,	right.z,	// x-right
+		up.x,		up.y,		up.z,		// y-up
+		normF.x,	normF.y,	normF.z,	// z-forward
 	};
-
-
-	/*// initialise then fill
-	hmm_mat4 Result = HMM_Mat4d(1.0f);
-	// copy in rotation
-	std::memcpy(&Result.Elements[0][0], &_trans.getBasis().getRow(0).m_floats[0], sizeof(float) * 12);
-	//_trans.getBasis().serializeFloat(*reinterpret_cast<btMatrix3x3FloatData*>(Result.Elements));
-	Result = HMM_Transpose(Result);
-	// copy in translation
-	std::memcpy(&Result.Elements[3][0], &_trans.getOrigin().m_floats[0], sizeof(float) * 3);
-	//_trans.getOrigin().serializeFloat(*reinterpret_cast<btVector3FloatData*>(&Result.Elements[3]));
-	// fill in final item that we haven't written.
-	Result.Elements[3][3] = 1.0f;*/
-
-	return (Result);
 }
 
 #define WINDOW_START_WIDTH 640

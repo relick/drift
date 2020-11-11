@@ -8,8 +8,8 @@ namespace Core
 {
 	struct Transform
 	{
-		// origin = position, basis = transform
-		fTrans m_transform{ fQuat::getIdentity() }; // identity
+		// origin = position, basis = rotation
+		fTrans m_transform{};
 		Core::EntityID m_parent;
 
 		Transform(Core::EntityID _parent = Core::EntityID{})
@@ -20,7 +20,11 @@ namespace Core
 			, m_parent{ _parent }
 		{}
 		explicit Transform(fQuat const& _q, fVec3 const& _p, Core::EntityID _parent = Core::EntityID{})
-			: m_transform{ _q, _p }
+			: m_transform{ static_cast<fMat3>(_q), _p }
+			, m_parent{ _parent }
+		{}
+		explicit Transform(fMat3 const& _m, fVec3 const& _p, Core::EntityID _parent = Core::EntityID{})
+			: m_transform{ _m, _p }
 			, m_parent{ _parent }
 		{}
 

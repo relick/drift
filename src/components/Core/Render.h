@@ -40,10 +40,9 @@ namespace Core
 			};
 
 			Type m_type;
-			fVec3Data m_colour;
+			fVec3 m_colour;
 			float m_intensity;
-			fVec3Data m_attenuation{ 1.0f, 0.7f, 1.8f }; // constant, linear, quadratic
-			fVec3Data m_direction; // for directional + spotlights
+			fVec3 m_attenuation{ 1.0f, 0.7f, 1.8f }; // constant, linear, quadratic
 			float m_cutoffAngle{ 0.9978f }; // spotlights only
 			float m_outerCutoffAngle{ 0.953f }; // spotlights only
 

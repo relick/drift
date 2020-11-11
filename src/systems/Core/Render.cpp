@@ -5,7 +5,6 @@
 
 #include "managers/Resources.h"
 
-#include "HandmadeMath.h"
 #include "shaders/main.h"
 
 #define SOKOL_IMPL
@@ -21,11 +20,11 @@ static constexpr int MAX_LIGHTS = 16;
 
 struct LightSetter
 {
-	fVec4Data& Col;
-	fVec4Data& Pos;
-	fVec4Data& Att;
-	fVec4Data& Dir;
-	fVec4Data& Cut;
+	fVec4& Col;
+	fVec4& Pos;
+	fVec4& Att;
+	fVec4& Dir;
+	fVec4& Cut;
 };
 
 class PassData
@@ -34,7 +33,7 @@ class PassData
 	usize numLights{ 0 };
 
 public:
-	fVec3Data& ambientLight{ lightData.ambient };
+	fVec3& ambientLight{ lightData.ambient };
 	LightSetter AddLight()
 	{
 		usize thisLightI = numLights;
@@ -53,7 +52,7 @@ public:
 	void Reset()
 	{
 		numLights = 0;
-		lightData.ambient = fVec3Data(0.0f, 0.0f, 0.0f);
+		lightData.ambient = fVec3(0.0f, 0.0f, 0.0f);
 	}
 	main_lights_t const& shader_LightData() { return lightData; }
 };
@@ -66,8 +65,8 @@ struct
 
 struct
 {
-	hmm_mat4 proj{ HMM_Perspective(60.0f, 640.0f / 480.0f, 0.01f, 10.0f) };
-	hmm_mat4 view{ HMM_LookAt(HMM_Vec3(1.4f, 1.5f, 4.0f), HMM_Vec3(0.0f, 0.0f, 0.0f), HMM_Vec3(0.0f, 1.0f, 0.0f)) };
+	fMat4 proj{ glm::perspective(glm::radians(60.0f), 640.0f / 480.0f, 0.01f, 10.0f) };
+	fMat4 view{ glm::lookAt(fVec3(1.4f, 1.5f, 4.0f), fVec3(0.0f, 0.0f, 0.0f), fVec3(0.0f, 1.0f, 0.0f)) };
 } cameraState;
 
 namespace Core
@@ -91,8 +90,8 @@ namespace Core
 #if USE_INTERLEAVED
 			mainLayoutDesc.buffers[0].stride = sizeof(Resource::VertexData);
 			mainLayoutDesc.attrs[ATTR_main_vs_aPos].offset = 0;
-			mainLayoutDesc.attrs[ATTR_main_vs_aNormal].offset = sizeof(fVec3Data);
-			mainLayoutDesc.attrs[ATTR_main_vs_aTexCoord].offset = sizeof(fVec3Data) + sizeof(fVec3Data);
+			mainLayoutDesc.attrs[ATTR_main_vs_aNormal].offset = sizeof(fVec3);
+			mainLayoutDesc.attrs[ATTR_main_vs_aTexCoord].offset = sizeof(fVec3) + sizeof(fVec3);
 #else
 			mainLayoutDesc.attrs[ATTR_main_vs_aPos].buffer_index = 0;
 			mainLayoutDesc.attrs[ATTR_main_vs_aNormal].buffer_index = 1;
@@ -124,10 +123,10 @@ namespace Core
 		{
 			ecs::make_system<ecs::opts::group<Sys::DEFAULT_PASS_START>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _t, Core::Render::DefaultPass_Tag)
 			{
-				cameraState.proj = HMM_Perspective(60.0f, _rfd.fW / _rfd.fH, 0.01f, 1000.0f);
+				cameraState.proj = glm::perspective(glm::radians(_cam.m_povY), _rfd.fW / _rfd.fH, 0.01f, 1000.0f);
 
-				hmm_mat4 const cameraMat = HMM_Mat4FromfTrans(_t.T());
-				cameraState.view = HMM_InverseNoScale(cameraMat);
+				fMat4 const cameraMat = _t.T().GetRenderMatrix();
+				cameraState.view = glm::inverse(cameraMat);
 			});
 
 			ecs::make_system<ecs::opts::group<Sys::RENDER_ADD>, ecs::opts::not_parallel>([](Core::MT_Only&, Core::Render::FrameData const& _fd, Core::Render::Light const& _light, Core::Transform const& _t)
@@ -142,47 +141,48 @@ namespace Core
 				case Light::Type::Directional:
 				{
 					LightSetter lightSetter = renderState.defaultPass.AddLight();
-					lightSetter.Col = fVec4Data(_light.m_colour, _light.m_intensity);
+					lightSetter.Col = fVec4(_light.m_colour, _light.m_intensity);
 
-					hmm_vec3 lightDir = HMM_Vec3(_light.m_direction.x, _light.m_direction.y, _light.m_direction.z);
-					lightDir = HMM_NormalizeVec3((cameraState.view * HMM_Vec4v(lightDir, 0.0f)).XYZ);
-					lightSetter.Pos = fVec4Data(-lightDir.X, -lightDir.Y, -lightDir.Z, 0.0f);
+					fTrans const worldT = _t.CalculateWorldTransform();
+					fMat3 const& camBasis = worldT.m_basis;
+					fVec3 const& front = camBasis[2]; // get z, is front vec/light dir.
+					fVec3 const lightDir = glm::normalize(fVec3((cameraState.view * fVec4(front, 0.0f)).xyz));
+					lightSetter.Pos = fVec4(-lightDir, 0.0f);
 					break;
 				}
 				case Light::Type::Point:
 				{
 					LightSetter lightSetter = renderState.defaultPass.AddLight();
-					lightSetter.Col = fVec4Data(_light.m_colour, _light.m_intensity);
+					lightSetter.Col = fVec4(_light.m_colour, _light.m_intensity);
 
-					fVec3 const& pos = _t.CalculateWorldTransform().getOrigin();
-					hmm_vec3 lightPos = HMM_Vec3(pos.x(), pos.y(), pos.z());
-					lightPos = (cameraState.view * HMM_Vec4v(lightPos, 1.0f)).XYZ;
-					lightSetter.Pos = fVec4Data(lightPos.X, lightPos.Y, lightPos.Z, 1.0f);
+					fTrans const worldT = _t.CalculateWorldTransform();
+					fVec3 const lightPos = (cameraState.view * fVec4(worldT.m_origin, 1.0f)).xyz;
+					lightSetter.Pos = fVec4(lightPos, 1.0f);
 
 					// set dir and cutoff values that allow for omnidirectional lighting.
-					lightSetter.Dir = fVec4Data(0.0f, 0.0f, 0.0f, 0.0f);
-					lightSetter.Cut = fVec4Data(0.0f, -1.1f, 0.0f, 0.0f); // all cosine values are greater than this.
+					lightSetter.Dir = fVec4(0.0f, 0.0f, 0.0f, 0.0f);
+					lightSetter.Cut = fVec4(0.0f, -1.1f, 0.0f, 0.0f); // all cosine values are greater than this.
 
-					lightSetter.Att = fVec4Data(_light.m_attenuation, 0.0f);
+					lightSetter.Att = fVec4(_light.m_attenuation, 0.0f);
 					break;
 				}
 				case Light::Type::Spotlight:
 				{
 					LightSetter lightSetter = renderState.defaultPass.AddLight();
-					lightSetter.Col = fVec4Data(_light.m_colour, _light.m_intensity);
+					lightSetter.Col = fVec4(_light.m_colour, _light.m_intensity);
 
-					fVec3 const& pos = _t.CalculateWorldTransform().getOrigin();
-					hmm_vec3 lightPos = HMM_Vec3(pos.x(), pos.y(), pos.z());
-					lightPos = (cameraState.view * HMM_Vec4v(lightPos, 1.0f)).XYZ;
-					lightSetter.Pos = fVec4Data(lightPos.X, lightPos.Y, lightPos.Z, 1.0f);
+					fTrans const worldT = _t.CalculateWorldTransform();
+					fVec3 const lightPos = (cameraState.view * fVec4(worldT.m_origin, 1.0f)).xyz;
+					lightSetter.Pos = fVec4(lightPos, 1.0f);
 
-					hmm_vec3 lightDir = HMM_Vec3(_light.m_direction.x, _light.m_direction.y, _light.m_direction.z);
-					lightDir = HMM_NormalizeVec3((cameraState.view * HMM_Vec4v(lightDir, 0.0f)).XYZ);
-					lightSetter.Dir = fVec4Data(-lightDir.X, -lightDir.Y, -lightDir.Z, 0.0f);
+					fMat3 const& camBasis = worldT.m_basis;
+					fVec3 const& front = camBasis[2]; // get z, is front vec/light dir.
+					fVec3 const lightDir = glm::normalize(fVec3((cameraState.view * fVec4(front, 0.0f)).xyz));
+					lightSetter.Dir = fVec4(-lightDir, 0.0f);
 
-					lightSetter.Cut = fVec4Data(_light.m_cutoffAngle, _light.m_outerCutoffAngle, 0.0f, 0.0f);
+					lightSetter.Cut = fVec4(_light.m_cutoffAngle, _light.m_outerCutoffAngle, 0.0f, 0.0f);
 
-					lightSetter.Att = fVec4Data(_light.m_attenuation, 0.0f);
+					lightSetter.Att = fVec4(_light.m_attenuation, 0.0f);
 					break;
 				}
 				}
@@ -194,9 +194,9 @@ namespace Core
 				{
 					main_vs_params_t vs_params;
 					fTrans const worldTransform = _t.CalculateWorldTransform();
-					hmm_mat4 const modelMat = HMM_Mat4FromfTrans(worldTransform);
+					fMat4 const modelMat = worldTransform.GetRenderMatrix();
 					vs_params.view_model = cameraState.view * modelMat;
-					vs_params.normal = HMM_Transpose(HMM_InverseNoScale(vs_params.view_model));
+					vs_params.normal = glm::transpose(glm::inverse(vs_params.view_model));
 					vs_params.projection = cameraState.proj;
 
 					Resource::ModelData const& model = Resource::GetModel(_model.m_modelID);

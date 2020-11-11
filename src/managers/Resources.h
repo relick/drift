@@ -44,9 +44,9 @@ namespace Core
 
 		struct VertexData
 		{
-			fVec3Data position;
-			fVec3Data normal;
-			fVec2Data uv{ 0.0f, 0.0f };
+			fVec3 position;
+			fVec3 normal;
+			fVec2 uv{ 0.0f, 0.0f };
 		};
 
 		using IndexType = uint32;

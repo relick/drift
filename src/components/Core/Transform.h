@@ -32,6 +32,12 @@ namespace Core
 		fTrans& T() { return m_transform; }
 		fTrans const& T() const { return m_transform; }
 
+		void DetachFromParent()
+		{
+			m_transform = CalculateWorldTransform();
+			m_parent = Core::EntityID();
+		}
+
 		fTrans const CalculateWorldTransform() const
 		{
 			Core::EntityID nextParent = m_parent;

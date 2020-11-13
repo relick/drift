@@ -185,12 +185,12 @@ namespace Core
 					linearVelocity.setY(0.0f);
 					float speed = _cc.m_body->getLinearVelocity().length();
 
-					fVec3 forwardDir = -_t.T().m_basis[2];
+					fVec3 forwardDir = _t.T().m_basis[2];
 					forwardDir = glm::normalize(forwardDir);
 					fVec3 walkDirection(0.0, 0.0, 0.0);
 					float walkSpeed = walkVel * _fd.dt;
 
-					Core::Render::TextAndGLDebug::DrawLine(_t.T().m_origin, _t.T().m_origin + forwardDir);
+					Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + forwardDir);
 
 					if (Core::Input::Pressed(Core::Input::Action::Forward))
 					{
@@ -205,7 +205,7 @@ namespace Core
 					if (!Core::Input::Pressed(Core::Input::Action::Forward) && !Core::Input::Pressed(Core::Input::Action::Backward) && fnOnGround())
 					{
 						/* Dampen when on the ground and not being moved by the player */
-						linearVelocity *= btScalar(0.2);
+						linearVelocity *= powf(0.2f, _fd.dt);
 						linearVelocity.setY(yLinVel);
 						_cc.m_body->setLinearVelocity(linearVelocity);
 					}
@@ -224,7 +224,6 @@ namespace Core
 					btTransform const tForBullet = _t.T().GetBulletTransform();
 					_cc.m_body->setWorldTransform(tForBullet);
 					_cc.m_motionState->setWorldTransform(tForBullet);
-					//_cc.m_body->setCenterOfMassTransform(tForBullet); // wut?
 				}
 
 				// jump

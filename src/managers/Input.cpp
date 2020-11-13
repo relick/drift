@@ -10,10 +10,17 @@ namespace Core
 	{
 		struct InputState
 		{
-			// Menu seems to be the last one.
-			bool keysPressed[SAPP_KEYCODE_MENU + 1]{ false };
-			// Middle seems to be the last one.
-			bool mouseButtonsPressed[SAPP_MOUSEBUTTON_MIDDLE + 1]{ false };
+			struct Keys
+			{
+				// Menu seems to be the last one.
+				std::array<bool, SAPP_KEYCODE_MENU + 1> keys{ false };
+				// Middle seems to be the last one.
+				std::array<bool, SAPP_MOUSEBUTTON_MIDDLE + 1> mouseButtons{ false };
+			};
+
+			Keys pressedNextFrame{};
+			Keys pressedThisFrame{};
+			Keys pressedOnce{};
 
 			struct MouseFrame
 			{
@@ -94,11 +101,24 @@ namespace Core
 			actions[static_cast<usize>(Action::Debug_LowerCamera)][0].keyType = KeyType::Keyboard;
 			actions[static_cast<usize>(Action::Debug_LowerCamera)][0].key = SAPP_KEYCODE_Q;
 
+			actions[static_cast<usize>(Action::Debug_EnableCamera)][0].keyType = KeyType::Keyboard;
+			actions[static_cast<usize>(Action::Debug_EnableCamera)][0].key = SAPP_KEYCODE_KP_ENTER;
+
 		}
 
 		// Run every frame
 		void Update()
 		{
+			for (usize keyI = 0; keyI < inputState.pressedOnce.keys.size(); ++keyI)
+			{
+				inputState.pressedOnce.keys[keyI] = !inputState.pressedThisFrame.keys[keyI] && inputState.pressedNextFrame.keys[keyI];
+			}
+			for (usize mouseI = 0; mouseI < inputState.pressedOnce.mouseButtons.size(); ++mouseI)
+			{
+				inputState.pressedOnce.mouseButtons[mouseI] = !inputState.pressedThisFrame.mouseButtons[mouseI] && inputState.pressedNextFrame.mouseButtons[mouseI];
+			}
+			inputState.pressedThisFrame = inputState.pressedNextFrame;
+
 			inputState.thisFrame = inputState.nextFrame;
 			inputState.nextFrame = InputState::MouseFrame{};
 		}
@@ -111,22 +131,22 @@ namespace Core
 			// key presses
 			case SAPP_EVENTTYPE_KEY_DOWN:
 			{
-				inputState.keysPressed[_event->key_code] = true;
+				inputState.pressedNextFrame.keys[_event->key_code] = true;
 				break;
 			}
 			case SAPP_EVENTTYPE_KEY_UP:
 			{
-				inputState.keysPressed[_event->key_code] = false;
+				inputState.pressedNextFrame.keys[_event->key_code] = false;
 				break;
 			}
 			case SAPP_EVENTTYPE_MOUSE_DOWN:
 			{
-				inputState.mouseButtonsPressed[_event->mouse_button] = true;
+				inputState.pressedNextFrame.mouseButtons[_event->mouse_button] = true;
 				break;
 			}
 			case SAPP_EVENTTYPE_MOUSE_UP:
 			{
-				inputState.mouseButtonsPressed[_event->mouse_button] = false;
+				inputState.pressedNextFrame.mouseButtons[_event->mouse_button] = false;
 				break;
 			}
 
@@ -166,12 +186,34 @@ namespace Core
 				{
 				case KeyType::Keyboard:
 				{
-					isPressed |= inputState.keysPressed[data.key];
+					isPressed |= inputState.pressedThisFrame.keys[data.key];
 					break;
 				}
 				case KeyType::Mouse:
 				{
-					isPressed |= inputState.mouseButtonsPressed[data.key];
+					isPressed |= inputState.pressedThisFrame.mouseButtons[data.key];
+					break;
+				}
+				}
+			}
+			return isPressed;
+		}
+
+		bool PressedOnce(Action _action)
+		{
+			bool isPressed = false;
+			for (ActionKey const& data : actions[static_cast<usize>(_action)])
+			{
+				switch (data.keyType)
+				{
+				case KeyType::Keyboard:
+				{
+					isPressed |= inputState.pressedOnce.keys[data.key];
+					break;
+				}
+				case KeyType::Mouse:
+				{
+					isPressed |= inputState.pressedOnce.mouseButtons[data.key];
 					break;
 				}
 				}

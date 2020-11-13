@@ -89,7 +89,6 @@ namespace Core
 				fonsContext = sfons_create(512, 512, FONS_ZERO_TOPLEFT);
 			}
 
-			void FlushGL();
 			void Setup()
 			{
 				// Prepare GL matrices.
@@ -151,8 +150,8 @@ namespace Core
 
 					if (fsTest.showText)
 					{
-						RenderText(fsTest.fontNormal, fsTest.pos, "The big ", fsTest.sizes[0]);
-						RenderText(fsTest.fontNormal, fsTest.pos, "brown fox", fsTest.sizes[1], fsTest.brown);
+						Text::Write(fsTest.fontNormal, fsTest.pos, "The big ", fsTest.sizes[0]);
+						Text::Write(fsTest.fontNormal, fsTest.pos, "brown fox", fsTest.sizes[1], fsTest.brown);
 					}
 					if (fsTest.showDebug)
 					{

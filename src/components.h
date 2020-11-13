@@ -30,3 +30,4 @@ namespace Core
 #include "components/Core/Transform.h"
 
 // Game
+#include "components/Game/Player.h"

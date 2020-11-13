@@ -12,7 +12,7 @@ namespace Core
 	{
 		struct FrameData
 		{
-			ecs_flags(ecs::flag::global);
+			ecs_flags(ecs::flag::global, ecs::flag::immutable);
 
 			int w{ WINDOW_START_WIDTH };
 			int h{ WINDOW_START_HEIGHT };

@@ -11,13 +11,14 @@ namespace Core
 		// Attach to the entity with the pass tag you want
 		struct Camera
 		{
-			fVec2 angle{ 0.0f, 0.0f };
 			float m_povY{ 60.0f }; // degrees
 		};
 
-		struct DebugCameraControl_Tag
+		struct DebugCameraControl
 		{
-			ecs_flags(ecs::flag::tag);
+			fVec2 m_angle{ 0.0f, 0.0f };
+			Core::EntityID m_storedParent;
+			fTrans m_storedTransform;
 		};
 	}
 }

@@ -51,31 +51,17 @@ void initialise_cb()
 
 	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::GlobalWorkaround_Tag)
 	{
-		static bool pressedLastFrame = false;
-		bool const pPressed = Core::Input::Pressed(Core::Input::Action::Pause);
-		bool const oPressed = Core::Input::Pressed(Core::Input::Action::Debug_SpeedUp);
 		static double speed = 1.0;
-		if (pPressed || oPressed)
+		if (Core::Input::PressedOnce(Core::Input::Action::Pause))
 		{
-			if (!pressedLastFrame)
-			{
-				if (pPressed)
-				{
-					Core::FrameData& fd = ecs::get_global_component<Core::FrameData>();
-					fd.m_scale = (fd.m_scale == 0.0 ? speed : 0.0);
-				}
-				if (oPressed)
-				{
-					speed = (speed == 1.0 ? 2.0 : (speed == 2.0 ? 5.0 : 1.0));
-					Core::FrameData& fd = ecs::get_global_component<Core::FrameData>();
-					fd.m_scale = (fd.m_scale == 0.0 ? 0.0 : speed);
-				}
-				pressedLastFrame = true;
-			}
+			Core::FrameData& fd = ecs::get_global_component<Core::FrameData>();
+			fd.m_scale = (fd.m_scale == 0.0 ? speed : 0.0);
 		}
-		else
+		if (Core::Input::PressedOnce(Core::Input::Action::Debug_SpeedUp))
 		{
-			pressedLastFrame = false;
+			speed = (speed == 1.0 ? 2.0 : (speed == 2.0 ? 5.0 : 1.0));
+			Core::FrameData& fd = ecs::get_global_component<Core::FrameData>();
+			fd.m_scale = (fd.m_scale == 0.0 ? 0.0 : speed);
 		}
 		if (Core::Input::Pressed(Core::Input::Action::Quit))
 		{
@@ -102,127 +88,132 @@ void initialise_cb()
 	Core::AddComponent(renderEntity, Core::Render::Frame_Tag());
 	Core::AddComponent(renderEntity, Core::Render::DefaultPass_Tag());
 	Core::Transform renderTrans(fQuatIdentity(), fVec3(0.0f, 0.8f, 0.0f));
-	//renderTrans.m_parent = character;
+	renderTrans.m_parent = character;
 	Core::AddComponent(renderEntity, renderTrans); // camera transform
 	Core::AddComponent(renderEntity, Core::Render::Camera());
-	Core::AddComponent(renderEntity, Core::Render::DebugCameraControl_Tag());
+	Core::AddComponent(renderEntity, Core::Render::DebugCameraControl());
 
 	// Setup entity initialisers
 	setup_cube();
 
 	// Setup systems
 	// debug camera control
-	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::FrameData const& _fd, Core::Render::Camera& _cam, Core::Transform& _t, Core::Render::DebugCameraControl_Tag)
+	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::FrameData const& _fd, Core::Render::Camera& _cam, Core::Transform& _t, Core::Render::DebugCameraControl& _debugCamera)
 	{
-		if (Core::Input::Pressed(Core::Input::Action::Debug_AimCamera))
+		static bool debugCameraEnabled = false;
+
+		if (Core::Input::PressedOnce(Core::Input::Action::Debug_EnableCamera))
 		{
-			sapp_lock_mouse(true);
-			fVec2 const mouseDelta = Core::Input::GetMouseDelta();
-			_cam.angle.x -= mouseDelta.y * 0.0005f;
-			_cam.angle.y += mouseDelta.x * 0.0005f;
+			if (debugCameraEnabled)
+			{
+				_t.m_parent = _debugCamera.m_storedParent;
+				_t.T() = _debugCamera.m_storedTransform;
+				debugCameraEnabled = false;
+			}
+			else
+			{
+				_debugCamera.m_storedParent = _t.m_parent;
+				_debugCamera.m_storedTransform = _t.T();
+				_t.DetachFromParent();
+				debugCameraEnabled = true;
+			}
 		}
-		else
+
+		if (debugCameraEnabled)
 		{
-			sapp_lock_mouse(false);
-		}
+			if (Core::Input::Pressed(Core::Input::Action::Debug_AimCamera))
+			{
+				sapp_lock_mouse(true);
+				fVec2 const mouseDelta = Core::Input::GetMouseDelta();
+				_debugCamera.m_angle.x -= mouseDelta.y * 0.0005f;
+				_debugCamera.m_angle.y += mouseDelta.x * 0.0005f;
+			}
+			else
+			{
+				sapp_lock_mouse(false);
+			}
 
 #define CHECK_AXES 0
 #if CHECK_AXES
-		_t.T().m_origin = fVec3(0, 0, 0);
-		if (Core::Input::Pressed(Core::Input::Action::Forward))
-		{
-			_t.T().m_origin += fVec3(0, 0, 1);
-		}
-		if (Core::Input::Pressed(Core::Input::Action::Backward))
-		{
-			_t.T().m_origin += fVec3(0, 0, -1);
-		}
-		if (Core::Input::Pressed(Core::Input::Action::Left))
-		{
-			_t.T().m_origin += fVec3(-1, 0, 0);
-		}
-		if (Core::Input::Pressed(Core::Input::Action::Right))
-		{
-			_t.T().m_origin += fVec3(1, 0, 0);
-		}
-		if (Core::Input::Pressed(Core::Input::Action::Debug_RaiseCamera))
-		{
-			_t.T().m_origin += fVec3(0, 1, 0);
-		}
-		if (Core::Input::Pressed(Core::Input::Action::Debug_LowerCamera))
-		{
-			_t.T().m_origin += fVec3(0, -1, 0);
-		}
+			_t.T().m_origin = fVec3(0, 0, 0);
+			if (Core::Input::Pressed(Core::Input::Action::Forward))
+			{
+				_t.T().m_origin += fVec3(0, 0, 1);
+			}
+			if (Core::Input::Pressed(Core::Input::Action::Backward))
+			{
+				_t.T().m_origin += fVec3(0, 0, -1);
+			}
+			if (Core::Input::Pressed(Core::Input::Action::Left))
+			{
+				_t.T().m_origin += fVec3(-1, 0, 0);
+			}
+			if (Core::Input::Pressed(Core::Input::Action::Right))
+			{
+				_t.T().m_origin += fVec3(1, 0, 0);
+			}
+			if (Core::Input::Pressed(Core::Input::Action::Debug_RaiseCamera))
+			{
+				_t.T().m_origin += fVec3(0, 1, 0);
+			}
+			if (Core::Input::Pressed(Core::Input::Action::Debug_LowerCamera))
+			{
+				_t.T().m_origin += fVec3(0, -1, 0);
+			}
 
-		static bool pressedLastFrame = false;
-		if (Core::Input::Pressed(Core::Input::Action::Select))
-		{
-			if (!pressedLastFrame)
+			if (Core::Input::PressedOnce(Core::Input::Action::Select))
 			{
 				fVec3 const row0 = _t.T().m_basis[0];
 				_t.T().m_basis[0] = _t.T().m_basis[1];
 				_t.T().m_basis[1] = _t.T().m_basis[2];
 				_t.T().m_basis[2] = row0;
 			}
-			pressedLastFrame = true;
-		}
-		else
-		{
-			pressedLastFrame = false;
-		}
 #else
-		// when at identity, forward == z
-		float const yaw = _cam.angle.y;
-		float const pitch = _cam.angle.x;
+			// when at identity, forward == z
+			float const yaw = _debugCamera.m_angle.y;
+			float const pitch = _debugCamera.m_angle.x;
 
 
-		fVec3 forward;
-		forward.x = cosf(yaw) * cosf(pitch);
-		forward.y = sinf(pitch);
-		forward.z = sinf(yaw) * cosf(pitch);
-		forward = glm::normalize(forward);
+			fVec3 forward;
+			forward.x = cosf(yaw) * cosf(pitch);
+			forward.y = sinf(pitch);
+			forward.z = sinf(yaw) * cosf(pitch);
+			forward = glm::normalize(forward);
 
-		_t.T().m_basis = RotationFromForward(forward);//glm::lookAt(_t.T().m_origin, _t.T().m_origin + forward, fVec3(0.0f, 1.0f, 0.0f));
+			_t.T().m_basis = RotationFromForward(forward);
 
-		// also re-calculate the Right and Up vector
-		fVec3 right = glm::normalize(glm::cross(forward, fVec3(0.0f, 1.0f, 0.0f)));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
-		fVec3 up = glm::normalize(glm::cross(right, forward));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+			// also re-calculate the Right and Up vector
+			fVec3 right = glm::normalize(glm::cross(forward, fVec3(0.0f, 1.0f, 0.0f)));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+			fVec3 up = glm::normalize(glm::cross(right, forward));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
 
-		float velocity = 0.8f * _fd.unscaled_dt;
-		if (Core::Input::Pressed(Core::Input::Action::Forward))
-		{
-			_t.T().m_origin += forward * velocity;
-		}
-		if (Core::Input::Pressed(Core::Input::Action::Backward))
-		{
-			_t.T().m_origin -= forward * velocity;
-		}
-		if (Core::Input::Pressed(Core::Input::Action::Left))
-		{
-			_t.T().m_origin -= right * velocity;
-		}
-		if (Core::Input::Pressed(Core::Input::Action::Right))
-		{
-			_t.T().m_origin += right * velocity;
-		}
-		// should this up really be used? or world up?
-		if (Core::Input::Pressed(Core::Input::Action::Debug_RaiseCamera))
-		{
-			_t.T().m_origin += up * velocity;
-		}
-		if (Core::Input::Pressed(Core::Input::Action::Debug_LowerCamera))
-		{
-			_t.T().m_origin -= up * velocity;
-		}
+			float velocity = 0.8f * _fd.unscaled_dt;
+			if (Core::Input::Pressed(Core::Input::Action::Forward))
+			{
+				_t.T().m_origin += forward * velocity;
+			}
+			if (Core::Input::Pressed(Core::Input::Action::Backward))
+			{
+				_t.T().m_origin -= forward * velocity;
+			}
+			if (Core::Input::Pressed(Core::Input::Action::Left))
+			{
+				_t.T().m_origin -= right * velocity;
+			}
+			if (Core::Input::Pressed(Core::Input::Action::Right))
+			{
+				_t.T().m_origin += right * velocity;
+			}
+			// should this up really be used? or world up?
+			if (Core::Input::Pressed(Core::Input::Action::Debug_RaiseCamera))
+			{
+				_t.T().m_origin += up * velocity;
+			}
+			if (Core::Input::Pressed(Core::Input::Action::Debug_LowerCamera))
+			{
+				_t.T().m_origin -= up * velocity;
+			}
 #endif
-	});
-
-	ecs::make_system<ecs::opts::group<Sys::RENDER_START>>([](Core::MT_Only&, Core::Render::FrameData& _rfd, Core::GlobalWorkaround_Tag)
-	{
-		_rfd.w = sapp_width();
-		_rfd.fW = static_cast<float>(_rfd.w);
-		_rfd.h = sapp_height();
-		_rfd.fH = static_cast<float>(_rfd.h);
+		}
 	});
 
 	ecs::make_system<ecs::opts::group<Sys::DEFAULT_PASS_START>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::DefaultPass_Tag)
@@ -268,6 +259,14 @@ void frame_cb()
 		fd.unscaled_dt = static_cast<float>(fd.unscaled_ddt);
 		fd.ddt = fd.m_scale * fd.unscaled_ddt;
 		fd.dt = static_cast<float>(fd.ddt);
+	}
+
+	{
+		Core::Render::FrameData& rfd = ecs::get_global_component<Core::Render::FrameData>();
+		rfd.w = sapp_width();
+		rfd.fW = static_cast<float>(rfd.w);
+		rfd.h = sapp_height();
+		rfd.fH = static_cast<float>(rfd.h);
 	}
 
 	Core::Input::Update();

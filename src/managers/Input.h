@@ -25,6 +25,7 @@ namespace Core
 			Debug_AimCamera,
 			Debug_RaiseCamera,
 			Debug_LowerCamera,
+			Debug_EnableCamera,
 
 			Count,
 		};
@@ -48,6 +49,7 @@ namespace Core
 		void SetActionKey(Action _action, int _index, ActionKey _actionKey);
 		ActionKey GetActionKey(Action _action, int _index);
 		bool Pressed(Action _action);
+		bool PressedOnce(Action _action);
 		fVec2 GetMouseDelta();
 		float GetScrollDelta();
 	}

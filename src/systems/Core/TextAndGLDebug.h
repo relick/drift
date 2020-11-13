@@ -14,8 +14,16 @@ namespace Core
 			void Setup();
 			void Render();
 			void Cleanup();
+		}
 
-			bool RenderText(uint32 _fontI, fVec2 _tlPos, char const* _text, float _size = 16.0f, uint32 _col = COL_WHITE);
+		namespace Debug
+		{
+			void DrawLine(fVec3 const& _start, fVec3 const& _end, uint32 _col = COL_WHITE);
+		}
+
+		namespace Text
+		{
+			bool Write(uint32 _fontI, fVec2 _tlPos, char const* _text, float _size = 16.0f, uint32 _col = COL_WHITE);
 		}
 	}
 }

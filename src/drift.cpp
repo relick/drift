@@ -84,10 +84,26 @@ void initialise_cb()
 	});
 
 	// Setup entity manager
+	Core::EntityID character = Core::CreateEntity();
+	fTrans const characterTrans{ fQuatIdentity(), fVec3(2.0f, 0.0f, 0.0f) };
+	Core::AddComponent(character, Core::Transform(characterTrans));
+	{
+		Core::Physics::CharacterControllerDesc ccDesc{};
+		ccDesc.m_halfHeight = 0.9f;
+		ccDesc.m_radius = 0.6f;
+		ccDesc.m_mass = 80.0f;
+		ccDesc.m_startTransform = characterTrans;
+		ccDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
+
+		Core::AddComponent(character, ccDesc);
+	}
+
 	Core::EntityID const renderEntity = Core::CreateEntity();
 	Core::AddComponent(renderEntity, Core::Render::Frame_Tag());
 	Core::AddComponent(renderEntity, Core::Render::DefaultPass_Tag());
-	Core::AddComponent(renderEntity, Core::Transform(fQuat{}, fVec3(1.4f, 1.5f, 4.0f))); // camera transform
+	Core::Transform renderTrans(fQuatIdentity(), fVec3(0.0f, 0.8f, 0.0f));
+	//renderTrans.m_parent = character;
+	Core::AddComponent(renderEntity, renderTrans); // camera transform
 	Core::AddComponent(renderEntity, Core::Render::Camera());
 	Core::AddComponent(renderEntity, Core::Render::DebugCameraControl_Tag());
 
@@ -117,7 +133,7 @@ void initialise_cb()
 		{
 			_t.T().m_origin += fVec3(0, 0, 1);
 		}
-		if (Core::Input::Pressed(Core::Input::Action::Back))
+		if (Core::Input::Pressed(Core::Input::Action::Backward))
 		{
 			_t.T().m_origin += fVec3(0, 0, -1);
 		}
@@ -166,7 +182,7 @@ void initialise_cb()
 		forward.z = sinf(yaw) * cosf(pitch);
 		forward = glm::normalize(forward);
 
-		_t.T().m_basis = glm::lookAt(_t.T().m_origin, _t.T().m_origin + forward, fVec3(0.0f, 1.0f, 0.0f));
+		_t.T().m_basis = RotationFromForward(forward);//glm::lookAt(_t.T().m_origin, _t.T().m_origin + forward, fVec3(0.0f, 1.0f, 0.0f));
 
 		// also re-calculate the Right and Up vector
 		fVec3 right = glm::normalize(glm::cross(forward, fVec3(0.0f, 1.0f, 0.0f)));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
@@ -177,7 +193,7 @@ void initialise_cb()
 		{
 			_t.T().m_origin += forward * velocity;
 		}
-		if (Core::Input::Pressed(Core::Input::Action::Back))
+		if (Core::Input::Pressed(Core::Input::Action::Backward))
 		{
 			_t.T().m_origin -= forward * velocity;
 		}

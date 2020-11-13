@@ -34,6 +34,11 @@ using fMat3 = glm::mat3;
 using fMat4 = glm::mat4;
 using fQuat = glm::quat;
 
+constexpr fQuat fQuatIdentity()
+{
+	return glm::identity<fQuat>();
+}
+
 #include <LinearMath/btTransform.h>
 struct fTrans
 {
@@ -65,13 +70,13 @@ struct fTrans
 		fVec3 const& col2 = m_basis[1];
 		fVec3 const& col3 = m_basis[2];
 
-		fVec3 const& row4 = m_origin;
+		fVec3 const& posi = m_origin;
 
 		return {
-			col1[0], col2[0], col3[0], 0.0f,
-			col1[1], col2[1], col3[1], 0.0f,
-			col1[2], col2[2], col3[2], 0.0f,
-			row4[0], row4[1], row4[2], 1.0f,
+			col1[0], col1[1], col1[2], 0.0f,
+			col2[0], col2[1], col2[2], 0.0f,
+			col3[0], col3[1], col3[2], 0.0f,
+			posi[0], posi[1], posi[2], 1.0f,
 		};
 	}
 
@@ -80,9 +85,9 @@ struct fTrans
 		// initialise directly
 		return btTransform(
 			btMatrix3x3(
-				m_basis[0][0], m_basis[0][1], m_basis[0][2], 
-				m_basis[1][0], m_basis[1][1], m_basis[1][2], 
-				m_basis[2][0], m_basis[2][1], m_basis[2][2]),
+				m_basis[0][0], m_basis[1][0], m_basis[2][0],
+				m_basis[0][1], m_basis[1][1], m_basis[2][1],
+				m_basis[0][2], m_basis[1][2], m_basis[2][2]),
 			btVector3(m_origin[0], m_origin[1], m_origin[2])
 		);
 	}
@@ -92,12 +97,16 @@ struct fTrans
 		: m_basis(_b)
 		, m_origin(_o)
 	{}
+	fTrans(fQuat const& _q, fVec3 const& _o = fVec3(0.0f))
+		: m_basis(_q)
+		, m_origin(_o)
+	{}
 
 	explicit fTrans(btTransform const& _t)
 		: m_basis{
-		_t.getBasis().getRow(0).x(), _t.getBasis().getRow(0).y(), _t.getBasis().getRow(0).z(),
-		_t.getBasis().getRow(1).x(), _t.getBasis().getRow(1).y(), _t.getBasis().getRow(1).z(),
-		_t.getBasis().getRow(2).x(), _t.getBasis().getRow(2).y(), _t.getBasis().getRow(2).z(),
+		_t.getBasis().getRow(0).x(), _t.getBasis().getRow(1).x(), _t.getBasis().getRow(2).x(),
+		_t.getBasis().getRow(0).y(), _t.getBasis().getRow(1).y(), _t.getBasis().getRow(2).y(),
+		_t.getBasis().getRow(0).z(), _t.getBasis().getRow(1).z(), _t.getBasis().getRow(2).z(),
 	}
 		, m_origin{
 		_t.getOrigin().x(), _t.getOrigin().y(), _t.getOrigin().z()
@@ -117,10 +126,16 @@ inline fMat3 RotationFromForward(fVec3 const& _f)
 	};
 }
 
+inline fVec3 ConvertbtVector3(btVector3 const& _btVec3)
+{
+	return fVec3(_btVec3.x(), _btVec3.y(), _btVec3.z());
+}
+
 #define WINDOW_START_WIDTH 640
 #define WINDOW_START_HEIGHT 480
 
 #define COL_WHITE static_cast<uint32>(-1)
+#define COL_GREEN static_cast<uint32>(65280u)
 
 #if DEBUG_TOOLS
 #include <assert.h>

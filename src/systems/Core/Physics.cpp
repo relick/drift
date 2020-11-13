@@ -14,6 +14,9 @@
 #include "ImGui.h"
 #include <imgui.h>
 
+#include "managers/Input.h"
+#include "systems/Core/TextAndGLDebug.h"
+
 std::unique_ptr<btIDebugDraw> debugDrawer;
 
 struct ImGuiWorldData
@@ -148,11 +151,171 @@ namespace Core
 #endif
 		}
 
+		btScalar rayLambda[2]{};
+		
+		void AddCharacterControllerSystems()
+		{
+			ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::FrameData const& _fd, Core::Physics::CharacterController& _cc, Core::Transform& _t)
+			{
+				auto fnOnGround = []() -> bool
+				{
+					return rayLambda[0] < btScalar(1.0);
+				};
+
+				// playerStep
+				{
+					/* Handle turning */
+					static float turnAngle = 0.0f;
+					float const turnVel = 1.0f;
+					float const walkVel = 8.0f;
+					float const maxLinearVel = 10.0f;
+					if (Core::Input::Pressed(Core::Input::Action::Left))
+					{
+						turnAngle += _fd.dt * turnVel;
+					}
+					if (Core::Input::Pressed(Core::Input::Action::Right))
+					{
+						turnAngle -= _fd.dt * turnVel;
+					}
+
+					_t.T().m_basis = fMat3(glm::rotate(fQuatIdentity(), turnAngle, fVec3(0.0, 1.0, 0.0)));
+
+					btVector3 linearVelocity = _cc.m_body->getLinearVelocity();
+					btScalar yLinVel = linearVelocity.y();
+					linearVelocity.setY(0.0f);
+					float speed = _cc.m_body->getLinearVelocity().length();
+
+					fVec3 forwardDir = -_t.T().m_basis[2];
+					forwardDir = glm::normalize(forwardDir);
+					fVec3 walkDirection(0.0, 0.0, 0.0);
+					float walkSpeed = walkVel * _fd.dt;
+
+					Core::Render::TextAndGLDebug::DrawLine(_t.T().m_origin, _t.T().m_origin + forwardDir);
+
+					if (Core::Input::Pressed(Core::Input::Action::Forward))
+					{
+						walkDirection += forwardDir;
+					}
+					if (Core::Input::Pressed(Core::Input::Action::Backward))
+					{
+						walkDirection -= forwardDir;
+					}
+
+
+					if (!Core::Input::Pressed(Core::Input::Action::Forward) && !Core::Input::Pressed(Core::Input::Action::Backward) && fnOnGround())
+					{
+						/* Dampen when on the ground and not being moved by the player */
+						linearVelocity *= btScalar(0.2);
+						linearVelocity.setY(yLinVel);
+						_cc.m_body->setLinearVelocity(linearVelocity);
+					}
+					else
+					{
+						if (speed < maxLinearVel)
+						{
+							linearVelocity.setY(yLinVel);
+							fVec3 walkF = walkDirection * walkSpeed;
+							btVector3 walk(walkF.x, walkF.y, walkF.z);
+							btVector3 velocity = linearVelocity + walk;
+							_cc.m_body->setLinearVelocity(velocity);
+						}
+					}
+
+					btTransform const tForBullet = _t.T().GetBulletTransform();
+					_cc.m_body->setWorldTransform(tForBullet);
+					_cc.m_motionState->setWorldTransform(tForBullet);
+					//_cc.m_body->setCenterOfMassTransform(tForBullet); // wut?
+				}
+
+				// jump
+				if (Core::Input::Pressed(Core::Input::Action::Jump) && fnOnGround())
+				{
+					fVec3 up = _t.T().m_basis[1];
+					up = glm::normalize(up);
+					float magnitude = (1.0f / _cc.m_body->getInvMass()) * 8.0f;
+					fVec3 const impulse = up * magnitude;
+					_cc.m_body->applyCentralImpulse(btVector3(impulse.x, impulse.y, impulse.z));
+				}
+			});
+
+			ecs::make_system<ecs::opts::group<Sys::PHYSICS_TRANSFORMS_IN>>([](Core::FrameData const& _fd, Core::Physics::CharacterController& _cc, Core::Transform const& _t)
+			{
+				btScalar rayLambda[2]{};
+				btVector3 rayNormal[2]{};
+
+				btTransform xform;
+				_cc.m_motionState->getWorldTransform(xform);
+
+				// preStep
+				{
+					Core::Physics::World const& pw = GetWorld(_cc.m_physicsWorld);
+
+					btVector3 down = -xform.getBasis()[1];
+					btVector3 forward = xform.getBasis()[2];
+					down.normalize();
+					forward.normalize();
+
+					btVector3 raySource[2]{};
+					btVector3 rayTarget[2]{};
+					raySource[0] = xform.getOrigin();
+					raySource[1] = xform.getOrigin();
+
+					rayTarget[0] = raySource[0] + down * _cc.m_halfHeight * 1.1f;
+					rayTarget[1] = raySource[1] + forward * _cc.m_halfHeight * 1.1f;
+
+					class ClosestNotMe : public btCollisionWorld::ClosestRayResultCallback
+					{
+					public:
+						ClosestNotMe(btRigidBody* me) : btCollisionWorld::ClosestRayResultCallback(btVector3(0.0, 0.0, 0.0), btVector3(0.0, 0.0, 0.0))
+						{
+							m_me = me;
+						}
+
+						virtual btScalar addSingleResult(btCollisionWorld::LocalRayResult& rayResult, bool normalInWorldSpace)
+						{
+							if (rayResult.m_collisionObject == m_me)
+								return 1.0;
+
+							return ClosestRayResultCallback::addSingleResult(rayResult, normalInWorldSpace);
+						}
+					protected:
+						btRigidBody* m_me;
+					};
+
+					ClosestNotMe rayCallback(_cc.m_body);
+
+					int i = 0;
+					for (i = 0; i < 2; i++)
+					{
+						rayCallback.m_closestHitFraction = 1.0;
+						pw.m_dynamicsWorld->rayTest(raySource[i], rayTarget[i], rayCallback);
+						if (rayCallback.hasHit())
+						{
+							rayLambda[i] = rayCallback.m_closestHitFraction;
+						}
+						else
+						{
+							rayLambda[i] = 1.0;
+						}
+					}
+				}
+			});
+
+			ecs::make_system<ecs::opts::group<Sys::PHYSICS_TRANSFORMS_OUT>>([](Core::Physics::CharacterController const& _cc, Core::Transform& _t)
+			{
+				btTransform trans;
+				_cc.m_body->getMotionState()->getWorldTransform(trans);
+				_t.T() = _t.CalculateLocalTransform(fTrans(trans));
+			});
+		}
+
 		void Setup()
 		{
+			AddCharacterControllerSystems();
+
+
 			// Object transforms being pushed into physics
-			// Serial to prevent (unconfirmed?) issues
-			ecs::make_system<ecs::opts::group<Sys::PHYSICS_TRANSFORMS_IN>, ecs::opts::not_parallel>([](Core::Physics::RigidBody& _rb, Core::Transform const& _t)
+			ecs::make_system<ecs::opts::group<Sys::PHYSICS_TRANSFORMS_IN>>([](Core::Physics::RigidBody& _rb, Core::Transform const& _t)
 			{
 				// Can't set transforms for non-kinematic bodies.
 				if (_rb.m_body->isKinematicObject())
@@ -223,6 +386,29 @@ namespace Core
 					}
 
 					_t.T() = _t.CalculateLocalTransform(fTrans(trans));
+
+					{
+						fVec3 forwardDir = glm::normalize(_t.T().m_basis[2]);
+						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + forwardDir);
+
+						fVec3 upDir = glm::normalize(_t.T().m_basis[1]);
+						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + upDir);
+
+						fVec3 rightDir = glm::normalize(_t.T().m_basis[0]);
+						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + rightDir);
+					}
+					{
+						fVec3 btForwardDir = ConvertbtVector3(trans.getBasis().getColumn(2));
+						fVec3 btOrigin = ConvertbtVector3(trans.getOrigin());
+						Core::Render::Debug::DrawLine(btOrigin, btOrigin + btForwardDir, COL_GREEN);
+
+						fVec3 btUpDir = ConvertbtVector3(trans.getBasis().getColumn(1));
+						Core::Render::Debug::DrawLine(btOrigin, btOrigin + btUpDir, COL_GREEN);
+
+						fVec3 btRightDir = ConvertbtVector3(trans.getBasis().getColumn(0));
+						Core::Render::Debug::DrawLine(btOrigin, btOrigin + btRightDir, COL_GREEN);
+
+					}
 				}
 			});
 		}

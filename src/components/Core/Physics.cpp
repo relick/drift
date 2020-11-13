@@ -109,7 +109,7 @@ namespace Core
 			newComponent.m_shape->calculateLocalInertia(mass, localInertia);
 		}
 
-		newComponent.m_motionState = new btDefaultMotionState(_desc.m_startTransform);
+		newComponent.m_motionState = new btDefaultMotionState(_desc.m_startTransform.GetBulletTransform());
 
 		// Finalise RB
 		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, newComponent.m_motionState, newComponent.m_shape, localInertia);
@@ -135,6 +135,58 @@ namespace Core
 	void RemoveComponent<Physics::RigidBody>(EntityID const _entity)
 	{
 		Physics::RigidBody* const oldComponent = ecs::get_component<Physics::RigidBody>(_entity.GetValue());
+		ASSERT(oldComponent);
+
+		Core::Physics::World& physicsWorld = Physics::GetWorld(oldComponent->m_physicsWorld);
+		physicsWorld.m_dynamicsWorld->removeCollisionObject(oldComponent->m_body);
+
+		physicsWorlds.at(oldComponent->m_physicsWorld).numBodies--;
+
+		SafeDelete(oldComponent->m_motionState);
+		SafeDelete(oldComponent->m_body);
+		SafeDelete(oldComponent->m_shape);
+
+		ecs::remove_component<Physics::World>(_entity.GetValue());
+	}
+
+	template<>
+	void AddComponent(EntityID const _entity, Physics::CharacterControllerDesc const& _desc)
+	{
+		Physics::CharacterController newComponent{};
+
+		ASSERT(_desc.m_physicsWorld.IsValid());
+		newComponent.m_physicsWorld = _desc.m_physicsWorld;
+
+		newComponent.m_halfHeight = _desc.m_halfHeight;
+		newComponent.m_shape = new btCapsuleShape(_desc.m_radius, _desc.m_halfHeight);
+
+		btScalar const mass = std::max(_desc.m_mass, 0.0f);
+		btVector3 localInertia(0, 0, 0);
+		newComponent.m_shape->calculateLocalInertia(mass, localInertia);
+
+		newComponent.m_motionState = new btDefaultMotionState(_desc.m_startTransform.GetBulletTransform());
+
+		// Finalise RB
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, newComponent.m_motionState, newComponent.m_shape, localInertia);
+		newComponent.m_body = new btRigidBody(rbInfo);
+
+		newComponent.m_body->setSleepingThresholds(0.0f, 0.0f);
+		newComponent.m_body->setAngularFactor(0.0f);
+
+		// Add to physics world
+		Core::Physics::World& physicsWorld = Physics::GetWorld(newComponent.m_physicsWorld);
+		physicsWorld.m_dynamicsWorld->addRigidBody(newComponent.m_body);
+
+		physicsWorlds.at(newComponent.m_physicsWorld).numBodies++;
+
+		// Add to ecs
+		ecs::add_component(_entity.GetValue(), newComponent);
+	}
+
+	template<>
+	void RemoveComponent<Physics::CharacterController>(EntityID const _entity)
+	{
+		Physics::CharacterController* const oldComponent = ecs::get_component<Physics::CharacterController>(_entity.GetValue());
 		ASSERT(oldComponent);
 
 		Core::Physics::World& physicsWorld = Physics::GetWorld(oldComponent->m_physicsWorld);

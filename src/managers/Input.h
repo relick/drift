@@ -17,7 +17,7 @@ namespace Core
 			Jump,
 
 			Forward,
-			Back,
+			Backward,
 			Left,
 			Right,
 

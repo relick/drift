@@ -25,6 +25,10 @@
 #include <imgui.h>
 #include <ecs/ecs.h>
 
+#include <vector>
+#include <mutex>
+#include <unordered_map>
+
 FONScontext* fonsContext{ nullptr };
 uint32 fonsFontCount = 0;
 
@@ -47,6 +51,30 @@ namespace Core
 {
 	namespace Render
 	{
+		struct LineToDraw
+		{
+			fVec3 m_start{};
+			fVec3 m_end{};
+		};
+		std::unordered_map<uint32, std::vector<LineToDraw>> linesToDraw{};
+		std::mutex linesToDrawLock{};
+
+		void FlushGL()
+		{
+			sgl_begin_lines();
+			for (auto const& [col, lines] : linesToDraw)
+			{
+				sgl_c1i(col);
+				for (auto const& line : lines)
+				{
+					sgl_v3f(line.m_start.x, line.m_start.y, line.m_start.z);
+					sgl_v3f(line.m_end.x, line.m_end.y, line.m_end.z);
+				}
+			}
+			sgl_end();
+			linesToDraw.clear();
+		}
+
 		namespace TextAndGLDebug
 		{
 			void Init()
@@ -61,6 +89,7 @@ namespace Core
 				fonsContext = sfons_create(512, 512, FONS_ZERO_TOPLEFT);
 			}
 
+			void FlushGL();
 			void Setup()
 			{
 				// Prepare GL matrices.
@@ -74,12 +103,16 @@ namespace Core
 					sgl_matrix_mode_modelview();
 					sgl_load_identity();
 
-					sgl_load_matrix(&glm::inverse(_camT.T().GetRenderMatrix())[0][0]);
+					fTrans const cameraTrans = _camT.CalculateWorldTransform();
+					fMat4 const cameraMat = glm::lookAt(cameraTrans.m_origin, cameraTrans.m_origin + cameraTrans.m_basis[2], fVec3(0.0f, 1.0f, 0.0f));
+					sgl_load_matrix(&cameraMat[0][0]);
 				});
 
 				// Prepare text matrices.
 				ecs::make_system<ecs::opts::group<Sys::TEXT_START>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _camT, Core::Render::DefaultPass_Tag)
 				{
+					FlushGL();
+
 					sgl_defaults();
 
 					sgl_matrix_mode_projection();
@@ -142,8 +175,26 @@ namespace Core
 				fonsContext = nullptr;
 				sgl_shutdown();
 			}
+		}
 
-			bool RenderText
+		namespace Debug
+		{
+			// could buffer this at some point I guess.
+			void DrawLine
+			(
+				fVec3 const& _start,
+				fVec3 const& _end,
+				uint32 _col
+			)
+			{
+				std::scoped_lock lock(linesToDrawLock);
+				linesToDraw[_col].push_back(LineToDraw{ _start, _end });
+			}
+		}
+
+		namespace Text
+		{
+			bool Write
 			(
 				uint32 _fontI,
 				fVec2 _tlPos,

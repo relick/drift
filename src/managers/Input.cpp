@@ -60,8 +60,8 @@ namespace Core
 				actions[static_cast<usize>(Action::Forward)][0].keyType = KeyType::Keyboard;
 				actions[static_cast<usize>(Action::Forward)][0].key = SAPP_KEYCODE_W;
 
-				actions[static_cast<usize>(Action::Back)][0].keyType = KeyType::Keyboard;
-				actions[static_cast<usize>(Action::Back)][0].key = SAPP_KEYCODE_S;
+				actions[static_cast<usize>(Action::Backward)][0].keyType = KeyType::Keyboard;
+				actions[static_cast<usize>(Action::Backward)][0].key = SAPP_KEYCODE_S;
 
 				actions[static_cast<usize>(Action::Left)][0].keyType = KeyType::Keyboard;
 				actions[static_cast<usize>(Action::Left)][0].key = SAPP_KEYCODE_A;
@@ -72,8 +72,8 @@ namespace Core
 				actions[static_cast<usize>(Action::Forward)][1].keyType = KeyType::Keyboard;
 				actions[static_cast<usize>(Action::Forward)][1].key = SAPP_KEYCODE_UP;
 
-				actions[static_cast<usize>(Action::Back)][1].keyType = KeyType::Keyboard;
-				actions[static_cast<usize>(Action::Back)][1].key = SAPP_KEYCODE_DOWN;
+				actions[static_cast<usize>(Action::Backward)][1].keyType = KeyType::Keyboard;
+				actions[static_cast<usize>(Action::Backward)][1].key = SAPP_KEYCODE_DOWN;
 
 				actions[static_cast<usize>(Action::Left)][1].keyType = KeyType::Keyboard;
 				actions[static_cast<usize>(Action::Left)][1].key = SAPP_KEYCODE_LEFT;

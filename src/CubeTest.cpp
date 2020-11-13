@@ -150,7 +150,8 @@ void setup_cube()
 	CubeTestState.bind = binds;
 
 	Core::EntityID ground = Core::CreateEntity();
-	Core::AddComponent(ground, Core::Transform(fQuat{}, fVec3(0.0f, -2.0f, 0.0f)));
+	fTrans const groundTrans{ fQuatIdentity(), fVec3(0.0f, -2.0f, 0.0f) };
+	Core::AddComponent(ground, Core::Transform(groundTrans));
 	{
 		Core::Render::ModelDesc modelDesc{};
 		modelDesc.m_filePath = "assets/models/cube/groundcube.obj";
@@ -161,18 +162,15 @@ void setup_cube()
 		rbDesc.m_shapeType = Core::Physics::ShapeType::Box;
 		rbDesc.m_boxDimensions = btVector3(50.0f, 1.0f, 50.0f);
 		rbDesc.m_mass = 0.0f;
-		btTransform groundTransform;
-		groundTransform.setIdentity();
-		groundTransform.setOrigin(btVector3(0, -2, 0));
-		rbDesc.m_startTransform = groundTransform;
+		rbDesc.m_startTransform = groundTrans;
 		rbDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
 
 		Core::AddComponent(ground, rbDesc);
 	}
 
-
 	Core::EntityID cube = Core::CreateEntity();
-	Core::AddComponent(cube, Core::Transform(fQuat{}, fVec3(0.0f, 0.0f, 0.0f)));
+	fTrans const cubeTrans{ fQuatIdentity(), fVec3(0.0f, 0.0f, 0.0f) };
+	Core::AddComponent(cube, Core::Transform(cubeTrans));
 	Core::AddComponent(cube, Core::Render::CubeTest{false, 0.0f, 0.0f});
 	{
 		Core::Render::ModelDesc modelDesc{};
@@ -185,17 +183,15 @@ void setup_cube()
 		rbDesc.m_boxDimensions = btVector3(0.5f, 0.5f, 0.5f);
 		rbDesc.m_mass = 1.0f;
 		rbDesc.m_isKinematic = true;
-		btTransform cubeTransform;
-		cubeTransform.setIdentity();
-		cubeTransform.setOrigin(btVector3(0, 0, 0));
-		rbDesc.m_startTransform = cubeTransform;
+		rbDesc.m_startTransform = cubeTrans;
 		rbDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
 
 		Core::AddComponent(cube, rbDesc);
 	}
 
 	Core::EntityID cube2 = Core::CreateEntity();
-	Core::AddComponent(cube2, Core::Transform(fQuat{}, fVec3(-0.5f, 1.5f, 0.0f)));
+	fTrans const cube2Trans{ fQuatIdentity(), fVec3(-0.5f, 1.5f, 0.0f) };
+	Core::AddComponent(cube2, Core::Transform(cube2Trans));
 	Core::AddComponent(cube2, Core::Render::CubeTest{false, 0.0f, 0.0f});
 	{
 		Core::Render::ModelDesc modelDesc{};
@@ -207,22 +203,19 @@ void setup_cube()
 		rbDesc.m_shapeType = Core::Physics::ShapeType::Box;
 		rbDesc.m_boxDimensions = btVector3(0.5f, 0.5f, 0.5f);
 		rbDesc.m_mass = 1.0f;
-		btTransform cubeTransform;
-		cubeTransform.setIdentity();
-		cubeTransform.setOrigin(btVector3(-0.5f, 1.5f, 0.0f));
-		rbDesc.m_startTransform = cubeTransform;
+		rbDesc.m_startTransform = cube2Trans;
 		rbDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
 
 		Core::AddComponent(cube2, rbDesc);
 	}
 
-	Core::EntityID backpack = Core::CreateEntity();
-	Core::AddComponent(backpack, Core::Transform(fQuat{}, fVec3(-0.5f, 1.5f, 0.0f)));
+	/*Core::EntityID backpack = Core::CreateEntity();
+	Core::AddComponent(backpack, Core::Transform(fQuatIdentity(), fVec3(-0.5f, 1.5f, 0.0f)));
 	{
 		Core::Render::ModelDesc modelDesc{};
 		modelDesc.m_filePath = "assets/models/backpack/backpack.obj";
 		Core::AddComponent(backpack, modelDesc);
-	}
+	}*/
 
 	Core::EntityID lightCube = Core::CreateEntity();
 	Core::AddComponent(lightCube, Core::Transform(RotationFromForward(fVec3(-1.0f, -1.0f, 0.0f)), fVec3(1.2f, 1.0f, 2.0f)));
@@ -277,8 +270,9 @@ void setup_cube()
 	{
 		camera_state.proj = glm::perspective(glm::radians(_cam.m_povY), _rfd.fW / _rfd.fH, 0.01f, 1000.0f);
 
-		fMat4 const cameraMat = _t.T().GetRenderMatrix();
-		camera_state.view = glm::inverse(cameraMat);
+		fTrans const cameraTrans = _t.CalculateWorldTransform();
+		fMat4 const cameraMat = glm::lookAt(cameraTrans.m_origin, cameraTrans.m_origin + cameraTrans.m_basis[2], fVec3(0.0f, 1.0f, 0.0f));
+		camera_state.view = cameraMat;
 	});
 
 	ecs::make_system<ecs::opts::group<Sys::RENDER_PASSES>, ecs::opts::not_parallel>([](Core::MT_Only&, Core::Render::FrameData const& _fd, Core::Render::CubeTest const& _cubeTest, Core::Transform const& _t)

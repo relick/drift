@@ -33,7 +33,7 @@ namespace Core
 			bool m_isKinematic{ false };
 			btScalar m_mass{ 0 };
 			ShapeType m_shapeType{ ShapeType::Box };
-			btTransform m_startTransform{};
+			fTrans m_startTransform{};
 
 			// Box
 			btVector3 m_boxDimensions{};
@@ -51,6 +51,21 @@ namespace Core
 			btCollisionShape* m_shape{ nullptr };
 			btDefaultMotionState* m_motionState{ nullptr };
 			btRigidBody* m_body{ nullptr };
+		};
+
+		struct CharacterControllerDesc
+		{
+			EntityID m_physicsWorld{};
+
+			btScalar m_mass{ 80 }; //kg
+			fTrans m_startTransform{};
+			btScalar m_radius{ 0.5f };
+			btScalar m_halfHeight{ 1.0f };
+		};
+
+		struct CharacterController : public RigidBody
+		{
+			btScalar m_halfHeight{ 1.0f };
 		};
 
 		Core::EntityID GetPrimaryWorldEntity();
@@ -74,5 +89,11 @@ namespace Core
 
 	template<>
 	void RemoveComponent<Physics::RigidBody>(EntityID const _entity);
+
+	template<>
+	void AddComponent(EntityID const _entity, Physics::CharacterControllerDesc const& _desc);
+
+	template<>
+	void RemoveComponent<Physics::CharacterController>(EntityID const _entity);
 
 }

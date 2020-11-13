@@ -103,7 +103,7 @@ namespace Core
 					sgl_load_identity();
 
 					fTrans const cameraTrans = _camT.CalculateWorldTransform();
-					fMat4 const cameraMat = glm::lookAt(cameraTrans.m_origin, cameraTrans.m_origin + cameraTrans.m_basis[2], fVec3(0.0f, 1.0f, 0.0f));
+					fMat4 const cameraMat = glm::lookAt(cameraTrans.m_origin, cameraTrans.m_origin + cameraTrans.forward(), fVec3(0.0f, 1.0f, 0.0f));
 					sgl_load_matrix(&cameraMat[0][0]);
 				});
 

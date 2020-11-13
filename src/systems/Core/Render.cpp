@@ -126,7 +126,7 @@ namespace Core
 				cameraState.proj = glm::perspective(glm::radians(_cam.m_povY), _rfd.fW / _rfd.fH, 0.01f, 1000.0f);
 
 				fTrans const cameraTrans = _t.CalculateWorldTransform();
-				fMat4 const cameraMat = glm::lookAt(cameraTrans.m_origin, cameraTrans.m_origin + cameraTrans.m_basis[2], fVec3(0.0f, 1.0f, 0.0f));
+				fMat4 const cameraMat = glm::lookAt(cameraTrans.m_origin, cameraTrans.m_origin + cameraTrans.forward(), fVec3(0.0f, 1.0f, 0.0f));
 				cameraState.view = cameraMat;
 			});
 

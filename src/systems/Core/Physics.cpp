@@ -151,7 +151,7 @@ namespace Core
 #endif
 		}
 
-		btScalar rayLambda[2]{};
+		float rayLambda[2]{};
 		
 		void AddCharacterControllerSystems()
 		{
@@ -159,7 +159,7 @@ namespace Core
 			{
 				auto fnOnGround = []() -> bool
 				{
-					return rayLambda[0] < btScalar(1.0);
+					return rayLambda[0] < 1.0f;
 				};
 
 				// playerStep
@@ -181,12 +181,11 @@ namespace Core
 					_t.T().m_basis = fMat3(glm::rotate(fQuatIdentity(), turnAngle, fVec3(0.0, 1.0, 0.0)));
 
 					btVector3 linearVelocity = _cc.m_body->getLinearVelocity();
-					btScalar yLinVel = linearVelocity.y();
+					float yLinVel = linearVelocity.y();
 					linearVelocity.setY(0.0f);
 					float speed = _cc.m_body->getLinearVelocity().length();
 
-					fVec3 forwardDir = _t.T().m_basis[2];
-					forwardDir = glm::normalize(forwardDir);
+					fVec3 const forwardDir = _t.T().forward();
 					fVec3 walkDirection(0.0, 0.0, 0.0);
 					float walkSpeed = walkVel * _fd.dt;
 
@@ -227,21 +226,17 @@ namespace Core
 				}
 
 				// jump
-				if (Core::Input::Pressed(Core::Input::Action::Jump) && fnOnGround())
+				if (Core::Input::PressedOnce(Core::Input::Action::Jump) && fnOnGround())
 				{
-					fVec3 up = _t.T().m_basis[1];
-					up = glm::normalize(up);
-					float magnitude = (1.0f / _cc.m_body->getInvMass()) * 8.0f;
+					fVec3 const up = _t.T().up();
+					float magnitude = _cc.m_body->getMass() * 8.0f;
 					fVec3 const impulse = up * magnitude;
-					_cc.m_body->applyCentralImpulse(btVector3(impulse.x, impulse.y, impulse.z));
+					_cc.m_body->applyCentralImpulse(ConvertTobtVector3(impulse));
 				}
 			});
 
 			ecs::make_system<ecs::opts::group<Sys::PHYSICS_TRANSFORMS_IN>>([](Core::FrameData const& _fd, Core::Physics::CharacterController& _cc, Core::Transform const& _t)
 			{
-				btScalar rayLambda[2]{};
-				btVector3 rayNormal[2]{};
-
 				btTransform xform;
 				_cc.m_motionState->getWorldTransform(xform);
 
@@ -249,18 +244,16 @@ namespace Core
 				{
 					Core::Physics::World const& pw = GetWorld(_cc.m_physicsWorld);
 
-					btVector3 down = -xform.getBasis()[1];
-					btVector3 forward = xform.getBasis()[2];
-					down.normalize();
-					forward.normalize();
+					fVec3 down = -_t.T().up();
+					fVec3 forward = _t.T().forward();
 
 					btVector3 raySource[2]{};
 					btVector3 rayTarget[2]{};
 					raySource[0] = xform.getOrigin();
 					raySource[1] = xform.getOrigin();
 
-					rayTarget[0] = raySource[0] + down * _cc.m_halfHeight * 1.1f;
-					rayTarget[1] = raySource[1] + forward * _cc.m_halfHeight * 1.1f;
+					rayTarget[0] = raySource[0] + ConvertTobtVector3(down * _cc.m_halfHeight * 1.2f);
+					rayTarget[1] = raySource[1] + ConvertTobtVector3(forward * _cc.m_halfHeight * 1.2f);
 
 					class ClosestNotMe : public btCollisionWorld::ClosestRayResultCallback
 					{
@@ -286,7 +279,7 @@ namespace Core
 					int i = 0;
 					for (i = 0; i < 2; i++)
 					{
-						rayCallback.m_closestHitFraction = 1.0;
+						rayCallback.m_closestHitFraction = 1.0f;
 						pw.m_dynamicsWorld->rayTest(raySource[i], rayTarget[i], rayCallback);
 						if (rayCallback.hasHit())
 						{
@@ -294,7 +287,7 @@ namespace Core
 						}
 						else
 						{
-							rayLambda[i] = 1.0;
+							rayLambda[i] = 1.0f;
 						}
 					}
 				}
@@ -387,25 +380,22 @@ namespace Core
 					_t.T() = _t.CalculateLocalTransform(fTrans(trans));
 
 					{
-						fVec3 forwardDir = glm::normalize(_t.T().m_basis[2]);
-						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + forwardDir);
+						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + _t.T().forward());
+						
+						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + _t.T().up());
 
-						fVec3 upDir = glm::normalize(_t.T().m_basis[1]);
-						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + upDir);
-
-						fVec3 rightDir = glm::normalize(_t.T().m_basis[0]);
-						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + rightDir);
+						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + _t.T().right());
 					}
 					{
-						fVec3 btForwardDir = ConvertbtVector3(trans.getBasis().getColumn(2));
-						fVec3 btOrigin = ConvertbtVector3(trans.getOrigin());
-						Core::Render::Debug::DrawLine(btOrigin, btOrigin + btForwardDir, COL_GREEN);
+						fVec3 btForwardDir = ConvertFrombtVector3(trans.getBasis().getColumn(2));
+						fVec3 btOrigin = ConvertFrombtVector3(trans.getOrigin());
+						Core::Render::Debug::DrawLine(btOrigin, btOrigin + btForwardDir, Colour::green);
 
-						fVec3 btUpDir = ConvertbtVector3(trans.getBasis().getColumn(1));
-						Core::Render::Debug::DrawLine(btOrigin, btOrigin + btUpDir, COL_GREEN);
+						fVec3 btUpDir = ConvertFrombtVector3(trans.getBasis().getColumn(1));
+						Core::Render::Debug::DrawLine(btOrigin, btOrigin + btUpDir, Colour::green);
 
-						fVec3 btRightDir = ConvertbtVector3(trans.getBasis().getColumn(0));
-						Core::Render::Debug::DrawLine(btOrigin, btOrigin + btRightDir, COL_GREEN);
+						fVec3 btRightDir = ConvertFrombtVector3(trans.getBasis().getColumn(0));
+						Core::Render::Debug::DrawLine(btOrigin, btOrigin + btRightDir, Colour::green);
 
 					}
 				}

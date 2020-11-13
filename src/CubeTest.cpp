@@ -168,6 +168,25 @@ void setup_cube()
 		Core::AddComponent(ground, rbDesc);
 	}
 
+	Core::EntityID wall = Core::CreateEntity();
+	fTrans const wallTrans{ fMat3(glm::yawPitchRoll(0.0f, glm::radians(90.0f), 0.0f)), fVec3(0.0f, 0.0f, 2.0f) };
+	Core::AddComponent(wall, Core::Transform(wallTrans));
+	{
+		Core::Render::ModelDesc modelDesc{};
+		modelDesc.m_filePath = "assets/models/cube/groundcube.obj";
+		Core::AddComponent(wall, modelDesc);
+	}
+	{
+		Core::Physics::RigidBodyDesc rbDesc{};
+		rbDesc.m_shapeType = Core::Physics::ShapeType::Box;
+		rbDesc.m_boxDimensions = btVector3(50.0f, 1.0f, 50.0f);
+		rbDesc.m_mass = 0.0f;
+		rbDesc.m_startTransform = wallTrans;
+		rbDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
+
+		Core::AddComponent(wall, rbDesc);
+	}
+
 	Core::EntityID cube = Core::CreateEntity();
 	fTrans const cubeTrans{ fQuatIdentity(), fVec3(0.0f, 0.0f, 0.0f) };
 	Core::AddComponent(cube, Core::Transform(cubeTrans));
@@ -181,7 +200,7 @@ void setup_cube()
 		Core::Physics::RigidBodyDesc rbDesc{};
 		rbDesc.m_shapeType = Core::Physics::ShapeType::Box;
 		rbDesc.m_boxDimensions = btVector3(0.5f, 0.5f, 0.5f);
-		rbDesc.m_mass = 1.0f;
+		rbDesc.m_mass = 1000.0f;
 		rbDesc.m_isKinematic = true;
 		rbDesc.m_startTransform = cubeTrans;
 		rbDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
@@ -271,7 +290,7 @@ void setup_cube()
 		camera_state.proj = glm::perspective(glm::radians(_cam.m_povY), _rfd.fW / _rfd.fH, 0.01f, 1000.0f);
 
 		fTrans const cameraTrans = _t.CalculateWorldTransform();
-		fMat4 const cameraMat = glm::lookAt(cameraTrans.m_origin, cameraTrans.m_origin + cameraTrans.m_basis[2], fVec3(0.0f, 1.0f, 0.0f));
+		fMat4 const cameraMat = glm::lookAt(cameraTrans.m_origin, cameraTrans.m_origin + cameraTrans.forward(), fVec3(0.0f, 1.0f, 0.0f));
 		camera_state.view = cameraMat;
 	});
 

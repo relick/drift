@@ -163,10 +163,10 @@ void initialise_cb()
 
 			if (Core::Input::PressedOnce(Core::Input::Action::Select))
 			{
-				fVec3 const row0 = _t.T().m_basis[0];
+				fVec3 const col0 = _t.T().m_basis[0];
 				_t.T().m_basis[0] = _t.T().m_basis[1];
 				_t.T().m_basis[1] = _t.T().m_basis[2];
-				_t.T().m_basis[2] = row0;
+				_t.T().m_basis[2] = col0;
 			}
 #else
 			// when at identity, forward == z

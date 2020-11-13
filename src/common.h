@@ -63,6 +63,19 @@ struct fTrans
 		return *this;
 	}
 
+	fVec3 right() const
+	{
+		return glm::normalize(m_basis[0]);
+	}
+	fVec3 up() const
+	{
+		return glm::normalize(m_basis[1]);
+	}
+	fVec3 forward() const
+	{
+		return glm::normalize(m_basis[2]);
+	}
+
 	fMat4 GetRenderMatrix() const
 	{
 		// initialise directly
@@ -126,16 +139,23 @@ inline fMat3 RotationFromForward(fVec3 const& _f)
 	};
 }
 
-inline fVec3 ConvertbtVector3(btVector3 const& _btVec3)
+inline fVec3 ConvertFrombtVector3(btVector3 const& _btVec3)
 {
 	return fVec3(_btVec3.x(), _btVec3.y(), _btVec3.z());
+}
+inline btVector3 ConvertTobtVector3(fVec3 const& _fVec3)
+{
+	return btVector3(_fVec3.x, _fVec3.y, _fVec3.z);
 }
 
 #define WINDOW_START_WIDTH 640
 #define WINDOW_START_HEIGHT 480
 
-#define COL_WHITE static_cast<uint32>(-1)
-#define COL_GREEN static_cast<uint32>(65280u)
+namespace Colour
+{
+	constexpr uint32 white = static_cast<uint32>(-1);
+	constexpr uint32 green = static_cast<uint32>(65280u);
+}
 
 #if DEBUG_TOOLS
 #include <assert.h>

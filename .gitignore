@@ -355,3 +355,5 @@ MigrationBackup/
 out/
 CMakeSettings.json
 ImGuiSettings.ini
+
+run/

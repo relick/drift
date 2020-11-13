@@ -178,7 +178,6 @@ namespace Core
 
 		namespace Debug
 		{
-			// could buffer this at some point I guess.
 			void DrawLine
 			(
 				fVec3 const& _start,
@@ -188,6 +187,18 @@ namespace Core
 			{
 				std::scoped_lock lock(linesToDrawLock);
 				linesToDraw[_col].push_back(LineToDraw{ _start, _end });
+			}
+
+			void DrawLine
+			(
+				fVec3 const& _start,
+				fVec3 const& _end,
+				fVec3 const& _col
+			)
+			{
+				std::scoped_lock lock(linesToDrawLock);
+				uint32 const col = Colour::ConvertRGB(_col);
+				linesToDraw[col].push_back(LineToDraw{ _start, _end });
 			}
 		}
 

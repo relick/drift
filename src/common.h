@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include "gcem.hpp"
 using int8 = int8_t;
 using uint8 = uint8_t;
 using int16 = int16_t;
@@ -155,6 +156,15 @@ namespace Colour
 {
 	constexpr uint32 white = static_cast<uint32>(-1);
 	constexpr uint32 green = static_cast<uint32>(65280u);
+
+	inline uint32 ConvertRGB(fVec3 const& _col)
+	{
+		uint32 const r = static_cast<uint32>(gcem::round(_col.r * 255.0f));
+		uint32 const g = static_cast<uint32>(gcem::round(_col.g * 255.0f));
+		uint32 const b = static_cast<uint32>(gcem::round(_col.b * 255.0f));
+		constexpr uint32 const a = 0xFF;
+		return (a << 24) + (b << 16) + (g << 8) + (r);
+	}
 }
 
 #if DEBUG_TOOLS

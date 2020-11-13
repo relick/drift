@@ -10,7 +10,6 @@
 #if PHYSICS_DEBUG
 #include <sokol_gfx.h>
 #include <util/sokol_gl.h>
-#define BT_LINE_BATCH_SIZE 512
 #include "ImGui.h"
 #include <imgui.h>
 
@@ -27,8 +26,9 @@ struct ImGuiWorldData
 
 struct ImGuiData
 {
-	bool showImguiWin = false;
+	bool showImguiWin{ false };
 	std::vector<ImGuiWorldData> physicsWorlds;
+	bool showRBAxes{ false };
 } imGuiData;
 
 #endif
@@ -41,9 +41,6 @@ namespace Core
 		{
 			int m_debugMode{ btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb | btIDebugDraw::DBG_DrawContactPoints };
 
-			std::vector<btVector3> m_linePoints;
-
-			btVector3 m_currentLineColor{ -1, -1, -1 };
 			DefaultColors m_ourColors;
 
 		public:
@@ -59,14 +56,7 @@ namespace Core
 
 			void drawLine(btVector3 const& _from, btVector3 const& _to, btVector3 const& _colour) override
 			{
-				if (m_currentLineColor != _colour || m_linePoints.size() >= BT_LINE_BATCH_SIZE)
-				{
-					flushLines();
-					m_currentLineColor = _colour;
-				}
-
-				m_linePoints.push_back(_from);
-				m_linePoints.push_back(_to);
+				Render::Debug::DrawLine(ConvertFrombtVector3(_from), ConvertFrombtVector3(_to), ConvertFrombtVector3(_colour));
 			}
 
 			void drawContactPoint(btVector3 const& _pointOnB, btVector3 const& _normalOnB, btScalar _distance, int _lifeTime, btVector3 const& _colour) override
@@ -99,18 +89,6 @@ namespace Core
 
 			void flushLines() override
 			{
-				if (!m_linePoints.empty())
-				{
-					sgl_begin_lines();
-					sgl_c3f(m_currentLineColor.x(), m_currentLineColor.y(), m_currentLineColor.z());
-					for (btVector3 const& lineP : m_linePoints)
-					{
-						sgl_v3f(lineP.x(), lineP.y(), lineP.z());
-					}
-					sgl_end();
-
-					m_linePoints.clear();
-				}
 			}
 		};
 
@@ -189,7 +167,10 @@ namespace Core
 					fVec3 walkDirection(0.0, 0.0, 0.0);
 					float walkSpeed = walkVel * _fd.dt;
 
-					Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + forwardDir);
+					if (imGuiData.showRBAxes)
+					{
+						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + forwardDir);
+					}
 
 					if (Core::Input::Pressed(Core::Input::Action::Forward))
 					{
@@ -319,11 +300,9 @@ namespace Core
 
 			// Physics update step
 			// Multiple worlds can run I guess
-			ecs::make_system<ecs::opts::group<Sys::PHYSICS_STEP>
+			ecs::make_system<ecs::opts::group<Sys::PHYSICS_STEP>>([](
 #if PHYSICS_DEBUG
-			, ecs::opts::not_parallel>([](ecs::entity_id _entity,
-#else
-			>([](
+			ecs::entity_id _entity,
 #endif 
 				Core::FrameData const& _fd, Core::Physics::World& _pw)
 			{
@@ -355,6 +334,8 @@ namespace Core
 							ImGui::Checkbox("- Show Debug", &world.showDebugDraw);
 							ImGui::PopID();
 						}
+
+						ImGui::Checkbox("Show RB axes", &imGuiData.showRBAxes);
 					}
 					ImGui::End();
 				}
@@ -379,24 +360,13 @@ namespace Core
 
 					_t.T() = _t.CalculateLocalTransform(fTrans(trans));
 
+					if(imGuiData.showRBAxes)
 					{
 						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + _t.T().forward());
 						
 						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + _t.T().up());
 
 						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + _t.T().right());
-					}
-					{
-						fVec3 btForwardDir = ConvertFrombtVector3(trans.getBasis().getColumn(2));
-						fVec3 btOrigin = ConvertFrombtVector3(trans.getOrigin());
-						Core::Render::Debug::DrawLine(btOrigin, btOrigin + btForwardDir, Colour::green);
-
-						fVec3 btUpDir = ConvertFrombtVector3(trans.getBasis().getColumn(1));
-						Core::Render::Debug::DrawLine(btOrigin, btOrigin + btUpDir, Colour::green);
-
-						fVec3 btRightDir = ConvertFrombtVector3(trans.getBasis().getColumn(0));
-						Core::Render::Debug::DrawLine(btOrigin, btOrigin + btRightDir, Colour::green);
-
 					}
 				}
 			});

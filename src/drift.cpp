@@ -235,9 +235,9 @@ void initialise_cb()
 		sg_pass_action pass_action{};
 		sg_color_attachment_action color_attach_action{};
 		color_attach_action.action = SG_ACTION_CLEAR;
-		color_attach_action.val[0] = 0.1f;
-		color_attach_action.val[1] = 0.1f;
-		color_attach_action.val[2] = 0.1f;
+		color_attach_action.val[0] = 0.0f;
+		color_attach_action.val[1] = 0.0f;
+		color_attach_action.val[2] = 0.0f;
 		color_attach_action.val[3] = 1.0f;
 		pass_action.colors[0] = color_attach_action;
 

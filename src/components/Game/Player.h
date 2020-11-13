@@ -5,4 +5,8 @@
 
 namespace Game
 {
+	struct Player
+	{
+		
+	};
 }

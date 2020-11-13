@@ -115,6 +115,20 @@ void initialise_cb()
 				_debugCamera.m_storedParent = _t.m_parent;
 				_debugCamera.m_storedTransform = _t.T();
 				_t.DetachFromParent();
+				fVec3 const forward = _t.T().forward();
+				_debugCamera.m_angle.x = asin(forward.y); // pitch
+				float const cosPitch = cos(_debugCamera.m_angle.x);
+				if (cosPitch == 0.0f)
+				{
+					_debugCamera.m_angle.y = 0.0f; // if looking directly up or down then yaw can't be calc'd.. but also doesn't matter
+				}
+				else
+				{
+					// yaw1 and yaw2 should just be pi offset.
+					float const yaw1 = acos(forward.x / cosPitch);
+					//float const yaw2 = asin(forward.z / cosPitch);
+					_debugCamera.m_angle.y = yaw1;
+				}
 				debugCameraEnabled = true;
 			}
 		}

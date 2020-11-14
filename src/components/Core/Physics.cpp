@@ -156,9 +156,11 @@ namespace Core
 
 		ASSERT(_desc.m_physicsWorld.IsValid());
 		newComponent.m_physicsWorld = _desc.m_physicsWorld;
+		newComponent.m_viewObject = _desc.m_viewObject;
 
+		newComponent.m_radius = _desc.m_radius;
 		newComponent.m_halfHeight = _desc.m_halfHeight;
-		newComponent.m_shape = new btCapsuleShape(_desc.m_radius, _desc.m_halfHeight);
+		newComponent.m_shape = new btCapsuleShape(_desc.m_radius, _desc.m_halfHeight * 2.0f);
 
 		btScalar const mass = std::max(_desc.m_mass, 0.0f);
 		btVector3 localInertia(0, 0, 0);

@@ -1,4 +1,4 @@
-#include "ImGui.h"
+﻿#include "ImGui.h"
 
 #include "components.h"
 #include "SystemOrdering.h"
@@ -45,7 +45,7 @@ namespace Core
 				// use ms gothic
 				{
 					ImGuiIO* io = &ImGui::GetIO();
-					io->Fonts->AddFontFromFileTTF("assets/fonts/MS-Gothic-01.ttf", 13.0f);
+					io->Fonts->AddFontFromFileTTF("assets/fonts/msgothic.ttc", 13.0f, 0, io->Fonts->GetGlyphRangesJapanese());
 
 					unsigned char* font_pixels;
 					int font_width, font_height;
@@ -140,10 +140,10 @@ namespace Core
 							fps = 0;
 						}
 
-						ImGui::Text("%iw/%ih", _rfd.w, _rfd.h);
+						ImGui::Text("%i幅/%i丈", _rfd.w, _rfd.h);
 						ImGui::Separator();
 
-						ImGui::Text("FPS: %i", lastFPS);
+						ImGui::Text("%i FPS", lastFPS);
 						ImGui::Separator();
 #if SOKOL_D3D11
 						ImGui::TextUnformatted("Direct3D 11");
@@ -152,7 +152,7 @@ namespace Core
 #endif
 						ImGui::Separator();
 
-						ImGui::Text("Speed: %.2fx", _fd.m_scale);
+						ImGui::Text("スピード：%.2fx", _fd.m_scale);
 						ImGui::Separator();
 
 						ImGui::EndMainMenuBar();

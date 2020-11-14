@@ -1,4 +1,4 @@
-#include "Physics.h"
+﻿#include "Physics.h"
 
 #include "SystemOrdering.h"
 #include "components.h"
@@ -129,90 +129,98 @@ namespace Core
 #endif
 		}
 
-		float rayLambda[2]{};
+		bool onGround{ false };
+		btVector3 groundPoint{};
 		
 		void AddCharacterControllerSystems()
 		{
 			ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::FrameData const& _fd, Core::Physics::CharacterController& _cc, Core::Transform& _t)
 			{
-				auto fnOnGround = []() -> bool
-				{
-					return rayLambda[0] < 1.0f;
-				};
-
 				// playerStep
 				{
 					/* Handle turning */
-					static float turnAngle = 0.0f;
 					float const turnVel = 1.0f;
-					float const walkVel = 8.0f;
-					float const maxLinearVel = 10.0f;
-					if (Core::Input::Pressed(Core::Input::Action::Left))
-					{
-						turnAngle += _fd.dt * turnVel;
-					}
-					if (Core::Input::Pressed(Core::Input::Action::Right))
-					{
-						turnAngle -= _fd.dt * turnVel;
-					}
-
-					_t.T().m_basis = fMat3(glm::rotate(fQuatIdentity(), turnAngle, fVec3(0.0, 1.0, 0.0)));
+					float const walkAccel = 250.0f;
+					float const maxLinearVel2 = pow(15.0f / 3.6f, 2);
 
 					btVector3 linearVelocity = _cc.m_body->getLinearVelocity();
 					float yLinVel = linearVelocity.y();
-					linearVelocity.setY(0.0f);
-					float speed = _cc.m_body->getLinearVelocity().length();
 
-					fVec3 const forwardDir = _t.T().forward();
+					fVec3 forward = _cc.m_viewObject.IsValid() ? (ecs::get_component<Core::Transform>(_cc.m_viewObject.GetValue())->T().forward()) : _t.T().forward();
+					forward.y = 0;
+					forward = glm::normalize(forward);
+					fVec3 right = glm::normalize(glm::cross(forward, fVec3(0, 1, 0)));
 					fVec3 walkDirection(0.0, 0.0, 0.0);
-					float walkSpeed = walkVel * _fd.dt;
+					float walkSpeed = walkAccel * _fd.dt;
 
 					if (imGuiData.showRBAxes)
 					{
-						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + forwardDir);
+						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + forward);
 					}
 
 					if (Core::Input::Pressed(Core::Input::Action::Forward))
 					{
-						walkDirection += forwardDir;
+						walkDirection += forward;
 					}
 					if (Core::Input::Pressed(Core::Input::Action::Backward))
 					{
-						walkDirection -= forwardDir;
+						walkDirection -= forward;
+					}
+					if (Core::Input::Pressed(Core::Input::Action::Left))
+					{
+						walkDirection -= right;
+					}
+					if (Core::Input::Pressed(Core::Input::Action::Right))
+					{
+						walkDirection += right;
 					}
 
 
-					if (!Core::Input::Pressed(Core::Input::Action::Forward) && !Core::Input::Pressed(Core::Input::Action::Backward) && fnOnGround())
+					if (onGround)
 					{
 						/* Dampen when on the ground and not being moved by the player */
-						linearVelocity *= powf(0.2f, _fd.dt);
-						linearVelocity.setY(yLinVel);
+						linearVelocity *= powf(0.1f, _fd.dt);
 						_cc.m_body->setLinearVelocity(linearVelocity);
 					}
-					else
+
+					if (onGround || yLinVel >= 0.0f)
 					{
-						if (speed < maxLinearVel)
+						fVec3 dv = walkDirection * walkSpeed;
+						linearVelocity += ConvertTobtVector3(dv);
+						btScalar speed2 = pow(linearVelocity.x(), 2) + pow(linearVelocity.z(), 2);
+						if (speed2 > maxLinearVel2)
 						{
-							linearVelocity.setY(yLinVel);
-							fVec3 walkF = walkDirection * walkSpeed;
-							btVector3 walk(walkF.x, walkF.y, walkF.z);
-							btVector3 velocity = linearVelocity + walk;
-							_cc.m_body->setLinearVelocity(velocity);
+							btScalar correction = sqrt(maxLinearVel2 / speed2);
+							linearVelocity[0] *= correction;
+							linearVelocity[2] *= correction;
 						}
+
+						//_cc.m_body->velo
+						_cc.m_body->setLinearVelocity(linearVelocity);
 					}
 
-					btTransform const tForBullet = _t.T().GetBulletTransform();
-					_cc.m_body->setWorldTransform(tForBullet);
-					_cc.m_motionState->setWorldTransform(tForBullet);
+					//btTransform const tForBullet = _t.T().GetBulletTransform();
+					//_cc.m_body->setWorldTransform(tForBullet);
+					//_cc.m_motionState->setWorldTransform(tForBullet);
 				}
 
 				// jump
-				if (Core::Input::PressedOnce(Core::Input::Action::Jump) && fnOnGround())
+				if (Core::Input::PressedOnce(Core::Input::Action::Jump) && onGround)
 				{
 					fVec3 const up = _t.T().up();
 					float magnitude = _cc.m_body->getMass() * 8.0f;
 					fVec3 const impulse = up * magnitude;
 					_cc.m_body->applyCentralImpulse(ConvertTobtVector3(impulse));
+					onGround = false;
+				}
+
+				if (onGround)
+				{
+					_cc.m_body->setGravity({ 0, 0, 0 });
+				}
+				else
+				{
+					_cc.m_body->setGravity({ 0, -8, 0 });
 				}
 			});
 
@@ -225,51 +233,57 @@ namespace Core
 				{
 					Core::Physics::World const& pw = GetWorld(_cc.m_physicsWorld);
 
-					fVec3 down = -_t.T().up();
-					fVec3 forward = _t.T().forward();
-
-					btVector3 raySource[2]{};
-					btVector3 rayTarget[2]{};
-					raySource[0] = xform.getOrigin();
-					raySource[1] = xform.getOrigin();
-
-					rayTarget[0] = raySource[0] + ConvertTobtVector3(down * _cc.m_halfHeight * 1.2f);
-					rayTarget[1] = raySource[1] + ConvertTobtVector3(forward * _cc.m_halfHeight * 1.2f);
-
-					class ClosestNotMe : public btCollisionWorld::ClosestRayResultCallback
+					class FindGround : public btCollisionWorld::ContactResultCallback
 					{
 					public:
-						ClosestNotMe(btRigidBody* me) : btCollisionWorld::ClosestRayResultCallback(btVector3(0.0, 0.0, 0.0), btVector3(0.0, 0.0, 0.0))
+						btScalar FindGround::addSingleResult(btManifoldPoint& cp,
+							const btCollisionObjectWrapper* colObj0, int partId0, int index0,
+							const btCollisionObjectWrapper* colObj1, int partId1, int index1)
 						{
-							m_me = me;
+							if (colObj0->m_collisionObject == mMe && !mHaveGround)
+							{
+								const btTransform& transform = mMe->getWorldTransform();
+								// Orthonormal basis (just rotations) => can just transpose to invert
+								btMatrix3x3 invBasis = transform.getBasis().transpose();
+								btVector3 localPoint = invBasis * (cp.m_positionWorldOnB - transform.getOrigin());
+								localPoint[1] += mShapeHalfHeight;
+								float r = localPoint.length();
+								float cosTheta = localPoint[1] / r;
+
+								if (fabs(r - mShapeRadius) <= mRadiusThreshold && cosTheta < mMaxCosGround)
+								{
+									mHaveGround = true;
+									mGroundPoint = cp.m_positionWorldOnB;
+								}
+							}
+							return 0;
 						}
 
-						virtual btScalar addSingleResult(btCollisionWorld::LocalRayResult& rayResult, bool normalInWorldSpace)
-						{
-							if (rayResult.m_collisionObject == m_me)
-								return 1.0;
-
-							return ClosestRayResultCallback::addSingleResult(rayResult, normalInWorldSpace);
-						}
-					protected:
-						btRigidBody* m_me;
+						btRigidBody* mMe{ nullptr };
+						// Assign some values, in some way
+						float mShapeRadius{};
+						float mShapeHalfHeight{};
+						float mRadiusThreshold{};
+						float mMaxCosGround{};
+						bool mHaveGround{ false };
+						btVector3 mGroundPoint{};
 					};
 
-					ClosestNotMe rayCallback(_cc.m_body);
-
-					int i = 0;
-					for (i = 0; i < 2; i++)
+					FindGround groundCallback;
+					groundCallback.mMe = _cc.m_body;
+					groundCallback.mShapeRadius = _cc.m_radius;
+					groundCallback.mShapeHalfHeight = _cc.m_halfHeight;
+					groundCallback.mRadiusThreshold = 0.01f;
+					groundCallback.mMaxCosGround = 1.0f;
+					pw.m_dynamicsWorld->contactTest(_cc.m_body, groundCallback);
+					if (groundCallback.mHaveGround)
 					{
-						rayCallback.m_closestHitFraction = 1.0f;
-						pw.m_dynamicsWorld->rayTest(raySource[i], rayTarget[i], rayCallback);
-						if (rayCallback.hasHit())
-						{
-							rayLambda[i] = rayCallback.m_closestHitFraction;
-						}
-						else
-						{
-							rayLambda[i] = 1.0f;
-						}
+						onGround = true;
+						groundPoint = groundCallback.mGroundPoint;
+					}
+					else
+					{
+						onGround = false;
 					}
 				}
 			});
@@ -319,25 +333,25 @@ namespace Core
 			});
 
 #if PHYSICS_DEBUG
-			Core::Render::DImGui::AddMenuItem("Physics", "Physics worlds", &imGuiData.showImguiWin);
+			Core::Render::DImGui::AddMenuItem("物理", "物理の世", &imGuiData.showImguiWin);
 
 			ecs::make_system<ecs::opts::group<Sys::IMGUI>>([](Core::MT_Only&, Core::GlobalWorkaround_Tag)
 			{
 				if (imGuiData.showImguiWin)
 				{
-					if (ImGui::Begin("Physics worlds", &imGuiData.showImguiWin, 0))
+					if (ImGui::Begin("物理の世", &imGuiData.showImguiWin, 0))
 					{
+						ImGui::Checkbox("RB axesを見せて", &imGuiData.showRBAxes);
+
 						for (ImGuiWorldData& world : imGuiData.physicsWorlds)
 						{
 							ImGui::PushID((int32)world.worldEntity.GetValue());
-							ImGui::Text("World %u", (uint32)world.worldEntity.GetValue());
-							ImGui::Checkbox("- Show Debug", &world.showDebugDraw);
+							ImGui::Text("世 %u", (uint32)world.worldEntity.GetValue());
+							ImGui::Checkbox("- デバッグを見せて", &world.showDebugDraw);
 							ImGui::PopID();
 						}
-
-						ImGui::Checkbox("Show RB axes", &imGuiData.showRBAxes);
 					}
-					ImGui::End();
+					ImGui::End(); 
 				}
 			});
 #endif

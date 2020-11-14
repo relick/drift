@@ -34,7 +34,7 @@ endforeach()
 ## Set C++ version and enable features
 set (CMAKE_CXX_STANDARD 20)
 if (MSVC)
-	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /experimental:module")
+	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /experimental:module /utf-8")
 endif()
 
 ## Set sokol_gfx API

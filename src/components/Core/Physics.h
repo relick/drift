@@ -56,6 +56,7 @@ namespace Core
 		struct CharacterControllerDesc
 		{
 			EntityID m_physicsWorld{};
+			EntityID m_viewObject{}; // local transform used for forward direction.
 
 			btScalar m_mass{ 80 }; //kg
 			fTrans m_startTransform{};
@@ -65,6 +66,8 @@ namespace Core
 
 		struct CharacterController : public RigidBody
 		{
+			EntityID m_viewObject{};
+			btScalar m_radius{ 0.5f };
 			btScalar m_halfHeight{ 1.0f };
 		};
 

@@ -4,5 +4,8 @@
 
 namespace Game
 {
-	void Setup();
+	namespace Player
+	{
+		void Setup();
+	}
 }

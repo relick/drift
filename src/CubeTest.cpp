@@ -221,7 +221,7 @@ void setup_cube()
 		Core::Physics::RigidBodyDesc rbDesc{};
 		rbDesc.m_shapeType = Core::Physics::ShapeType::Box;
 		rbDesc.m_boxDimensions = btVector3(0.5f, 0.5f, 0.5f);
-		rbDesc.m_mass = 1.0f;
+		rbDesc.m_mass = 160.0f;
 		rbDesc.m_startTransform = cube2Trans;
 		rbDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
 

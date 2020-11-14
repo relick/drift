@@ -26,6 +26,7 @@ void initialise_cb()
 		Core::Render::DImGui::Init();
 		Core::Physics::Init();
 		stm_setup();
+		sapp_lock_mouse(true);
 	}
 
 	// system and data setup
@@ -36,6 +37,10 @@ void initialise_cb()
 		Core::Render::DImGui::Setup();
 		Core::Physics::Setup();
 		Core::Input::Setup();
+	}
+
+	{
+		Game::Player::Setup();
 	}
 
 	// initial entity setup
@@ -70,13 +75,15 @@ void initialise_cb()
 	});
 
 	// Setup entity manager
-	Core::EntityID character = Core::CreateEntity();
+	Core::EntityID const renderEntity = Core::CreateEntity();
+	Core::EntityID const character = Core::CreateEntity();
 	fTrans const characterTrans{ fQuatIdentity(), fVec3(2.0f, 0.0f, 0.0f) };
 	Core::AddComponent(character, Core::Transform(characterTrans));
 	{
 		Core::Physics::CharacterControllerDesc ccDesc{};
+		ccDesc.m_viewObject = renderEntity;
 		ccDesc.m_halfHeight = 0.9f;
-		ccDesc.m_radius = 0.6f;
+		ccDesc.m_radius = 0.5f;
 		ccDesc.m_mass = 80.0f;
 		ccDesc.m_startTransform = characterTrans;
 		ccDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
@@ -84,14 +91,13 @@ void initialise_cb()
 		Core::AddComponent(character, ccDesc);
 	}
 
-	Core::EntityID const renderEntity = Core::CreateEntity();
 	Core::AddComponent(renderEntity, Core::Render::Frame_Tag());
 	Core::AddComponent(renderEntity, Core::Render::DefaultPass_Tag());
-	Core::Transform renderTrans(fQuatIdentity(), fVec3(0.0f, 0.8f, 0.0f));
-	renderTrans.m_parent = character;
+	Core::Transform const renderTrans(fQuatIdentity(), fVec3(0.0f, 0.8f, 0.0f), character);
 	Core::AddComponent(renderEntity, renderTrans); // camera transform
 	Core::AddComponent(renderEntity, Core::Render::Camera());
 	Core::AddComponent(renderEntity, Core::Render::DebugCameraControl());
+	Core::AddComponent(renderEntity, Game::Player::MouseLook());
 
 	// Setup entity initialisers
 	setup_cube();

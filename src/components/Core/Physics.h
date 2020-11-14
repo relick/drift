@@ -4,8 +4,7 @@
 #include "managers/EntityManager.h"
 #include <ecs/component_specifier.h>
 
-#include <btBulletDynamicsCommon.h>
-
+#include "PxPhysicsAPI.h"
 
 namespace Core
 {
@@ -13,11 +12,9 @@ namespace Core
 	{
 		struct World
 		{
-			btDefaultCollisionConfiguration* m_collisionConfiguration{ nullptr };
-			btCollisionDispatcher* m_dispatcher{ nullptr };
-			btBroadphaseInterface* m_overlappingPairCache{ nullptr };
-			btSequentialImpulseConstraintSolver* m_solver{ nullptr };
-			btDiscreteDynamicsWorld* m_dynamicsWorld{ nullptr };
+			physx::PxCpuDispatcher* m_dispatcher{ nullptr };
+			physx::PxScene* m_scene{ nullptr };
+			physx::PxMaterial* m_defaultMat{ nullptr };
 		};
 
 		enum class ShapeType
@@ -36,10 +33,10 @@ namespace Core
 			fTrans m_startTransform{};
 
 			// Box
-			btVector3 m_boxDimensions{};
+			physx::PxVec3 m_boxHalfDimensions{};
 
 			// Sphere
-			btScalar m_radius{};
+			float m_radius{};
 		};
 
 		struct RigidBody
@@ -48,9 +45,9 @@ namespace Core
 
 			EntityID m_physicsWorld{};
 
-			btCollisionShape* m_shape{ nullptr };
-			btDefaultMotionState* m_motionState{ nullptr };
-			btRigidBody* m_body{ nullptr };
+			physx::PxGeometry* m_geom{ nullptr };
+			bool m_isStatic{ nullptr };
+			physx::PxRigidActor* m_body{ nullptr };
 		};
 
 		struct CharacterControllerDesc

@@ -57,6 +57,20 @@ include_directories(${BULLET_INCLUDE_DIR})
 find_package(Assimp CONFIG REQUIRED)
 include_directories(assimp::assimp)
 
+list (APPEND PhysXLibs PhysX PhysXExtensions_static PhysXPvdSDK_static PhysXVehicle_static PhysXCharacterKinematic_static PhysXCooking PhysXCommon PhysXFoundation)
+
+set (PHYSX_LIBS "")
+foreach(PhysXLib IN LISTS PhysXLibs)
+	add_library(${PhysXLib} STATIC IMPORTED)
+	set_target_properties(${PhysXLib} PROPERTIES
+		IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/../vcpkg/installed/x64-windows/debug/lib/${PhysXLib}_64.lib"
+		INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/../vcpkg/installed/x64-windows/include/physx"
+	)
+	set (PHYSX_LIBS ${PHYSX_LIBS} ${PhysXLib})
+endforeach()
+
+include_directories("../vcpkg/installed/x64-windows/include/physx")
+
 include_directories("src" "ecs/include" "ecs/tls/include" "sokol" "imgui" "fontstash/src" "stb" "glm" "gcem/include")
 
 # Add source to this project's executable.
@@ -65,4 +79,4 @@ set (SOURCE_CPP "imgui/imgui.cpp" "imgui/imgui_demo.cpp" "imgui/imgui_draw.cpp" 
 
 add_executable (drift ${SOURCE_H} ${SOURCE_CPP} ${SHADERS_COMPILED})
 
-target_link_libraries(drift PRIVATE ${BULLET_LIBRARIES} assimp::assimp)
+target_link_libraries(drift PRIVATE ${BULLET_LIBRARIES} assimp::assimp ${PHYSX_LIBS})

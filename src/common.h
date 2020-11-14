@@ -41,6 +41,7 @@ constexpr fQuat fQuatIdentity()
 }
 
 #include <LinearMath/btTransform.h>
+#include <foundation/PxMat44.h>
 struct fTrans
 {
 	fMat3 m_basis{1.0f};
@@ -106,6 +107,23 @@ struct fTrans
 		);
 	}
 
+	physx::PxMat44 GetPhysxMatrix() const
+	{
+		// initialise directly
+		return physx::PxMat44(
+			physx::PxVec3(m_basis[0][0], m_basis[0][1], m_basis[0][2]),
+			physx::PxVec3(m_basis[1][0], m_basis[1][1], m_basis[1][2]),
+			physx::PxVec3(m_basis[2][0], m_basis[2][1], m_basis[2][2]),
+			physx::PxVec3(m_origin[0], m_origin[1], m_origin[2])
+		);
+	}
+
+	physx::PxTransform GetPhysxTransform() const
+	{
+		// initialise directly
+		return physx::PxTransform(GetPhysxMatrix());
+	}
+
 	fTrans() = default;
 	fTrans(fMat3 const& _b, fVec3 const& _o = fVec3(0.0f))
 		: m_basis(_b)
@@ -124,6 +142,17 @@ struct fTrans
 	}
 		, m_origin{
 		_t.getOrigin().x(), _t.getOrigin().y(), _t.getOrigin().z()
+	}
+	{}
+
+	explicit fTrans(physx::PxMat44 const& _t)
+		: m_basis{
+		_t.getBasis(0).x, _t.getBasis(0).y, _t.getBasis(0).z,
+		_t.getBasis(1).x, _t.getBasis(1).y, _t.getBasis(1).z,
+		_t.getBasis(2).x, _t.getBasis(2).y, _t.getBasis(2).z,
+	}
+	, m_origin{
+	_t.getPosition().x, _t.getPosition().y, _t.getPosition().z
 	}
 	{}
 };

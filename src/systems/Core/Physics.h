@@ -4,7 +4,10 @@
 #include "common.h"
 
 class btIDebugDraw;
-
+namespace physx
+{
+	class PxPhysics;
+}
 #define PHYSICS_DEBUG DEBUG_TOOLS
 
 namespace Core

@@ -3,7 +3,9 @@
 #include "SystemOrdering.h"
 #include "components.h"
 
-#include <btBulletDynamicsCommon.h>
+#include "PxPhysicsAPI.h"
+#include "extensions/PxDefaultAllocator.h"
+#include "extensions/PxDefaultErrorCallback.h"
 
 #include <memory>
 
@@ -15,8 +17,6 @@
 
 #include "managers/Input.h"
 #include "systems/Core/TextAndGLDebug.h"
-
-std::unique_ptr<btIDebugDraw> debugDrawer;
 
 struct ImGuiWorldData
 {
@@ -36,67 +36,6 @@ namespace Core
 {
 	namespace Physics
 	{
-#if PHYSICS_DEBUG
-		class DebugDrawer : public btIDebugDraw
-		{
-			int m_debugMode{ btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb | btIDebugDraw::DBG_DrawContactPoints };
-
-			DefaultColors m_ourColors;
-
-		public:
-			DefaultColors getDefaultColors() const override
-			{
-				return m_ourColors;
-			}
-
-			void setDefaultColors(DefaultColors const& _colours) override
-			{
-				m_ourColors = _colours;
-			}
-
-			void drawLine(btVector3 const& _from, btVector3 const& _to, btVector3 const& _colour) override
-			{
-				Render::Debug::DrawLine(ConvertFrombtVector3(_from), ConvertFrombtVector3(_to), ConvertFrombtVector3(_colour));
-			}
-
-			void drawContactPoint(btVector3 const& _pointOnB, btVector3 const& _normalOnB, btScalar _distance, int _lifeTime, btVector3 const& _colour) override
-			{
-				drawLine(_pointOnB, _pointOnB + _normalOnB * _distance, _colour);
-				btVector3 ncolor(0, 0, 0);
-				drawLine(_pointOnB, _pointOnB + _normalOnB * 0.01f, ncolor);
-			}
-
-			void reportErrorWarning(char const* _warningString) override
-			{}
-
-			void draw3dText(btVector3 const& _location, char const* _textString) override
-			{}
-
-			void setDebugMode(int _debugMode) override
-			{
-				m_debugMode = _debugMode;
-			}
-
-			int getDebugMode() const override
-			{
-				return m_debugMode;
-			}
-
-			void clearLines() override
-			{
-
-			}
-
-			void flushLines() override
-			{
-			}
-		};
-
-		btIDebugDraw* GetDebugDrawer()
-		{
-			return debugDrawer.get();
-		}
-
 		void AddPhysicsWorld(Core::EntityID _entity)
 		{
 			imGuiData.physicsWorlds.push_back(ImGuiWorldData{ _entity });
@@ -113,27 +52,35 @@ namespace Core
 				}
 			}
 		}
-#endif
+
+		struct
+		{
+			physx::PxFoundation* foundation{ nullptr };
+			physx::PxPhysics* physics{ nullptr };
+		} physxState;
 
 		void Init()
 		{
-#if PHYSICS_DEBUG
+			static physx::PxDefaultErrorCallback gDefaultErrorCallback;
+			static physx::PxDefaultAllocator gDefaultAllocatorCallback;
 
-			btIDebugDraw::DefaultColors colours;
-			colours.m_aabb = btVector3(1.0f, 0.0f, 0.0f);
-			colours.m_contactPoint = btVector3(0.0f, 1.0f, 0.0f);
-			colours.m_activeObject = btVector3(0.0f, 0.0f, 1.0f);
+			physxState.foundation = PxCreateFoundation(PX_PHYSICS_VERSION, gDefaultAllocatorCallback, gDefaultErrorCallback);
+			ASSERT(physxState.foundation);
 
-			debugDrawer = std::make_unique<DebugDrawer>();
-			debugDrawer->setDefaultColors(colours);
-#endif
+			physxState.physics = PxCreatePhysics(PX_PHYSICS_VERSION, *physxState.foundation, physx::PxTolerancesScale());
+			ASSERT(physxState.physics);
+
+			if (!PxInitExtensions(*physxState.physics, nullptr))
+			{
+				ASSERT(false);
+			}
 		}
 
 		float rayLambda[2]{};
 		
 		void AddCharacterControllerSystems()
 		{
-			ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::FrameData const& _fd, Core::Physics::CharacterController& _cc, Core::Transform& _t)
+			/*ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::FrameData const& _fd, Core::Physics::CharacterController& _cc, Core::Transform& _t)
 			{
 				auto fnOnGround = []() -> bool
 				{
@@ -142,7 +89,7 @@ namespace Core
 
 				// playerStep
 				{
-					/* Handle turning */
+					// Handle turning
 					static float turnAngle = 0.0f;
 					float const turnVel = 1.0f;
 					float const walkVel = 8.0f;
@@ -184,7 +131,7 @@ namespace Core
 
 					if (!Core::Input::Pressed(Core::Input::Action::Forward) && !Core::Input::Pressed(Core::Input::Action::Backward) && fnOnGround())
 					{
-						/* Dampen when on the ground and not being moved by the player */
+						// Dampen when on the ground and not being moved by the player
 						linearVelocity *= powf(0.2f, _fd.dt);
 						linearVelocity.setY(yLinVel);
 						_cc.m_body->setLinearVelocity(linearVelocity);
@@ -279,7 +226,7 @@ namespace Core
 				btTransform trans;
 				_cc.m_body->getMotionState()->getWorldTransform(trans);
 				_t.T() = _t.CalculateLocalTransform(fTrans(trans));
-			});
+			});*/
 		}
 
 		void Setup()
@@ -291,10 +238,13 @@ namespace Core
 			ecs::make_system<ecs::opts::group<Sys::PHYSICS_TRANSFORMS_IN>>([](Core::Physics::RigidBody& _rb, Core::Transform const& _t)
 			{
 				// Can't set transforms for non-kinematic bodies.
-				if (_rb.m_body->isKinematicObject())
+				if (!_rb.m_isStatic)
 				{
-					fTrans const worldTrans = _t.CalculateWorldTransform();
-					_rb.m_motionState->setWorldTransform(worldTrans.GetBulletTransform());
+					physx::PxRigidDynamic* dynamic = _rb.m_body->is<physx::PxRigidDynamic>();
+					if (dynamic->getRigidBodyFlags() & physx::PxRigidBodyFlag::eKINEMATIC)
+					{
+						dynamic->setKinematicTarget(_t.CalculateWorldTransform().GetPhysxTransform());
+					}
 				}
 			});
 
@@ -306,7 +256,16 @@ namespace Core
 #endif 
 				Core::FrameData const& _fd, Core::Physics::World& _pw)
 			{
-				_pw.m_dynamicsWorld->stepSimulation(_fd.dt, 10);
+				static float accum = 0.0f;
+				accum += _fd.dt;
+				while (accum >= (1.0f / 60.0f))
+				{
+					_pw.m_scene->simulate((1.0f / 60.0f));
+					_pw.m_scene->fetchResults(true);
+					accum -= (1.0f / 60.0f);
+				}
+				
+				/*
 #if PHYSICS_DEBUG
 				for (ImGuiWorldData const& world : imGuiData.physicsWorlds)
 				{
@@ -315,7 +274,7 @@ namespace Core
 						_pw.m_dynamicsWorld->debugDrawWorld();
 					}
 				}
-#endif
+#endif*/
 			});
 
 #if PHYSICS_DEBUG
@@ -346,36 +305,37 @@ namespace Core
 			// Just reading and throwing into the transform components so should be parallel.
 			ecs::make_system<ecs::opts::group<Sys::PHYSICS_TRANSFORMS_OUT>>([](Core::Physics::RigidBody const& _rb, Core::Transform& _t)
 			{
-				if (_rb.m_body->isActive())
+				bool const sleeping = _rb.m_isStatic || _rb.m_body->is<physx::PxRigidDynamic>()->isSleeping();
+				if (!sleeping)
 				{
-					btTransform trans;
-					if (_rb.m_body->getMotionState())
-					{
-						_rb.m_body->getMotionState()->getWorldTransform(trans);
-					}
-					else
-					{
-						trans = _rb.m_body->getWorldTransform();
-					}
+					_t.T() = _t.CalculateLocalTransform(fTrans(_rb.m_body->getGlobalPose()));
 
-					_t.T() = _t.CalculateLocalTransform(fTrans(trans));
-
-					if(imGuiData.showRBAxes)
+					if (imGuiData.showRBAxes)
 					{
 						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + _t.T().forward());
-						
+
 						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + _t.T().up());
 
 						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + _t.T().right());
 					}
 				}
+
+				//physx::PxShape* shapes[1];
+				//physx::PxU32 nbShapes = _rb.m_body->getNbShapes();
+				//_rb.m_body->getShapes(shapes, nbShapes);
+
+				//physx::PxMat44 shapePose(physx::PxShapeExt::getGlobalPose(*shapes[0], *_rb.m_body));
+				//physx::PxGeometryHolder h = shapes[0]->getGeometry();
+				//_t.T() = _t.CalculateLocalTransform(fTrans(shapePose));
 			});
 		}
 
 		void Cleanup()
 		{
+			physxState.physics->release();
+			physxState.foundation->release();
 #if PHYSICS_DEBUG
-			debugDrawer.reset();
+			//debugDrawer.reset();
 #endif
 		}
 }

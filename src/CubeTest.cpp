@@ -160,7 +160,7 @@ void setup_cube()
 	{
 		Core::Physics::RigidBodyDesc rbDesc{};
 		rbDesc.m_shapeType = Core::Physics::ShapeType::Box;
-		rbDesc.m_boxDimensions = btVector3(50.0f, 1.0f, 50.0f);
+		rbDesc.m_boxHalfDimensions = physx::PxVec3(50.0f, 1.0f, 50.0f);
 		rbDesc.m_mass = 0.0f;
 		rbDesc.m_startTransform = groundTrans;
 		rbDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
@@ -179,7 +179,7 @@ void setup_cube()
 	{
 		Core::Physics::RigidBodyDesc rbDesc{};
 		rbDesc.m_shapeType = Core::Physics::ShapeType::Box;
-		rbDesc.m_boxDimensions = btVector3(50.0f, 1.0f, 50.0f);
+		rbDesc.m_boxHalfDimensions = physx::PxVec3(50.0f, 1.0f, 50.0f);
 		rbDesc.m_mass = 0.0f;
 		rbDesc.m_startTransform = wallTrans;
 		rbDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
@@ -199,7 +199,7 @@ void setup_cube()
 	{
 		Core::Physics::RigidBodyDesc rbDesc{};
 		rbDesc.m_shapeType = Core::Physics::ShapeType::Box;
-		rbDesc.m_boxDimensions = btVector3(0.5f, 0.5f, 0.5f);
+		rbDesc.m_boxHalfDimensions = physx::PxVec3(0.5f, 0.5f, 0.5f);
 		rbDesc.m_mass = 1000.0f;
 		rbDesc.m_isKinematic = true;
 		rbDesc.m_startTransform = cubeTrans;
@@ -220,7 +220,7 @@ void setup_cube()
 	{
 		Core::Physics::RigidBodyDesc rbDesc{};
 		rbDesc.m_shapeType = Core::Physics::ShapeType::Box;
-		rbDesc.m_boxDimensions = btVector3(0.5f, 0.5f, 0.5f);
+		rbDesc.m_boxHalfDimensions = physx::PxVec3(0.5f, 0.5f, 0.5f);
 		rbDesc.m_mass = 1.0f;
 		rbDesc.m_startTransform = cube2Trans;
 		rbDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();

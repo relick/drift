@@ -39,8 +39,33 @@ namespace Core
 				simgui_desc_t simguiDesc{};
 				simguiDesc.dpi_scale = sapp_dpi_scale();
 				simguiDesc.ini_filename = "ImGuiSettings.ini";
+				simguiDesc.no_default_font = true;
 				simgui_setup(&simguiDesc);
-				gfxImGuiState.buffers.num_slots;
+
+				// use ms gothic
+				{
+					ImGuiIO* io = &ImGui::GetIO();
+					io->Fonts->AddFontFromFileTTF("assets/fonts/MS-Gothic-01.ttf", 13.0f);
+
+					unsigned char* font_pixels;
+					int font_width, font_height;
+					io->Fonts->GetTexDataAsRGBA32(&font_pixels, &font_width, &font_height);
+					sg_image_desc img_desc;
+					memset(&img_desc, 0, sizeof(img_desc));
+					img_desc.width = font_width;
+					img_desc.height = font_height;
+					img_desc.pixel_format = SG_PIXELFORMAT_RGBA8;
+					img_desc.wrap_u = SG_WRAP_CLAMP_TO_EDGE;
+					img_desc.wrap_v = SG_WRAP_CLAMP_TO_EDGE;
+					img_desc.min_filter = SG_FILTER_LINEAR;
+					img_desc.mag_filter = SG_FILTER_LINEAR;
+					img_desc.content.subimage[0][0].ptr = font_pixels;
+					img_desc.content.subimage[0][0].size = font_width * font_height * sizeof(uint32_t);
+					img_desc.label = "sokol-imgui-font";
+					_simgui.img = sg_make_image(&img_desc);
+					io->Fonts->TexID = (ImTextureID)(uintptr_t)_simgui.img.id;
+				}
+
 				sg_imgui_init(&gfxImGuiState);
 #endif
 			}

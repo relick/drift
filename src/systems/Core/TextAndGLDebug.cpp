@@ -92,12 +92,12 @@ namespace Core
 			void Setup()
 			{
 				// Prepare GL matrices.
-				ecs::make_system<ecs::opts::group<Sys::GL_START>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _camT, Core::Render::DefaultPass_Tag)
+				ecs::make_system<ecs::opts::group<Sys::GL_START>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _camT)
 				{
 					sgl_defaults();
 					sgl_matrix_mode_projection();
 					sgl_load_identity();
-					sgl_perspective(glm::radians(_cam.m_povY), _rfd.fW / _rfd.fH, 0.01f, 1000.0f);
+					sgl_perspective(glm::radians(_cam.m_povY), _rfd.renderArea.fW / _rfd.renderArea.fH, 0.01f, 1000.0f);
 
 					sgl_matrix_mode_modelview();
 					sgl_load_identity();
@@ -108,7 +108,7 @@ namespace Core
 				});
 
 				// Prepare text matrices.
-				ecs::make_system<ecs::opts::group<Sys::TEXT_START>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _camT, Core::Render::DefaultPass_Tag)
+				ecs::make_system<ecs::opts::group<Sys::TEXT_START>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _camT)
 				{
 					FlushGL();
 
@@ -116,7 +116,7 @@ namespace Core
 
 					sgl_matrix_mode_projection();
 					sgl_load_identity();
-					sgl_ortho(0, _rfd.fW, _rfd.fH, 0, -1, 1);
+					sgl_ortho(0, _rfd.renderArea.fW, _rfd.renderArea.fH, 0, -1, 1);
 
 					sgl_matrix_mode_modelview();
 					sgl_load_identity();

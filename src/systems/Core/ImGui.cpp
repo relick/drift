@@ -76,7 +76,7 @@ namespace Core
 
 				ecs::make_system<ecs::opts::group<Sys::FRAME_START>>([](Core::FrameData const& _fd, Core::Render::FrameData const& _rfd, Core::Render::Frame_Tag)
 				{
-					simgui_new_frame(_rfd.w, _rfd.h, _fd.unscaled_ddt > 0.0 ? _fd.unscaled_ddt : DBL_EPSILON);
+					simgui_new_frame(_rfd.contextWindow.w, _rfd.contextWindow.h, _fd.unscaled_ddt > 0.0 ? _fd.unscaled_ddt : DBL_EPSILON);
 				});
 
 				ecs::make_system<ecs::opts::group<Sys::IMGUI>>([](Core::MT_Only&, Core::FrameData const& _fd, Core::Render::FrameData const& _rfd, Core::GlobalWorkaround_Tag)
@@ -140,7 +140,7 @@ namespace Core
 							fps = 0;
 						}
 
-						ImGui::Text("%i幅/%i丈", _rfd.w, _rfd.h);
+						ImGui::Text("%i幅/%i丈", _rfd.contextWindow.w, _rfd.contextWindow.h);
 						ImGui::Separator();
 
 						ImGui::Text("%i FPS", lastFPS);

@@ -2,6 +2,8 @@
 
 #include "systems/Core/Physics.h"
 
+#include <btBulletDynamicsCommon.h>
+
 #include <map>
 struct PhysicsWorldInternalData
 {
@@ -90,7 +92,7 @@ namespace Core
 		{
 		case Physics::ShapeType::Box:
 		{
-			newComponent.m_shape = new btBoxShape(_desc.m_boxDimensions);
+			newComponent.m_shape = new btBoxShape(ConvertTobtVector3(_desc.m_boxHalfDimensions));
 			break;
 		}
 		case Physics::ShapeType::Sphere:

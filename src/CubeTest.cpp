@@ -160,7 +160,7 @@ void setup_cube()
 	{
 		Core::Physics::RigidBodyDesc rbDesc{};
 		rbDesc.m_shapeType = Core::Physics::ShapeType::Box;
-		rbDesc.m_boxDimensions = btVector3(50.0f, 1.0f, 50.0f);
+		rbDesc.m_boxHalfDimensions = fVec3(50.0f, 1.0f, 50.0f);
 		rbDesc.m_mass = 0.0f;
 		rbDesc.m_startTransform = groundTrans;
 		rbDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
@@ -179,7 +179,7 @@ void setup_cube()
 	{
 		Core::Physics::RigidBodyDesc rbDesc{};
 		rbDesc.m_shapeType = Core::Physics::ShapeType::Box;
-		rbDesc.m_boxDimensions = btVector3(50.0f, 1.0f, 50.0f);
+		rbDesc.m_boxHalfDimensions = fVec3(50.0f, 1.0f, 50.0f);
 		rbDesc.m_mass = 0.0f;
 		rbDesc.m_startTransform = wallTrans;
 		rbDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
@@ -199,7 +199,7 @@ void setup_cube()
 	{
 		Core::Physics::RigidBodyDesc rbDesc{};
 		rbDesc.m_shapeType = Core::Physics::ShapeType::Box;
-		rbDesc.m_boxDimensions = btVector3(0.5f, 0.5f, 0.5f);
+		rbDesc.m_boxHalfDimensions = fVec3(0.5f, 0.5f, 0.5f);
 		rbDesc.m_mass = 1000.0f;
 		rbDesc.m_isKinematic = true;
 		rbDesc.m_startTransform = cubeTrans;
@@ -220,7 +220,7 @@ void setup_cube()
 	{
 		Core::Physics::RigidBodyDesc rbDesc{};
 		rbDesc.m_shapeType = Core::Physics::ShapeType::Box;
-		rbDesc.m_boxDimensions = btVector3(0.5f, 0.5f, 0.5f);
+		rbDesc.m_boxHalfDimensions = fVec3(0.5f, 0.5f, 0.5f);
 		rbDesc.m_mass = 160.0f;
 		rbDesc.m_startTransform = cube2Trans;
 		rbDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
@@ -285,9 +285,10 @@ void setup_cube()
 		}
 	});
 
-	ecs::make_system<ecs::opts::group<Sys::DEFAULT_PASS_START>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _t, Core::Render::DefaultPass_Tag)
+	/*ecs::make_system<ecs::opts::group<Sys::DEFAULT_PASS_START>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _t, Core::Render::DefaultPass_Tag)
 	{
-		camera_state.proj = glm::perspective(glm::radians(_cam.m_povY), _rfd.fW / _rfd.fH, 0.01f, 1000.0f);
+		//camera_state.proj = glm::perspective(glm::radians(_cam.m_povY), _rfd.fW / _rfd.fH, 0.01f, 1000.0f);
+		camera_state.proj = glm::perspective(glm::radians(_cam.m_povY), 320.0f / 240.0f, 0.01f, 1000.0f);
 
 		fTrans const cameraTrans = _t.CalculateWorldTransform();
 		fMat4 const cameraMat = glm::lookAt(cameraTrans.m_origin, cameraTrans.m_origin + cameraTrans.forward(), fVec3(0.0f, 1.0f, 0.0f));
@@ -312,5 +313,5 @@ void setup_cube()
 			sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_unlit_vs_params, &vs_params, sizeof(vs_params));
 			sg_draw(0, 36, 1);
 		}
-	});
+	});*/
 }

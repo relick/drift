@@ -4,8 +4,15 @@
 #include "managers/EntityManager.h"
 #include <ecs/component_specifier.h>
 
-#include <btBulletDynamicsCommon.h>
-
+// forward
+class btDefaultCollisionConfiguration;
+class btCollisionDispatcher;
+class btBroadphaseInterface;
+class btSequentialImpulseConstraintSolver;
+class btDiscreteDynamicsWorld;
+class btCollisionShape;
+class btDefaultMotionState;
+class btRigidBody;
 
 namespace Core
 {
@@ -31,15 +38,15 @@ namespace Core
 			EntityID m_physicsWorld{};
 
 			bool m_isKinematic{ false };
-			btScalar m_mass{ 0 };
+			float m_mass{ 0 };
 			ShapeType m_shapeType{ ShapeType::Box };
 			fTrans m_startTransform{};
 
 			// Box
-			btVector3 m_boxDimensions{};
+			fVec3 m_boxHalfDimensions{};
 
 			// Sphere
-			btScalar m_radius{};
+			float m_radius{};
 		};
 
 		struct RigidBody
@@ -58,17 +65,17 @@ namespace Core
 			EntityID m_physicsWorld{};
 			EntityID m_viewObject{}; // local transform used for forward direction.
 
-			btScalar m_mass{ 80 }; //kg
+			float m_mass{ 80 }; //kg
 			fTrans m_startTransform{};
-			btScalar m_radius{ 0.5f };
-			btScalar m_halfHeight{ 1.0f };
+			float m_radius{ 0.5f };
+			float m_halfHeight{ 1.0f };
 		};
 
 		struct CharacterController : public RigidBody
 		{
 			EntityID m_viewObject{};
-			btScalar m_radius{ 0.5f };
-			btScalar m_halfHeight{ 1.0f };
+			float m_radius{ 0.5f };
+			float m_halfHeight{ 1.0f };
 		};
 
 		Core::EntityID GetPrimaryWorldEntity();

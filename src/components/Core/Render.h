@@ -14,16 +14,17 @@ namespace Core
 		{
 			ecs_flags(ecs::flag::global, ecs::flag::immutable);
 
-			int w{ WINDOW_START_WIDTH };
-			int h{ WINDOW_START_HEIGHT };
-			float fW{ static_cast<float>(w) };
-			float fH{ static_cast<float>(h) };
+			struct Target
+			{
+				int w{ WINDOW_START_WIDTH };
+				int h{ WINDOW_START_HEIGHT };
+				float fW{ static_cast<float>(w) };
+				float fH{ static_cast<float>(h) };
+			};
+			Target contextWindow{};
+			Target renderArea{};
 		};
 		struct Frame_Tag
-		{
-			ecs_flags(ecs::flag::tag);
-		};
-		struct DefaultPass_Tag
 		{
 			ecs_flags(ecs::flag::tag);
 		};

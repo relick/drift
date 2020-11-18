@@ -3,6 +3,7 @@
 #include "managers/EntityManager.h"
 #include "managers/Input.h"
 #include "managers/Resources.h"
+#include "managers/Render.h"
 
 #include "components.h"
 #include "systems.h"
@@ -11,7 +12,6 @@
 
 // sokol
 #include <sokol_app.h>
-#include <sokol_gfx.h>
 #include <sokol_time.h>
 
 #include "CubeTest.h"
@@ -92,7 +92,6 @@ void initialise_cb()
 	}
 
 	Core::AddComponent(renderEntity, Core::Render::Frame_Tag());
-	Core::AddComponent(renderEntity, Core::Render::DefaultPass_Tag());
 	Core::Transform const renderTrans(fQuatIdentity(), fVec3(0.0f, 0.8f, 0.0f), character);
 	Core::AddComponent(renderEntity, renderTrans); // camera transform
 	Core::AddComponent(renderEntity, Core::Render::Camera());
@@ -236,34 +235,6 @@ void initialise_cb()
 		}
 	});
 
-	ecs::make_system<ecs::opts::group<Sys::DEFAULT_PASS_START>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::DefaultPass_Tag)
-	{
-		sg_pass_action pass_action{};
-		sg_color_attachment_action color_attach_action{};
-		color_attach_action.action = SG_ACTION_CLEAR;
-		color_attach_action.val[0] = 0.0f;
-		color_attach_action.val[1] = 0.0f;
-		color_attach_action.val[2] = 0.0f;
-		color_attach_action.val[3] = 1.0f;
-		pass_action.colors[0] = color_attach_action;
-
-		sg_begin_default_pass(&pass_action, _rfd.w, _rfd.h);
-	});
-
-	ecs::make_system<ecs::opts::group<Sys::DEFAULT_PASS_END>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::DefaultPass_Tag)
-	{
-		// End of the default pass -
-		// 3D scene drawn already, text layer next, imgui last.
-		Core::Render::TextAndGLDebug::Render();
-		Core::Render::DImGui::Render();
-		sg_end_pass();
-	});
-
-	ecs::make_system<ecs::opts::group<Sys::RENDER_END>>([](Core::MT_Only&, Core::Render::Frame_Tag)
-	{
-		sg_commit();
-	});
-
 	// Finalise initial components
 	ecs::commit_changes();
 
@@ -283,10 +254,14 @@ void frame_cb()
 
 	{
 		Core::Render::FrameData& rfd = ecs::get_global_component<Core::Render::FrameData>();
-		rfd.w = sapp_width();
-		rfd.fW = static_cast<float>(rfd.w);
-		rfd.h = sapp_height();
-		rfd.fH = static_cast<float>(rfd.h);
+		rfd.contextWindow.w = sapp_width();
+		rfd.contextWindow.fW = static_cast<float>(rfd.contextWindow.w);
+		rfd.contextWindow.h = sapp_height();
+		rfd.contextWindow.fH = static_cast<float>(rfd.contextWindow.h);
+		rfd.renderArea.w = RENDER_AREA_WIDTH;
+		rfd.renderArea.fW = static_cast<float>(rfd.renderArea.w);
+		rfd.renderArea.h = RENDER_AREA_HEIGHT;
+		rfd.renderArea.fH = static_cast<float>(rfd.renderArea.h);
 	}
 
 	Core::Input::Update();
@@ -298,7 +273,7 @@ void cleanup_cb()
 	Core::Physics::Cleanup();
 	Core::Render::DImGui::Cleanup();
 	Core::Render::TextAndGLDebug::Cleanup();
-	sg_shutdown();
+	Core::Render::Cleanup();
 }
 
 void event_cb(sapp_event const* _event)
@@ -314,17 +289,18 @@ void fail_cb(char const* _error)
 
 sapp_desc sokol_main(int argc, char* argv[])
 {
-	sapp_desc desc{};
-	desc.init_cb = &initialise_cb;
-	desc.frame_cb = &frame_cb;
-	desc.cleanup_cb = &cleanup_cb;
-	desc.event_cb = &event_cb;
-	desc.fail_cb = &fail_cb;
+	sapp_desc desc{
+		.init_cb = &initialise_cb,
+		.frame_cb = &frame_cb,
+		.cleanup_cb = &cleanup_cb,
+		.event_cb = &event_cb,
+		.fail_cb = &fail_cb,
 
-	desc.width = WINDOW_START_WIDTH;
-	desc.height = WINDOW_START_HEIGHT;
-	desc.sample_count = 8;
-	desc.window_title = "drift";
+		.width = WINDOW_START_WIDTH,
+		.height = WINDOW_START_HEIGHT,
+		.sample_count = 1,
+		.window_title = "drift",
+	};
 
 	return desc;
 }

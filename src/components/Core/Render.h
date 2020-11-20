@@ -4,7 +4,7 @@
 #include "managers/EntityManager.h"
 #include "managers/Resources.h"
 
-#include <ecs/component_specifier.h>
+#include <ecs/flags.h>
 
 namespace Core
 {

@@ -2,7 +2,7 @@
 
 #include "common.h"
 
-#include <ecs/component_specifier.h>
+#include <ecs/flags.h>
 
 namespace Core
 {

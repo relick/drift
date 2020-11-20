@@ -99,7 +99,7 @@ void initialise_cb()
 	Core::AddComponent(renderEntity, Game::Player::MouseLook());
 
 	// Setup entity initialisers
-	setup_cube();
+	//setup_cube();
 
 	// Setup systems
 	// debug camera control

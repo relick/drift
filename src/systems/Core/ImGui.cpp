@@ -79,7 +79,7 @@ namespace Core
 					simgui_new_frame(_rfd.contextWindow.w, _rfd.contextWindow.h, _fd.unscaled_ddt > 0.0 ? _fd.unscaled_ddt : DBL_EPSILON);
 				});
 
-				ecs::make_system<ecs::opts::group<Sys::IMGUI>>([](Core::MT_Only&, Core::FrameData const& _fd, Core::Render::FrameData const& _rfd, Core::GlobalWorkaround_Tag)
+				ecs::make_system<ecs::opts::group<Sys::IMGUI>>([](Core::MT_Only&, Core::FrameData const& _fd, Core::Render::FrameData const& _rfd, Core::Render::Frame_Tag)
 				{
 					// Draw gfx debug UI
 					sg_imgui_draw(&gfxImGuiState);

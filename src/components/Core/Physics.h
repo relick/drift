@@ -2,7 +2,8 @@
 
 #include "common.h"
 #include "managers/EntityManager.h"
-#include <ecs/component_specifier.h>
+
+#include <ecs/flags.h>
 
 // forward
 class btDefaultCollisionConfiguration;
@@ -11,7 +12,7 @@ class btBroadphaseInterface;
 class btSequentialImpulseConstraintSolver;
 class btDiscreteDynamicsWorld;
 class btCollisionShape;
-class btDefaultMotionState;
+struct btDefaultMotionState;
 class btRigidBody;
 
 namespace Core

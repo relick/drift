@@ -7,12 +7,6 @@
 // Core
 namespace Core
 {
-	// Only one entity will get this, allows for systems with only global components to run once per frame
-	struct GlobalWorkaround_Tag
-	{
-		ecs_flags(ecs::flag::tag);
-	};
-
 	// Empty global component, take by ref in any system group that needs to run without parallelisation.
 	struct MT_Only
 	{

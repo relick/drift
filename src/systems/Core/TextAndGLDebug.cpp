@@ -129,7 +129,7 @@ namespace Core
 
 				Core::Render::DImGui::AddMenuItem("GL", "Text Debug", &fsTest.showImguiWin);
 
-				ecs::make_system<ecs::opts::group<Sys::IMGUI>>([](Core::MT_Only&, Core::GlobalWorkaround_Tag)
+				ecs::make_system<ecs::opts::group<Sys::IMGUI>>([](Core::MT_Only&)
 				{
 					if (fsTest.showImguiWin)
 					{
@@ -144,7 +144,7 @@ namespace Core
 					}
 				});
 
-				ecs::make_system<ecs::opts::group<Sys::TEXT>>([](Core::MT_Only&, Core::GlobalWorkaround_Tag)
+				ecs::make_system<ecs::opts::group<Sys::TEXT>>([](Core::MT_Only&)
 				{
 					fonsClearState(fonsContext);
 

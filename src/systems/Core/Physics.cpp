@@ -141,7 +141,7 @@ namespace Core
 					/* Handle turning */
 					float const turnVel = 1.0f;
 					float const walkAccel = 250.0f;
-					float const maxLinearVel2 = pow(15.0f / 3.6f, 2);
+					float const maxLinearVel2 = powf(15.0f / 3.6f, 2);
 
 					btVector3 linearVelocity = _cc.m_body->getLinearVelocity();
 					float yLinVel = linearVelocity.y();
@@ -187,7 +187,7 @@ namespace Core
 					{
 						fVec3 dv = walkDirection * walkSpeed;
 						linearVelocity += ConvertTobtVector3(dv);
-						btScalar speed2 = pow(linearVelocity.x(), 2) + pow(linearVelocity.z(), 2);
+						btScalar speed2 = powf(linearVelocity.x(), 2) + powf(linearVelocity.z(), 2);
 						if (speed2 > maxLinearVel2)
 						{
 							btScalar correction = sqrt(maxLinearVel2 / speed2);
@@ -236,7 +236,7 @@ namespace Core
 					class FindGround : public btCollisionWorld::ContactResultCallback
 					{
 					public:
-						btScalar FindGround::addSingleResult(btManifoldPoint& cp,
+						btScalar addSingleResult(btManifoldPoint& cp,
 							const btCollisionObjectWrapper* colObj0, int partId0, int index0,
 							const btCollisionObjectWrapper* colObj1, int partId1, int index1)
 						{
@@ -335,7 +335,7 @@ namespace Core
 #if PHYSICS_DEBUG
 			Core::Render::DImGui::AddMenuItem("物理", "物理の世", &imGuiData.showImguiWin);
 
-			ecs::make_system<ecs::opts::group<Sys::IMGUI>>([](Core::MT_Only&, Core::GlobalWorkaround_Tag)
+			ecs::make_system<ecs::opts::group<Sys::IMGUI>>([](Core::MT_Only&)
 			{
 				if (imGuiData.showImguiWin)
 				{

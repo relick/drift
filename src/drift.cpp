@@ -48,13 +48,11 @@ void initialise_cb()
 		Core::EntityID const primaryPhysicsWorld = Core::CreateEntity();
 		Core::AddComponent(primaryPhysicsWorld, Core::Physics::World{});
 
-		Core::EntityID const global = Core::CreateEntity();
-		Core::AddComponent(global, Core::GlobalWorkaround_Tag());
 		ecs::commit_changes();
 	}
 
 
-	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::GlobalWorkaround_Tag)
+	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::FrameData const& _fd)
 	{
 		static double speed = 1.0;
 		if (Core::Input::PressedOnce(Core::Input::Action::Pause))
@@ -99,7 +97,7 @@ void initialise_cb()
 	Core::AddComponent(renderEntity, Game::Player::MouseLook());
 
 	// Setup entity initialisers
-	//setup_cube();
+	setup_cube();
 
 	// Setup systems
 	// debug camera control

@@ -25,9 +25,9 @@ namespace Core
 
 	// Expand it here - add_component does this anyway so shouldn't be any different.
 	template<detail::DoesNotNeedInitialiser T_FirstComponent, detail::DoesNotNeedInitialiser... T_Components>
-	void AddComponents(EntityID const _entity, T_FirstComponent const& _first_component, T_Components const&... _components)
+	void AddComponents(EntityID const _entity, T_FirstComponent const& _firstComponent, T_Components const&... _components)
 	{
-		AddComponent(_entity, _component);
+		AddComponent(_entity, _firstComponent);
 		(AddComponent(_entity, _components), ...);
 	}
 

@@ -6,6 +6,6 @@ namespace Core
 
 	EntityID CreateEntity()
 	{
-		return nextID++;
+		return EntityID(nextID++);
 	}
 }

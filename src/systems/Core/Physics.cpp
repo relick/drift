@@ -333,21 +333,21 @@ namespace Core
 			});
 
 #if PHYSICS_DEBUG
-			Core::Render::DImGui::AddMenuItem("物理", "物理の世", &imGuiData.showImguiWin);
+			Core::Render::DImGui::AddMenuItem("Physics", "Physics Worlds", &imGuiData.showImguiWin);
 
 			ecs::make_system<ecs::opts::group<Sys::IMGUI>>([](Core::MT_Only&)
 			{
 				if (imGuiData.showImguiWin)
 				{
-					if (ImGui::Begin("物理の世", &imGuiData.showImguiWin, 0))
+					if (ImGui::Begin("Physics Worlds", &imGuiData.showImguiWin, 0))
 					{
-						ImGui::Checkbox("RB axesを見せて", &imGuiData.showRBAxes);
+						ImGui::Checkbox("Show RB axes", &imGuiData.showRBAxes);
 
 						for (ImGuiWorldData& world : imGuiData.physicsWorlds)
 						{
 							ImGui::PushID((int32)world.worldEntity.GetValue());
-							ImGui::Text("世 %u", (uint32)world.worldEntity.GetValue());
-							ImGui::Checkbox("- デバッグを見せて", &world.showDebugDraw);
+							ImGui::Text("World %u", (uint32)world.worldEntity.GetValue());
+							ImGui::Checkbox("- Show debug", &world.showDebugDraw);
 							ImGui::PopID();
 						}
 					}

@@ -76,8 +76,7 @@ void setup_cube()
 	};
 
 	sg_buffer_desc cubeverts{};
-	cubeverts.size = sizeof(vertices);
-	cubeverts.content = vertices;
+	cubeverts.data = SG_RANGE(vertices);
 	cubeverts.label = "cube-vertices";
 
 	sg_buffer vbuf = sg_make_buffer(&cubeverts);
@@ -94,15 +93,14 @@ void setup_cube()
 
 	sg_buffer_desc cubeindices{};
 	cubeindices.type = SG_BUFFERTYPE_INDEXBUFFER;
-	cubeindices.size = sizeof(indices);
-	cubeindices.content = indices;
+	cubeindices.data = SG_RANGE(indices);
 	cubeindices.label = "cube-indices";
 
 	sg_buffer ibuf = sg_make_buffer(&cubeindices);
 
 	/* create shader */
-	sg_shader shd = sg_make_shader(phong_sg_shader_desc());
-	sg_shader unlit_shd = sg_make_shader(unlit_sg_shader_desc());
+	sg_shader shd = sg_make_shader(phong_sg_shader_desc(sg_query_backend()));
+	sg_shader unlit_shd = sg_make_shader(unlit_sg_shader_desc(sg_query_backend()));
 
 
 	/* create pipeline object */
@@ -116,11 +114,11 @@ void setup_cube()
 	pipelinedesc.layout = layoutdesc;
 	pipelinedesc.shader = shd;
 	pipelinedesc.index_type = SG_INDEXTYPE_UINT16;
-	pipelinedesc.depth_stencil = {
-		.depth_compare_func = SG_COMPAREFUNC_LESS_EQUAL,
-		.depth_write_enabled = true,
+	pipelinedesc.depth = {
+		.compare = SG_COMPAREFUNC_LESS_EQUAL,
+		.write_enabled = true,
 	};
-	pipelinedesc.rasterizer.cull_mode = SG_CULLMODE_BACK;
+	pipelinedesc.cull_mode = SG_CULLMODE_BACK;
 	pipelinedesc.label = "phong-pipeline";
 
 	CubeTestState.pip = sg_make_pipeline(&pipelinedesc);
@@ -133,11 +131,11 @@ void setup_cube()
 	unlitPipelineDesc.layout = unlitlayoutdesc;
 	unlitPipelineDesc.shader = unlit_shd;
 	unlitPipelineDesc.index_type = SG_INDEXTYPE_UINT16;
-	unlitPipelineDesc.depth_stencil = {
-		.depth_compare_func = SG_COMPAREFUNC_LESS_EQUAL,
-		.depth_write_enabled = true,
+	unlitPipelineDesc.depth = {
+		.compare = SG_COMPAREFUNC_LESS_EQUAL,
+		.write_enabled = true,
 	};
-	unlitPipelineDesc.rasterizer.cull_mode = SG_CULLMODE_BACK;
+	unlitPipelineDesc.cull_mode = SG_CULLMODE_BACK;
 	unlitPipelineDesc.label = "unlit-pipeline";
 
 	CubeTestState.lightCubePip = sg_make_pipeline(&unlitPipelineDesc);

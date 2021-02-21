@@ -297,6 +297,7 @@ sapp_desc sokol_main(int argc, char* argv[])
 		.width = WINDOW_START_WIDTH,
 		.height = WINDOW_START_HEIGHT,
 		.sample_count = 1,
+		.swap_interval = 1,
 		.window_title = "drift",
 	};
 

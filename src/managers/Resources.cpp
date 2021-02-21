@@ -31,17 +31,18 @@ namespace Core
 		void Setup()
 		{
 			uint8 emptyTex[] = { 255, 255, 255, 255 };
-			sg_image_content emptyTexContent{};
-			emptyTexContent.subimage[0][0].ptr = emptyTex;
-			emptyTexContent.subimage[0][0].size = sizeof(emptyTex);
-			sg_image_desc emptyTexDesc{};
-			emptyTexDesc.content = emptyTexContent;
-			emptyTexDesc.height = 1;
-			emptyTexDesc.width = 1;
-			emptyTexDesc.min_filter = SG_FILTER_LINEAR;
-			emptyTexDesc.mag_filter = SG_FILTER_LINEAR;
-			emptyTexDesc.wrap_u = SG_WRAP_REPEAT;
-			emptyTexDesc.wrap_v = SG_WRAP_REPEAT;
+			sg_image_data emptyTexData{};
+			emptyTexData.subimage[0][0].ptr = emptyTex;
+			emptyTexData.subimage[0][0].size = sizeof(emptyTex);
+			sg_image_desc emptyTexDesc{
+				.width = 1,
+				.height = 1,
+				.min_filter = SG_FILTER_LINEAR,
+				.mag_filter = SG_FILTER_LINEAR,
+				.wrap_u = SG_WRAP_REPEAT,
+				.wrap_v = SG_WRAP_REPEAT,
+				.data = emptyTexData,
+			};
 			defaultTextureID = sg_make_image(emptyTexDesc);
 		}
 		TextureID NewTextureID() { return nextTextureID++; }
@@ -93,10 +94,10 @@ namespace Core
 			if (data)
 			{
 				imageDesc.pixel_format = SG_PIXELFORMAT_RGBA8;
-				imageDesc.content.subimage[0][0].ptr = data;
-				imageDesc.content.subimage[0][0].size = imageDesc.width * imageDesc.height * nrComponents;
+				imageDesc.data.subimage[0][0].ptr = data;
+				imageDesc.data.subimage[0][0].size = imageDesc.width * imageDesc.height * nrComponents;
 
-				imageDesc.generateMipmaps = true;
+				imageDesc.generate_mipmaps = true;
 				imageDesc.min_filter = SG_FILTER_LINEAR_MIPMAP_LINEAR;
 				imageDesc.mag_filter = SG_FILTER_LINEAR;
 				imageDesc.wrap_u = SG_WRAP_REPEAT;
@@ -345,8 +346,7 @@ namespace Core
 			{
 				sg_buffer_desc vBufDesc{};
 				vBufDesc.type = SG_BUFFERTYPE_VERTEXBUFFER;
-				vBufDesc.size = static_cast<int>(newModel.m_vertexBufferData.size() * sizeof(float));
-				vBufDesc.content = &newModel.m_vertexBufferData[0];
+				vBufDesc.data = { &newModel.m_vertexBufferData[0], newModel.m_vertexBufferData.size() * sizeof(float), };
 #if DEBUG_TOOLS
 				newModel._traceName_vBufData = directory + "/vertices";
 				vBufDesc.label = newModel._traceName_vBufData.c_str();
@@ -357,8 +357,7 @@ namespace Core
 			{
 				sg_buffer_desc iBufDesc{};
 				iBufDesc.type = SG_BUFFERTYPE_INDEXBUFFER;
-				iBufDesc.size = static_cast<int>(newModel.m_indexBufferData.size() * sizeof(Resource::IndexType));
-				iBufDesc.content = &newModel.m_indexBufferData[0];
+				iBufDesc.data = { &newModel.m_indexBufferData[0], newModel.m_indexBufferData.size() * sizeof(Resource::IndexType), };
 #if DEBUG_TOOLS
 				newModel._traceName_iBufData = directory + "/indices";
 				iBufDesc.label = newModel._traceName_iBufData.c_str();

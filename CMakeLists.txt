@@ -23,7 +23,7 @@ set (SHADERS_COMPILED "")
 foreach(Shader IN LISTS Shaders)
 	add_custom_command(
 		OUTPUT ${SHADERS_DIR}/${Shader}.h
-		COMMAND sokol-shdc --input ${SHADERS_DIR}/${Shader}.glsl --output ${SHADERS_DIR}/${Shader}.h --slang glsl330:hlsl5 --errfmt=${SOKOL_SDHC_COMPILER} --genver=1 --ifdef
+		COMMAND ./sokol-shdc --input ${SHADERS_DIR}/${Shader}.glsl --output ${SHADERS_DIR}/${Shader}.h --slang glsl330:hlsl5 --errfmt=${SOKOL_SDHC_COMPILER} --genver=2
 		DEPENDS ${SHADERS_DIR}/${Shader}.glsl ${SHADERS_DIR}/${Shader}.vert ${SHADERS_DIR}/${Shader}.frag
 		WORKING_DIRECTORY ${TOOLS_DIR}
 	)

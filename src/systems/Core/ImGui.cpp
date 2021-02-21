@@ -59,8 +59,8 @@ namespace Core
 					img_desc.wrap_v = SG_WRAP_CLAMP_TO_EDGE;
 					img_desc.min_filter = SG_FILTER_LINEAR;
 					img_desc.mag_filter = SG_FILTER_LINEAR;
-					img_desc.content.subimage[0][0].ptr = font_pixels;
-					img_desc.content.subimage[0][0].size = font_width * font_height * sizeof(uint32_t);
+					img_desc.data.subimage[0][0].ptr = font_pixels;
+					img_desc.data.subimage[0][0].size = font_width * font_height * sizeof(uint32_t);
 					img_desc.label = "sokol-imgui-font";
 					_simgui.img = sg_make_image(&img_desc);
 					io->Fonts->TexID = (ImTextureID)(uintptr_t)_simgui.img.id;
@@ -140,7 +140,7 @@ namespace Core
 							fps = 0;
 						}
 
-						ImGui::Text("%i幅/%i丈", _rfd.contextWindow.w, _rfd.contextWindow.h);
+						ImGui::Text("%iw/%ih", _rfd.contextWindow.w, _rfd.contextWindow.h);
 						ImGui::Separator();
 
 						ImGui::Text("%i FPS", lastFPS);
@@ -152,7 +152,7 @@ namespace Core
 #endif
 						ImGui::Separator();
 
-						ImGui::Text("スピード：%.2fx", _fd.m_scale);
+						ImGui::Text("Speed: %.2fx", _fd.m_scale);
 						ImGui::Separator();
 
 						ImGui::EndMainMenuBar();

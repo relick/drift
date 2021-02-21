@@ -118,20 +118,17 @@ namespace Core
 			mainLayoutDesc.attrs[ATTR_main_vs_aTexCoord].buffer_index = 2;
 #endif
 
-			sg_pipeline_desc mainPipeDesc{};
-			mainPipeDesc.layout = mainLayoutDesc;
-			sg_shader_desc mainShaderDesc{};
-			{
-				mainShaderDesc = *main_sg_shader_desc();
-			}
-			mainPipeDesc.shader = sg_make_shader(mainShaderDesc);
-			mainPipeDesc.index_type = SG_INDEXTYPE_UINT32;
-			mainPipeDesc.depth_stencil = {
-				.depth_compare_func = SG_COMPAREFUNC_LESS_EQUAL,
-				.depth_write_enabled = true,
+			sg_pipeline_desc mainPipeDesc{
+				.shader = sg_make_shader(main_sg_shader_desc(sg_query_backend())),
+				.layout = mainLayoutDesc,
+				.depth = {
+					.compare = SG_COMPAREFUNC_LESS_EQUAL,
+					.write_enabled = true,
+				},
+				.index_type = SG_INDEXTYPE_UINT32,
+				.cull_mode = SG_CULLMODE_BACK,
+				.label = "main-pipeline",
 			};
-			mainPipeDesc.rasterizer.cull_mode = SG_CULLMODE_BACK;
-			mainPipeDesc.label = "main-pipeline";
 
 			renderState.mainPipeline = sg_make_pipeline(&mainPipeDesc);
 
@@ -170,16 +167,14 @@ namespace Core
 				smolLayoutDesc.attrs[ATTR_render_target_to_screen_vs_aTexCoord].offset = sizeof(fVec3);
 
 				sg_pipeline_desc smolPipeDesc{
+					.shader = sg_make_shader(render_target_to_screen_sg_shader_desc(sg_query_backend())),
 					.layout = smolLayoutDesc,
-					.shader = sg_make_shader(render_target_to_screen_sg_shader_desc()),
+					.depth = {
+						.compare = SG_COMPAREFUNC_LESS_EQUAL,
+						.write_enabled = true,
+					},
 					.index_type = SG_INDEXTYPE_NONE,
-					.depth_stencil = {
-						.depth_compare_func = SG_COMPAREFUNC_LESS_EQUAL,
-						.depth_write_enabled = true,
-					},
-					.rasterizer = {
-						.cull_mode = SG_CULLMODE_BACK,
-					},
+					.cull_mode = SG_CULLMODE_BACK,
 					.label = "smol-pipeline",
 				};
 
@@ -196,9 +191,8 @@ namespace Core
 				};
 
 				sg_buffer_desc smolBufferDesc{
-					.size = sizeof(smolBuf),
 					.type = SG_BUFFERTYPE_VERTEXBUFFER,
-					.content = smolBuf,
+					.data = SG_RANGE(smolBuf),
 					.label = "smol-buffer",
 				};
 				renderState.smol.binds.vertex_buffers[0] = sg_make_buffer(smolBufferDesc);
@@ -226,10 +220,7 @@ namespace Core
 			sg_pass_action pass_action{};
 			sg_color_attachment_action color_attach_action{};
 			color_attach_action.action = SG_ACTION_CLEAR;
-			color_attach_action.val[0] = 0.0f;
-			color_attach_action.val[1] = 0.0f;
-			color_attach_action.val[2] = 0.0f;
-			color_attach_action.val[3] = 1.0f;
+			color_attach_action.value = { 0.0f, 0.0f, 0.0f, 1.0f, };
 			pass_action.colors[0] = color_attach_action;
 
 			sg_begin_pass(renderState.smol.pass, pass_action);
@@ -244,7 +235,7 @@ namespace Core
 		{
 			// RENDER_PASSES
 			sg_apply_pipeline(renderState.mainPipeline);
-			sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_main_lights, &frameScene.lights.shader_LightData(), sizeof(main_lights_t));
+			sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_main_lights, SG_RANGE_REF(frameScene.lights.shader_LightData()));
 
 			main_vs_params_t vs_params;
 			vs_params.projection = frameScene.camera.proj;
@@ -256,12 +247,12 @@ namespace Core
 
 				Resource::ModelData const& model = Resource::GetModel(mtd.model);
 
-				sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_main_vs_params, &vs_params, sizeof(vs_params));
+				sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_main_vs_params, SG_RANGE_REF(vs_params));
 
 				for (Resource::MeshData const& mesh : model.m_meshes)
 				{
 					sg_apply_bindings(mesh.m_bindings);
-					sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_main_material, &mesh.m_material, sizeof(Resource::MaterialData));
+					sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_main_material, SG_RANGE_REF(mesh.m_material));
 					sg_draw(0, mesh.NumToDraw(), 1);
 				}
 
@@ -283,10 +274,7 @@ namespace Core
 			sg_pass_action pass_action{};
 			sg_color_attachment_action color_attach_action{};
 			color_attach_action.action = SG_ACTION_CLEAR;
-			color_attach_action.val[0] = 0.0f;
-			color_attach_action.val[1] = 0.0f;
-			color_attach_action.val[2] = 0.0f;
-			color_attach_action.val[3] = 1.0f;
+			color_attach_action.value = { 0.0f, 0.0f, 0.0f, 1.0f, };
 			pass_action.colors[0] = color_attach_action;
 
 			sg_begin_default_pass(pass_action, sapp_width(), sapp_height());
@@ -296,7 +284,7 @@ namespace Core
 			render_target_to_screen_vs_params_t aspectData{
 				.aspectMult = (4.0f / 3.0f) * (_rfd.contextWindow.fH / _rfd.contextWindow.fW),
 			};
-			sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_render_target_to_screen_vs_params, &aspectData, sizeof(render_target_to_screen_vs_params_t));
+			sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_render_target_to_screen_vs_params, SG_RANGE_REF(aspectData));
 			sg_draw(0, 6, 1);
 
 			Core::Render::DImGui::Render(); // imgui last, always a debug.

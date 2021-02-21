@@ -9,3 +9,4 @@
 *.mtl filter=lfs diff=lfs merge=lfs -text
 *.ttc filter=lfs diff=lfs merge=lfs -text
 *.h linguist-language=cpp
+*.exe filter=lfs diff=lfs merge=lfs -text

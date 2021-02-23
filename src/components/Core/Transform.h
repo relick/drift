@@ -38,6 +38,22 @@ namespace Core
 			m_parent = Core::EntityID();
 		}
 
+		void SetLocalTransformFromWorldTransform(fTrans const& _worldTransform)
+		{
+			Core::EntityID nextParent = m_parent;
+			fTrans finalTransform = fTrans();
+			while (nextParent.IsValid())
+			{
+				Transform const* const parentTrans = ecs::get_component<Transform>(nextParent.GetValue());
+				ASSERT(parentTrans != nullptr);
+
+				finalTransform = parentTrans->m_transform * finalTransform;
+				nextParent = parentTrans->m_parent;
+			}
+
+			m_transform = finalTransform.ToLocal(_worldTransform);
+		}
+
 		fTrans CalculateWorldTransform() const
 		{
 			Core::EntityID nextParent = m_parent;
@@ -56,18 +72,7 @@ namespace Core
 
 		fTrans CalculateWorldTransform(fTrans const& _localTransform) const
 		{
-			Core::EntityID nextParent = m_parent;
-			fTrans finalTransform = m_transform * _localTransform;
-			while (nextParent.IsValid())
-			{
-				Transform const* const parentTrans = ecs::get_component<Transform>(nextParent.GetValue());
-				ASSERT(parentTrans != nullptr);
-
-				finalTransform = parentTrans->m_transform * finalTransform;
-				nextParent = parentTrans->m_parent;
-			}
-
-			return finalTransform;
+			return CalculateWorldTransform() * _localTransform;
 		}
 
 		fTrans CalculateLocalTransform(fTrans const& _worldTransform) const

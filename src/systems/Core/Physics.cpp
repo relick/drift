@@ -295,7 +295,7 @@ namespace Core
 			{
 				btTransform trans;
 				_cc.m_body->getMotionState()->getWorldTransform(trans);
-				_t.T() = _t.CalculateLocalTransform(fTrans(trans));
+				_t.SetLocalTransformFromWorldTransform(fTrans(trans));
 			});
 		}
 
@@ -375,7 +375,7 @@ namespace Core
 						trans = _rb.m_body->getWorldTransform();
 					}
 
-					_t.T() = _t.CalculateLocalTransform(fTrans(trans));
+					_t.SetLocalTransformFromWorldTransform(fTrans(trans));
 
 #if PHYSICS_DEBUG
 					if(imGuiData.showRBAxes)

@@ -2,6 +2,7 @@
 
 #include "SystemOrdering.h"
 #include "components.h"
+#include "managers/Input.h"
 
 #include <btBulletDynamicsCommon.h>
 
@@ -153,10 +154,12 @@ namespace Core
 					fVec3 walkDirection(0.0, 0.0, 0.0);
 					float walkSpeed = walkAccel * _fd.dt;
 
+#if PHYSICS_DEBUG
 					if (imGuiData.showRBAxes)
 					{
 						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + forward);
 					}
+#endif
 
 					if (Core::Input::Pressed(Core::Input::Action::Forward))
 					{
@@ -374,6 +377,7 @@ namespace Core
 
 					_t.T() = _t.CalculateLocalTransform(fTrans(trans));
 
+#if PHYSICS_DEBUG
 					if(imGuiData.showRBAxes)
 					{
 						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + _t.T().forward());
@@ -382,6 +386,7 @@ namespace Core
 
 						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + _t.T().right());
 					}
+#endif
 				}
 			});
 		}

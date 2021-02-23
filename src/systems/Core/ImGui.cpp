@@ -7,9 +7,7 @@
 #include <sokol_gfx.h>
 
 #include <imgui.h>
-#define SOKOL_IMGUI_IMPL
 #include <util/sokol_imgui.h>
-#define SOKOL_GFX_IMGUI_IMPL
 #include <util/sokol_gfx_imgui.h>
 
 #include <sokol_time.h>
@@ -41,32 +39,29 @@ namespace Core
 				simguiDesc.ini_filename = "ImGuiSettings.ini";
 				simguiDesc.no_default_font = true;
 				simgui_setup(&simguiDesc);
+				sg_imgui_init(&gfxImGuiState);
 
 				// use ms gothic
 				{
-					ImGuiIO* io = &ImGui::GetIO();
-					io->Fonts->AddFontFromFileTTF("assets/fonts/msgothic.ttc", 13.0f, 0, io->Fonts->GetGlyphRangesJapanese());
+					ImGuiIO& io = ImGui::GetIO();
+					io.Fonts->AddFontFromFileTTF("assets/fonts/msgothic.ttc", 13.0f, 0, io.Fonts->GetGlyphRangesJapanese());
 
-					unsigned char* font_pixels;
-					int font_width, font_height;
-					io->Fonts->GetTexDataAsRGBA32(&font_pixels, &font_width, &font_height);
-					sg_image_desc img_desc;
-					memset(&img_desc, 0, sizeof(img_desc));
-					img_desc.width = font_width;
-					img_desc.height = font_height;
-					img_desc.pixel_format = SG_PIXELFORMAT_RGBA8;
-					img_desc.wrap_u = SG_WRAP_CLAMP_TO_EDGE;
-					img_desc.wrap_v = SG_WRAP_CLAMP_TO_EDGE;
-					img_desc.min_filter = SG_FILTER_LINEAR;
-					img_desc.mag_filter = SG_FILTER_LINEAR;
-					img_desc.data.subimage[0][0].ptr = font_pixels;
-					img_desc.data.subimage[0][0].size = font_width * font_height * sizeof(uint32_t);
-					img_desc.label = "sokol-imgui-font";
-					_simgui.img = sg_make_image(&img_desc);
-					io->Fonts->TexID = (ImTextureID)(uintptr_t)_simgui.img.id;
+					sg_image_desc imgDesc{
+						.pixel_format = SG_PIXELFORMAT_RGBA8,
+						.min_filter = SG_FILTER_LINEAR,
+						.mag_filter = SG_FILTER_LINEAR,
+						.wrap_u = SG_WRAP_CLAMP_TO_EDGE,
+						.wrap_v = SG_WRAP_CLAMP_TO_EDGE,
+						.label = "sokol-imgui-font",
+					};
+					int bytesPerPixel = sizeof(uint32);
+					uint8* pixelData = nullptr;
+					io.Fonts->GetTexDataAsRGBA32(&pixelData, &imgDesc.width, &imgDesc.height, &bytesPerPixel);
+					imgDesc.data.subimage[0][0].ptr = pixelData;
+					imgDesc.data.subimage[0][0].size = static_cast<usize>(imgDesc.width) * imgDesc.height * bytesPerPixel;
+
+					simgui_setfont(sg_make_image(imgDesc));
 				}
-
-				sg_imgui_init(&gfxImGuiState);
 #endif
 			}
 

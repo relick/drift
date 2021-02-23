@@ -15,11 +15,8 @@
 #include <windows.h>
 #endif
 
-#define SOKOL_GL_IMPL
 #include <util/sokol_gl.h>
-#define FONTSTASH_IMPLEMENTATION
 #include <fontstash.h>
-#define SOKOL_FONTSTASH_IMPL
 #include <util/sokol_fontstash.h>
 
 #include <imgui.h>

@@ -159,7 +159,7 @@ namespace Colour
 	constexpr uint32 white = static_cast<uint32>(-1);
 	constexpr uint32 green = static_cast<uint32>(65280u);
 
-	inline uint32 ConvertRGB(fVec3 const& _col)
+	inline constexpr uint32 ConvertRGB(fVec3 const& _col)
 	{
 		uint32 const r = static_cast<uint32>(gcem::round(_col.r * 255.0f));
 		uint32 const g = static_cast<uint32>(gcem::round(_col.g * 255.0f));
@@ -177,4 +177,4 @@ namespace Colour
 #define ASSERT(TEST)
 #endif
 
-#define SafeDelete(OBJ) delete OBJ; OBJ = nullptr;
+#define SafeDelete(OBJ) { delete OBJ; OBJ = nullptr; }

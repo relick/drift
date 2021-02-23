@@ -23,6 +23,7 @@ namespace Core
 		};
 
 		void Init();
+		void InitPipeline();
 		void StartPass(Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _t);
 		void Render(Core::Render::FrameData const& _rfd);
 		void Cleanup();

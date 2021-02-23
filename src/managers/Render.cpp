@@ -7,14 +7,11 @@
 #include "shaders/main.h"
 #include "shaders/render_target_to_screen.h"
 
-#define SOKOL_IMPL
-#if DEBUG_TOOLS
-#define SOKOL_TRACE_HOOKS
-#endif
+#include "RenderTools/Pipeline.h"
+
 #include <sokol_app.h>
 #include <sokol_gfx.h>
 #include <sokol_glue.h>
-#include <sokol_time.h>
 
 // classes
 namespace Core
@@ -53,20 +50,114 @@ namespace Core
 			main_lights_t const& shader_LightData() { return lightData; }
 		};
 
-		struct
+		class RenderState
 		{
-			sg_pipeline mainPipeline{};
+			e_Pass m_currentPass{ e_Pass_Count };
+			e_PassGlue m_currentPassGlue{ e_PassGlue_Count };
+			e_Renderer m_currentRenderer{ e_Renderer_Count };
 
-			struct
+		public:
+			std::array<Pass, e_Pass_Count> m_passes{};
+			std::array<PassGlue, e_PassGlue_Count> m_passGlues{};
+			std::array<Renderer, e_Renderer_Count> m_renderers{};
+
+			sg_pass_action m_defaultPassAction{};
+
+			void NextPass(e_Pass _pass)
 			{
-				sg_image colTarget{};
-				sg_image depthTarget{};
-				sg_pass pass{};
-				sg_pipeline targetToScreen{};
-				sg_bindings binds{};
-			} smol;
+				if (m_currentPass < e_Pass_Count)
+				{
+					sg_end_pass();
+				}
 
-		} renderState;
+				ASSERT(_pass < e_Pass_Count);
+
+				if (_pass == e_DefaultPass)
+				{
+					sg_begin_default_pass(m_defaultPassAction, sapp_width(), sapp_height());
+					m_currentPass = _pass;
+				}
+				else
+				{
+					if (m_passes[_pass].Begin())
+					{
+						m_currentPass = _pass;
+					}
+					else
+					{
+						m_currentPass = e_Pass_Count;
+					}
+
+					ASSERT(m_currentPass == _pass);
+				}
+			}
+
+			void SetPassGlue(e_PassGlue _passGlue)
+			{
+				ASSERT(_passGlue < e_PassGlue_Count);
+				ASSERT(m_currentPass < e_Pass_Count);
+				ASSERT(m_currentRenderer < e_Renderer_Count);
+
+				if (m_passGlues[_passGlue].Set(m_currentPass, m_currentRenderer))
+				{
+					m_currentPassGlue = _passGlue;
+				}
+				else
+				{
+					m_currentPassGlue = e_PassGlue_Count;
+				}
+
+				ASSERT(m_currentPassGlue == _passGlue);
+			}
+
+			void SetBinding(sg_bindings const& _binds)
+			{
+				ASSERT(m_currentPass < e_Pass_Count);
+				ASSERT(m_currentRenderer < e_Renderer_Count);
+				ASSERT(m_renderers[m_currentRenderer].CanUseGeneralBindings());
+
+				sg_apply_bindings(_binds);
+				m_currentPassGlue = e_PassGlue_Count;
+			}
+
+			void SetRenderer(e_Renderer _renderer)
+			{
+				ASSERT(_renderer < e_Renderer_Count);
+				ASSERT(m_currentPass < e_Pass_Count);
+
+				if (m_renderers[_renderer].Activate(m_currentPass))
+				{
+					m_currentRenderer = _renderer;
+				}
+				else
+				{
+					m_currentRenderer = e_Renderer_Count;
+				}
+
+				ASSERT(m_currentRenderer == _renderer);
+			}
+
+			void Draw(int numElements, int baseElement = 0, int numInstances = 1)
+			{
+				ASSERT(m_currentPass < e_Pass_Count);
+				ASSERT(m_currentRenderer < e_Renderer_Count);
+
+				sg_draw(baseElement, numElements, numInstances);
+			}
+
+			void Commit()
+			{
+				if (m_currentPass < e_Pass_Count)
+				{
+					sg_end_pass();
+				}
+				sg_commit();
+				m_currentPass = e_Pass_Count;
+				m_currentPassGlue = e_PassGlue_Count;
+				m_currentRenderer = e_Renderer_Count;
+			}
+
+		} state;
 
 		struct ModelToDraw
 		{
@@ -99,9 +190,48 @@ namespace Core
 			gfxDesc.context = sapp_sgcontext();
 			gfxDesc.buffer_pool_size = 512; // buff it up? // could go muuuuuch higher
 			sg_setup(&gfxDesc);
+		}
 
-			/* create main pipeline object */
+		//--------------------------------------------------------------------------------
+		void InitBuffers()
+		{
+			// Make passes
+			state.m_passes[Pass_MainTarget] = Pass{ RENDER_AREA_WIDTH, RENDER_AREA_HEIGHT, true, 1, "smol" };
+			sg_pass_action smolPassAction{};
+			sg_color_attachment_action colourAttachAction{
+				.action = SG_ACTION_CLEAR,
+				.value = { 0.0f, 0.0f, 0.0f, 1.0f, },
+			};
+			smolPassAction.colors[0] = colourAttachAction;
 
+			state.m_passes[Pass_MainTarget].SetPassAction(smolPassAction);
+
+			float smolBuf[] = {
+				-1.0f, -1.0f, 0.0f,		0, 1,
+				-1.0f,  1.0f, 0.0f,		0, 0,
+				 1.0f,  1.0f, 0.0f,		1, 0,
+
+				 1.0f,  1.0f, 0.0f,		1, 0,
+				 1.0f, -1.0f, 0.0f,		1, 1,
+				-1.0f, -1.0f, 0.0f,		0, 1,
+			};
+
+			sg_buffer_desc smolBufferDesc{
+				.type = SG_BUFFERTYPE_VERTEXBUFFER,
+				.data = SG_RANGE(smolBuf),
+				.label = "smol-buffer",
+			};
+			sg_bindings binds{};
+			binds.vertex_buffers[0] = sg_make_buffer(smolBufferDesc);
+			binds.fs_images[SLOT_render_target_to_screen_tex] = state.m_passes[Pass_MainTarget].GetColourImage(0);
+			state.m_passGlues[PassGlue_MainTarget_To_Screen] = PassGlue{ binds };
+			state.m_passGlues[PassGlue_MainTarget_To_Screen].AddValidPass(Pass_RenderToScreen);
+			state.m_passGlues[PassGlue_MainTarget_To_Screen].AddValidRenderer(Renderer_TargetToScreen);
+		}
+
+		//--------------------------------------------------------------------------------
+		void InitShaders()
+		{
 			// deinterleaved data in separate buffers.
 			sg_layout_desc mainLayoutDesc{};
 			mainLayoutDesc.attrs[ATTR_main_vs_aPos].format = SG_VERTEXFORMAT_FLOAT3;
@@ -130,75 +260,45 @@ namespace Core
 				.label = "main-pipeline",
 			};
 
-			renderState.mainPipeline = sg_make_pipeline(&mainPipeDesc);
+			state.m_renderers[Renderer_Main] = Renderer{ sg_make_pipeline(mainPipeDesc) };
+			state.m_renderers[Renderer_Main].AllowGeneralBindings();
+			state.m_renderers[Renderer_Main].AddValidPass(Pass_MainTarget);
 
-			{
-				sg_image_desc smolRenderTargetDesc{
-					.type = SG_IMAGETYPE_2D,
-					.render_target = true,
-					.width = RENDER_AREA_WIDTH,
-					.height = RENDER_AREA_HEIGHT,
-					.label = "smol-render",
-				};
-				renderState.smol.colTarget = sg_make_image(smolRenderTargetDesc);
+			sg_layout_desc targetToScreenLayoutDesc{};
+			targetToScreenLayoutDesc.attrs[ATTR_render_target_to_screen_vs_aPos].format = SG_VERTEXFORMAT_FLOAT3;
+			targetToScreenLayoutDesc.attrs[ATTR_render_target_to_screen_vs_aTexCoord].format = SG_VERTEXFORMAT_FLOAT2;
+			targetToScreenLayoutDesc.buffers[0].stride = sizeof(fVec3) + sizeof(fVec2);
+			targetToScreenLayoutDesc.attrs[ATTR_render_target_to_screen_vs_aPos].offset = 0;
+			targetToScreenLayoutDesc.attrs[ATTR_render_target_to_screen_vs_aTexCoord].offset = sizeof(fVec3);
 
-				sg_image_desc smolDepthTargetDesc{
-					.type = SG_IMAGETYPE_2D,
-					.render_target = true,
-					.width = RENDER_AREA_WIDTH,
-					.height = RENDER_AREA_HEIGHT,
-					.pixel_format = SG_PIXELFORMAT_DEPTH_STENCIL,
-					.label = "smol-depth",
-				};
-				renderState.smol.depthTarget = sg_make_image(smolDepthTargetDesc);
+			sg_pipeline_desc targetToScreenDesc{
+				.shader = sg_make_shader(render_target_to_screen_sg_shader_desc(sg_query_backend())),
+				.layout = targetToScreenLayoutDesc,
+				.depth = {
+					.compare = SG_COMPAREFUNC_LESS_EQUAL,
+					.write_enabled = true,
+				},
+				.index_type = SG_INDEXTYPE_NONE,
+				.cull_mode = SG_CULLMODE_BACK,
+				.label = "smol-pipeline",
+			};
 
-				sg_pass_desc smolPassDesc{
-					.depth_stencil_attachment = {.image = renderState.smol.depthTarget, .mip_level = 0 },
-					.label = "smol-pass",
-				};
-				smolPassDesc.color_attachments[0] = { .image = renderState.smol.colTarget, .mip_level = 0 },
-					renderState.smol.pass = sg_make_pass(smolPassDesc);
+			state.m_renderers[Renderer_TargetToScreen] = Renderer{ sg_make_pipeline(targetToScreenDesc) };
+			state.m_renderers[Renderer_TargetToScreen].AddValidPass(Pass_RenderToScreen);
 
-				sg_layout_desc smolLayoutDesc{};
-				smolLayoutDesc.attrs[ATTR_render_target_to_screen_vs_aPos].format = SG_VERTEXFORMAT_FLOAT3;
-				smolLayoutDesc.attrs[ATTR_render_target_to_screen_vs_aTexCoord].format = SG_VERTEXFORMAT_FLOAT2;
-				smolLayoutDesc.buffers[0].stride = sizeof(fVec3) + sizeof(fVec2);
-				smolLayoutDesc.attrs[ATTR_render_target_to_screen_vs_aPos].offset = 0;
-				smolLayoutDesc.attrs[ATTR_render_target_to_screen_vs_aTexCoord].offset = sizeof(fVec3);
+			sg_pass_action passAction{};
+			sg_color_attachment_action colourAttachAction{};
+			colourAttachAction.action = SG_ACTION_CLEAR;
+			colourAttachAction.value = { 0.0f, 0.0f, 0.0f, 1.0f, };
+			passAction.colors[0] = colourAttachAction;
+			state.m_defaultPassAction = passAction;
+		}
 
-				sg_pipeline_desc smolPipeDesc{
-					.shader = sg_make_shader(render_target_to_screen_sg_shader_desc(sg_query_backend())),
-					.layout = smolLayoutDesc,
-					.depth = {
-						.compare = SG_COMPAREFUNC_LESS_EQUAL,
-						.write_enabled = true,
-					},
-					.index_type = SG_INDEXTYPE_NONE,
-					.cull_mode = SG_CULLMODE_BACK,
-					.label = "smol-pipeline",
-				};
-
-				renderState.smol.targetToScreen = sg_make_pipeline(smolPipeDesc);
-
-				float smolBuf[] = {
-					-1.0f, -1.0f, 0.0f,		0, 1,
-					-1.0f,  1.0f, 0.0f,		0, 0,
-					 1.0f,  1.0f, 0.0f,		1, 0,
-
-					 1.0f,  1.0f, 0.0f,		1, 0,
-					 1.0f, -1.0f, 0.0f,		1, 1,
-					-1.0f, -1.0f, 0.0f,		0, 1,
-				};
-
-				sg_buffer_desc smolBufferDesc{
-					.type = SG_BUFFERTYPE_VERTEXBUFFER,
-					.data = SG_RANGE(smolBuf),
-					.label = "smol-buffer",
-				};
-				renderState.smol.binds.vertex_buffers[0] = sg_make_buffer(smolBufferDesc);
-				renderState.smol.binds.fs_images[SLOT_render_target_to_screen_tex] = renderState.smol.colTarget;
-			}
-
+		//--------------------------------------------------------------------------------
+		void InitPipeline()
+		{
+			InitBuffers();
+			InitShaders();
 		}
 
 		//--------------------------------------------------------------------------------
@@ -217,14 +317,7 @@ namespace Core
 			frameScene.camera.view = cameraMat;
 
 			// DEFAULT_PASS_START
-			sg_pass_action pass_action{};
-			sg_color_attachment_action color_attach_action{};
-			color_attach_action.action = SG_ACTION_CLEAR;
-			color_attach_action.value = { 0.0f, 0.0f, 0.0f, 1.0f, };
-			pass_action.colors[0] = color_attach_action;
-
-			sg_begin_pass(renderState.smol.pass, pass_action);
-
+			state.NextPass(Pass_MainTarget);
 		}
 
 		//--------------------------------------------------------------------------------
@@ -234,7 +327,7 @@ namespace Core
 		)
 		{
 			// RENDER_PASSES
-			sg_apply_pipeline(renderState.mainPipeline);
+			state.SetRenderer(Renderer_Main);
 			sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_main_lights, SG_RANGE_REF(frameScene.lights.shader_LightData()));
 
 			main_vs_params_t vs_params;
@@ -251,9 +344,9 @@ namespace Core
 
 				for (Resource::MeshData const& mesh : model.m_meshes)
 				{
-					sg_apply_bindings(mesh.m_bindings);
+					state.SetBinding(mesh.m_bindings);
 					sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_main_material, SG_RANGE_REF(mesh.m_material));
-					sg_draw(0, mesh.NumToDraw(), 1);
+					state.Draw(mesh.NumToDraw());
 				}
 
 			}
@@ -266,37 +359,39 @@ namespace Core
 			// DEFAULT_PASS_END
 			Core::Render::TextAndGLDebug::Render();
 
-			sg_end_pass();
-
 			// end of the main drawing pass
 			// begin of the screen drawing pass
+			state.NextPass(Pass_RenderToScreen);
+			state.SetRenderer(Renderer_TargetToScreen);
+			state.SetPassGlue(PassGlue_MainTarget_To_Screen);
 
-			sg_pass_action pass_action{};
-			sg_color_attachment_action color_attach_action{};
-			color_attach_action.action = SG_ACTION_CLEAR;
-			color_attach_action.value = { 0.0f, 0.0f, 0.0f, 1.0f, };
-			pass_action.colors[0] = color_attach_action;
-
-			sg_begin_default_pass(pass_action, sapp_width(), sapp_height());
-
-			sg_apply_pipeline(renderState.smol.targetToScreen);
-			sg_apply_bindings(renderState.smol.binds);
 			render_target_to_screen_vs_params_t aspectData{
 				.aspectMult = (4.0f / 3.0f) * (_rfd.contextWindow.fH / _rfd.contextWindow.fW),
 			};
 			sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_render_target_to_screen_vs_params, SG_RANGE_REF(aspectData));
-			sg_draw(0, 6, 1);
+			state.Draw(6);
 
 			Core::Render::DImGui::Render(); // imgui last, always a debug.
-			sg_end_pass();
 
 			// RENDER_END
-			sg_commit();
+			state.Commit();
 		}
 
 		//--------------------------------------------------------------------------------
 		void Cleanup()
 		{
+			for (auto& pass : state.m_passes)
+			{
+				pass = Pass{};
+			}
+			for (auto& passGlue : state.m_passGlues)
+			{
+				passGlue = PassGlue{};
+			}
+			for (auto& renderer : state.m_renderers)
+			{
+				renderer = Renderer{};
+			}
 			sg_shutdown();
 		}
 

@@ -24,10 +24,12 @@ void initialise_cb()
 		Core::Render::Init();
 		Core::Render::TextAndGLDebug::Init();
 		Core::Render::DImGui::Init();
+		Core::Render::InitPipeline(); //needs to come after imgui's hooks
 		Core::Physics::Init();
 		stm_setup();
 		sapp_lock_mouse(true);
 	}
+
 
 	// system and data setup
 	{
@@ -112,6 +114,7 @@ void initialise_cb()
 				_t.m_parent = _debugCamera.m_storedParent;
 				_t.T() = _debugCamera.m_storedTransform;
 				debugCameraEnabled = false;
+				sapp_lock_mouse(true);
 			}
 			else
 			{
@@ -297,7 +300,7 @@ sapp_desc sokol_main(int argc, char* argv[])
 		.width = WINDOW_START_WIDTH,
 		.height = WINDOW_START_HEIGHT,
 		.sample_count = 1,
-		.swap_interval = 1,
+		.swap_interval = 0,
 		.window_title = "drift",
 	};
 

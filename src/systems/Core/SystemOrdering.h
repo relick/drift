@@ -17,7 +17,7 @@ namespace Sys
 		// Game section - can be parallel
 		GAME_START,
 			GAME,
-			RENDER = GAME, // run bulk of the render code during the GAME section.
+			RENDER,// = GAME, //todo can't do this, must run on main thread... // run bulk of the render code during the GAME section.
 			RENDER_PASS_END,
 
 			PHYSICS_TRANSFORMS_IN,

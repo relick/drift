@@ -33,9 +33,6 @@ namespace Core::Render
 		}
 
 	public:
-		Pass()
-		{}
-
 		Pass
 		(
 			int _w,
@@ -178,7 +175,6 @@ namespace Core::Render
 		std::array<bool, e_Renderer_Count + 1> m_validRenderers{ false };
 #endif
 	public:
-		PassGlue() {}
 		PassGlue(sg_bindings const& _binds)
 			: m_bindings{ _binds }
 			, m_valid{ true }
@@ -226,7 +222,6 @@ namespace Core::Render
 #endif
 
 	public:
-		Renderer() {}
 		Renderer(sg_pipeline const& _pipeline)
 			: m_pipeline{ _pipeline }
 			, m_valid{ true }

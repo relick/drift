@@ -50,19 +50,23 @@ namespace Core
 			main_lights_t const& shader_LightData() { return lightData; }
 		};
 
+		class RenderStateFiller;
+
 		class RenderState
 		{
+			friend RenderStateFiller;
+
 			e_Pass m_currentPass{ e_Pass_Count };
 			e_PassGlue m_currentPassGlue{ e_PassGlue_Count };
 			e_Renderer m_currentRenderer{ e_Renderer_Count };
 
-		public:
-			std::array<Pass, e_Pass_Count> m_passes{};
-			std::array<PassGlue, e_PassGlue_Count> m_passGlues{};
-			std::array<Renderer, e_Renderer_Count> m_renderers{};
+			std::array<std::optional<Pass>, e_Pass_Count> m_passes{};
+			std::array<std::optional<PassGlue>, e_PassGlue_Count> m_passGlues{};
+			std::array<std::optional<Renderer>, e_Renderer_Count> m_renderers{};
 
 			sg_pass_action m_defaultPassAction{};
 
+		public:
 			void NextPass(e_Pass _pass)
 			{
 				if (m_currentPass < e_Pass_Count)
@@ -79,7 +83,8 @@ namespace Core
 				}
 				else
 				{
-					if (m_passes[_pass].Begin())
+					ASSERT(m_passes[_pass].has_value());
+					if (m_passes[_pass]->Begin())
 					{
 						m_currentPass = _pass;
 					}
@@ -98,7 +103,8 @@ namespace Core
 				ASSERT(m_currentPass < e_Pass_Count);
 				ASSERT(m_currentRenderer < e_Renderer_Count);
 
-				if (m_passGlues[_passGlue].Set(m_currentPass, m_currentRenderer))
+				ASSERT(m_passGlues[_passGlue].has_value());
+				if (m_passGlues[_passGlue]->Set(m_currentPass, m_currentRenderer))
 				{
 					m_currentPassGlue = _passGlue;
 				}
@@ -125,7 +131,8 @@ namespace Core
 				ASSERT(_renderer < e_Renderer_Count);
 				ASSERT(m_currentPass < e_Pass_Count);
 
-				if (m_renderers[_renderer].Activate(m_currentPass))
+				ASSERT(m_renderers[_renderer].has_value());
+				if (m_renderers[_renderer]->Activate(m_currentPass))
 				{
 					m_currentRenderer = _renderer;
 				}
@@ -157,7 +164,36 @@ namespace Core
 				m_currentRenderer = e_Renderer_Count;
 			}
 
+			void Cleanup()
+			{
+				for (auto& pass : state.m_passes)
+				{
+					pass = {};
+				}
+				for (auto& passGlue : state.m_passGlues)
+				{
+					passGlue = {};
+				}
+				for (auto& renderer : state.m_renderers)
+				{
+					renderer = {};
+				}
+			}
 		} state;
+
+		class RenderStateFiller
+		{
+			RenderState& m_state;
+		public:
+			RenderStateFiller(RenderState& _state)
+				: m_state{ _state }
+			{}
+
+			std::optional<Pass>& Pass(e_Pass _pass) { return m_state.m_passes[_pass]; }
+			std::optional<PassGlue>& PassGlue(e_PassGlue _passGlue) { return m_state.m_passGlues[_passGlue]; }
+			std::optional<Renderer>& Renderer(e_Renderer _renderer) { return m_state.m_renderers[_renderer]; }
+			void SetDefaultPassAction(sg_pass_action const& _action) { m_state.m_defaultPassAction = _action; }
+		};
 
 		struct ModelToDraw
 		{
@@ -193,10 +229,13 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		void InitBuffers()
+		void InitBuffers
+		(
+			RenderStateFiller& io_state
+		)
 		{
 			// Make passes
-			state.m_passes[Pass_MainTarget] = Pass{ RENDER_AREA_WIDTH, RENDER_AREA_HEIGHT, true, 1, "smol" };
+			io_state.Pass(Pass_MainTarget) = Pass{ RENDER_AREA_WIDTH, RENDER_AREA_HEIGHT, true, 1, "smol" };
 			sg_pass_action smolPassAction{};
 			sg_color_attachment_action colourAttachAction{
 				.action = SG_ACTION_CLEAR,
@@ -204,7 +243,7 @@ namespace Core
 			};
 			smolPassAction.colors[0] = colourAttachAction;
 
-			state.m_passes[Pass_MainTarget].SetPassAction(smolPassAction);
+			io_state.Pass(Pass_MainTarget)->SetPassAction(smolPassAction);
 
 			float smolBuf[] = {
 				-1.0f, -1.0f, 0.0f,		0, 1,
@@ -223,14 +262,17 @@ namespace Core
 			};
 			sg_bindings binds{};
 			binds.vertex_buffers[0] = sg_make_buffer(smolBufferDesc);
-			binds.fs_images[SLOT_render_target_to_screen_tex] = state.m_passes[Pass_MainTarget].GetColourImage(0);
-			state.m_passGlues[PassGlue_MainTarget_To_Screen] = PassGlue{ binds };
-			state.m_passGlues[PassGlue_MainTarget_To_Screen].AddValidPass(Pass_RenderToScreen);
-			state.m_passGlues[PassGlue_MainTarget_To_Screen].AddValidRenderer(Renderer_TargetToScreen);
+			binds.fs_images[SLOT_render_target_to_screen_tex] = io_state.Pass(Pass_MainTarget)->GetColourImage(0);
+			io_state.PassGlue(PassGlue_MainTarget_To_Screen) = PassGlue{ binds };
+			io_state.PassGlue(PassGlue_MainTarget_To_Screen)->AddValidPass(Pass_RenderToScreen);
+			io_state.PassGlue(PassGlue_MainTarget_To_Screen)->AddValidRenderer(Renderer_TargetToScreen);
 		}
 
 		//--------------------------------------------------------------------------------
-		void InitShaders()
+		void InitShaders
+		(
+			RenderStateFiller& io_state
+		)
 		{
 			// deinterleaved data in separate buffers.
 			sg_layout_desc mainLayoutDesc{};
@@ -260,9 +302,9 @@ namespace Core
 				.label = "main-pipeline",
 			};
 
-			state.m_renderers[Renderer_Main] = Renderer{ sg_make_pipeline(mainPipeDesc) };
-			state.m_renderers[Renderer_Main].AllowGeneralBindings();
-			state.m_renderers[Renderer_Main].AddValidPass(Pass_MainTarget);
+			io_state.Renderer(Renderer_Main) = Renderer{ sg_make_pipeline(mainPipeDesc) };
+			io_state.Renderer(Renderer_Main)->AllowGeneralBindings();
+			io_state.Renderer(Renderer_Main)->AddValidPass(Pass_MainTarget);
 
 			sg_layout_desc targetToScreenLayoutDesc{};
 			targetToScreenLayoutDesc.attrs[ATTR_render_target_to_screen_vs_aPos].format = SG_VERTEXFORMAT_FLOAT3;
@@ -283,22 +325,23 @@ namespace Core
 				.label = "smol-pipeline",
 			};
 
-			state.m_renderers[Renderer_TargetToScreen] = Renderer{ sg_make_pipeline(targetToScreenDesc) };
-			state.m_renderers[Renderer_TargetToScreen].AddValidPass(Pass_RenderToScreen);
+			io_state.Renderer(Renderer_TargetToScreen) = Renderer{ sg_make_pipeline(targetToScreenDesc) };
+			io_state.Renderer(Renderer_TargetToScreen)->AddValidPass(Pass_RenderToScreen);
 
 			sg_pass_action passAction{};
 			sg_color_attachment_action colourAttachAction{};
 			colourAttachAction.action = SG_ACTION_CLEAR;
 			colourAttachAction.value = { 0.0f, 0.0f, 0.0f, 1.0f, };
 			passAction.colors[0] = colourAttachAction;
-			state.m_defaultPassAction = passAction;
+			io_state.SetDefaultPassAction(passAction);
 		}
 
 		//--------------------------------------------------------------------------------
 		void InitPipeline()
 		{
-			InitBuffers();
-			InitShaders();
+			RenderStateFiller filler{ state };
+			InitBuffers(filler);
+			InitShaders(filler);
 		}
 
 		//--------------------------------------------------------------------------------
@@ -380,18 +423,7 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		void Cleanup()
 		{
-			for (auto& pass : state.m_passes)
-			{
-				pass = Pass{};
-			}
-			for (auto& passGlue : state.m_passGlues)
-			{
-				passGlue = PassGlue{};
-			}
-			for (auto& renderer : state.m_renderers)
-			{
-				renderer = Renderer{};
-			}
+			state.Cleanup();
 			sg_shutdown();
 		}
 

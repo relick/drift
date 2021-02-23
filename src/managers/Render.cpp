@@ -166,15 +166,15 @@ namespace Core
 
 			void Cleanup()
 			{
-				for (auto& pass : state.m_passes)
+				for (auto& pass : m_passes)
 				{
 					pass = {};
 				}
-				for (auto& passGlue : state.m_passGlues)
+				for (auto& passGlue : m_passGlues)
 				{
 					passGlue = {};
 				}
-				for (auto& renderer : state.m_renderers)
+				for (auto& renderer : m_renderers)
 				{
 					renderer = {};
 				}

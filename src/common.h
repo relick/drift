@@ -106,6 +106,12 @@ struct fTrans
 		);
 	}
 
+	fTrans ToLocal(fTrans const& _a) const
+	{
+		fMat3 const invB = glm::inverse(m_basis);
+		return fTrans(_a.m_basis * invB, (_a.m_origin - m_origin) * invB);
+	}
+
 	fTrans() = default;
 	fTrans(fMat3 const& _b, fVec3 const& _o = fVec3(0.0f))
 		: m_basis(_b)

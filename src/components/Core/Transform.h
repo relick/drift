@@ -38,7 +38,7 @@ namespace Core
 			m_parent = Core::EntityID();
 		}
 
-		fTrans const CalculateWorldTransform() const
+		fTrans CalculateWorldTransform() const
 		{
 			Core::EntityID nextParent = m_parent;
 			fTrans finalTransform = m_transform;
@@ -54,7 +54,7 @@ namespace Core
 			return finalTransform;
 		}
 
-		fTrans const CalculateWorldTransform(fTrans const& _localTransform) const
+		fTrans CalculateWorldTransform(fTrans const& _localTransform) const
 		{
 			Core::EntityID nextParent = m_parent;
 			fTrans finalTransform = m_transform * _localTransform;
@@ -70,20 +70,9 @@ namespace Core
 			return finalTransform;
 		}
 
-		fTrans const CalculateLocalTransform(fTrans const& _worldTransform) const
+		fTrans CalculateLocalTransform(fTrans const& _worldTransform) const
 		{
-			Core::EntityID nextParent = m_parent;
-			fTrans finalTransform = _worldTransform;
-			while (nextParent.IsValid())
-			{
-				Transform const* const parentTrans = ecs::get_component<Transform>(nextParent.GetValue());
-				ASSERT(parentTrans != nullptr);
-
-				finalTransform *= parentTrans->m_transform;
-				nextParent = parentTrans->m_parent;
-			}
-
-			return finalTransform;
+			return CalculateWorldTransform().ToLocal(_worldTransform);
 		}
 	};
 }

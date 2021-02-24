@@ -37,7 +37,7 @@ namespace Core
 				}
 				else
 				{
-					ASSERT(false); // run out of lights!!
+					ASSERT(false, "ran out of lights");
 				}
 
 				return LightSetter{ lightData.Col[thisLightI], lightData.Pos[thisLightI], lightData.Att[thisLightI], lightData.Dir[thisLightI], lightData.Cut[thisLightI], };

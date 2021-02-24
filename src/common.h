@@ -20,6 +20,7 @@ using int64 = int64_t;
 using uint64 = uint64_t;
 using isize = std::ptrdiff_t;
 using usize = std::size_t;
+using wchar = wchar_t;
 
 // Define some maths types
 #define GLM_FORCE_SWIZZLE
@@ -180,10 +181,23 @@ namespace Colour
 
 #if DEBUG_TOOLS
 #include <assert.h>
-// Nothing special yet but maybe one day
-#define ASSERT(TEST) assert( TEST ) 
+
+#if _MSC_VER
+#define ASSERT_MESSAGE(cond, message) (void)(                                            \
+            (!!(cond)) ||                                                                \
+            (_wassert(_CRT_WIDE(message), _CRT_WIDE(__FILE__), (unsigned)(__LINE__)), 0) \
+        )
 #else
-#define ASSERT(TEST)
+#define ASSERT_MESSAGE(cond, message) assert(cond)
+#endif
+
+#define GET_ASSERT_MACRO(_1,_2,NAME,...) NAME
+#define ASSERT(...) GET_ASSERT_MACRO(__VA_ARGS__, ASSERT_MESSAGE, assert)(__VA_ARGS__)
+
+#else
+
+#define ASSERT(...)
+
 #endif
 
 #define SafeDelete(OBJ) { delete OBJ; OBJ = nullptr; }

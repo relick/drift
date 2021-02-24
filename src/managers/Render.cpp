@@ -120,7 +120,7 @@ namespace Core
 			{
 				ASSERT(m_currentPass < e_Pass_Count);
 				ASSERT(m_currentRenderer < e_Renderer_Count);
-				ASSERT(m_renderers[m_currentRenderer].CanUseGeneralBindings());
+				ASSERT(m_renderers[m_currentRenderer]->CanUseGeneralBindings());
 
 				sg_apply_bindings(_binds);
 				m_currentPassGlue = e_PassGlue_Count;

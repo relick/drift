@@ -1,6 +1,9 @@
 #pragma once
 
-#define IMGUI_DEBUG_ENABLED DEBUG_TOOLS
+#if DEBUG_TOOLS
+	#define IMGUI_DEBUG_ENABLED 1
+	#undef NDEBUG
+#endif
 
 // Define some number types
 #include <cstddef>

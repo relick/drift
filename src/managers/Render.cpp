@@ -494,8 +494,8 @@ namespace Core
 			auto fnLightMeshVisitor = [](Resource::MeshData const& _mesh)
 			{
 				sg_bindings bufOnlyBinds = _mesh.m_bindings;
-				bufOnlyBinds.fs_images[1] = {};
-				bufOnlyBinds.fs_images[2] = {};
+				std::memset(&bufOnlyBinds.vs_images, 0, sizeof(bufOnlyBinds.vs_images));
+				std::memset(&bufOnlyBinds.fs_images, 0, sizeof(bufOnlyBinds.fs_images));
 				state.SetBinding(bufOnlyBinds, _mesh.NumToDraw());
 			};
 

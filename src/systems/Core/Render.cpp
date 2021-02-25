@@ -26,10 +26,11 @@ namespace Core
 					lightSetter.Col = fVec4(_light.m_colour, _light.m_intensity);
 
 					fTrans const worldT = _t.CalculateWorldTransform();
-					fMat3 const& camBasis = worldT.m_basis;
-					fVec3 const& front = camBasis[2]; // get z, is front vec/light dir.
-					fVec3 const lightDir = glm::normalize(fVec3((GetCameraState().view * fVec4(front, 0.0f)).xyz));
+					// forward() is vec/light dir.
+					fVec3 const lightDir = glm::normalize(fVec3((GetCameraState().view * fVec4(worldT.forward(), 0.0f)).xyz));
 					lightSetter.Pos = fVec4(-lightDir, 0.0f);
+
+					SetDirectionalLightDir(worldT.forward());
 					break;
 				}
 				case Light::Type::Point:

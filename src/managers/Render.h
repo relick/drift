@@ -20,6 +20,7 @@ namespace Core
 		{
 			fMat4 proj{};
 			fMat4 view{};
+			fVec3 pos{};
 		};
 
 		void Init();
@@ -33,5 +34,6 @@ namespace Core
 		void AddModelToScene(Core::Resource::ModelID const& _model, fTrans const& _worldTrans);
 		LightSetter AddLightToScene();
 		void AddAmbientLightToScene(fVec3 const& _col);
+		void SetDirectionalLightDir(fVec3 const& _dir);
 	}
 }

@@ -33,11 +33,17 @@ namespace Core::Render
 		}
 
 	public:
+		struct DepthDetail
+		{
+			bool use_depth{ false };
+			bool sampled{ false };
+		};
+
 		Pass
 		(
 			int _w,
 			int _h,
-			bool _useDepth,
+			DepthDetail _depthDetail,
 			int _numCol,
 			std::string const& _debugName
 		)
@@ -48,7 +54,7 @@ namespace Core::Render
 			passDesc.label = passDebugStr.c_str();
 #endif
 
-			if (_useDepth)
+			if (_depthDetail.use_depth)
 			{
 				sg_image_desc depthTargetDesc{
 					.type = SG_IMAGETYPE_2D,
@@ -56,6 +62,10 @@ namespace Core::Render
 					.width = _w,
 					.height = _h,
 					.pixel_format = SG_PIXELFORMAT_DEPTH_STENCIL,
+					.wrap_u = SG_WRAP_CLAMP_TO_BORDER,
+					.wrap_v = SG_WRAP_CLAMP_TO_BORDER,
+					.border_color = SG_BORDERCOLOR_OPAQUE_WHITE,
+					.will_be_sampled = _depthDetail.sampled,
 				};
 #if DEBUG_TOOLS
 				std::string const depthDebugStr = _debugName + "-depth";
@@ -66,8 +76,7 @@ namespace Core::Render
 				passDesc.depth_stencil_attachment = { .image = *m_depthTarget, .mip_level = 0 };
 			}
 
-			// todo: more than 1 colour
-			if (_numCol > 0)
+			for (int i = 0; i < _numCol && i < 4; ++i)
 			{
 				sg_image_desc colTargetDesc{
 					.type = SG_IMAGETYPE_2D,
@@ -76,15 +85,15 @@ namespace Core::Render
 					.height = _h,
 				};
 #if DEBUG_TOOLS
-				std::string const colDebugStr = _debugName + "-colour[0]";
+				std::string const colDebugStr = _debugName + "-colour[" + std::to_string(i) + "]";
 				colTargetDesc.label = colDebugStr.c_str();
 #endif
-				m_colTargets[0] = sg_make_image(colTargetDesc);
+				m_colTargets[i] = sg_make_image(colTargetDesc);
 
-				passDesc.color_attachments[0] = { .image = *m_colTargets[0], .mip_level = 0 };
+				passDesc.color_attachments[i] = { .image = *m_colTargets[i], .mip_level = 0 };
 			}
 
-			m_valid = _useDepth || _numCol > 0;
+			m_valid = _depthDetail.use_depth || _numCol > 0;
 			if (m_valid)
 			{
 				m_pass = sg_make_pass(passDesc);
@@ -169,15 +178,17 @@ namespace Core::Render
 	{
 		sg_bindings m_bindings{};
 		bool m_valid{ false };
+		uint32 m_numToDraw{ 0 };
 
 #if DEBUG_TOOLS
 		std::array<bool, e_Pass_Count + 1> m_validPasses{ false };
 		std::array<bool, e_Renderer_Count + 1> m_validRenderers{ false };
 #endif
 	public:
-		PassGlue(sg_bindings const& _binds)
+		PassGlue(sg_bindings const& _binds, uint32 _numToDraw)
 			: m_bindings{ _binds }
 			, m_valid{ true }
+			, m_numToDraw{ _numToDraw }
 		{}
 
 		bool Set(e_Pass _currentPass, e_Renderer _currentRenderer)
@@ -197,6 +208,8 @@ namespace Core::Render
 			}
 			return false;
 		}
+
+		uint32 NumToDraw() const { return m_numToDraw; }
 
 		void AddValidPass(e_Pass _pass)
 		{

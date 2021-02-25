@@ -2,6 +2,7 @@
 in vec3 FragPos;
 in vec3 Normal;
 in vec2 TexCoord;
+in vec4 FragPosLightSpace;
 
 // material assumed to be layout(location=0)
 uniform material {
@@ -29,10 +30,55 @@ uniform lights {
     vec4 Cut[MAX_LIGHTS]; // x is innerCutoff, y is outerCutoff
 } Lights;
 
+uniform sampler2D directionalShadowMap;
+
 out vec4 FragColor;
 
+
+float CalcShadow(in vec4 fragPosLightSpace, in vec3 lightDir)
+{
+#if SOKOL_GLSL
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
+#else
+    vec3 projCoords;
+    projCoords.x = 0.5 + (fragPosLightSpace.x / fragPosLightSpace.w * 0.5);
+    projCoords.y = 0.5 - (fragPosLightSpace.y / fragPosLightSpace.w * 0.5);
+    projCoords.z = fragPosLightSpace.z / fragPosLightSpace.w;
+#endif
+    // todo: make better bias?
+    float bias = 0.004; //max(0.01 * (1.0 - dot(normalize(Normal), lightDir)), 0.005);
+    float currentDepth = projCoords.z - bias;
+    
+    float shadow = 0.0;
+    if(clamp(projCoords.x, 0.0, 1.0) == projCoords.x &&
+       clamp(projCoords.y, 0.0, 1.0) == projCoords.y &&
+       currentDepth > 0.0 &&
+       currentDepth <= 1.0
+       )
+    {
+        vec2 texelSize = 1.0 / textureSize(directionalShadowMap, 0);
+        for(int x = -1; x <= 1; ++x)
+        {
+            for(int y = -1; y <= 1; ++y)
+            {
+                float pcfDepth = texture(directionalShadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
+                shadow += currentDepth > pcfDepth ? 1.0 : 0.0;        
+            }    
+        }
+        shadow /= 9.0;
+    }
+
+    return shadow;
+}
+
+bool IsDirectionalLight(in int i)
+{
+    return Lights.Pos[i].w == 0.0;
+}
+
 // point, directional, spotlight, done in this. ambient done in main.
-vec4 CalcLight(in int i, in vec4 matDiffuse, in vec4 matSpecular)
+vec4 CalcLight(in int i, in vec4 matDiffuse, in vec4 matSpecular, inout float shadow)
 {
     vec4 diffuse = vec4(0.0);
     vec3 specular = vec3(0.0);
@@ -41,12 +87,14 @@ vec4 CalcLight(in int i, in vec4 matDiffuse, in vec4 matSpecular)
     vec3 lightDir;
 
     float theta;
+
     // light type
-    if(Lights.Pos[i].w == 0.0)
+    if(IsDirectionalLight(i))
     {
         // directional
         lightDir = Lights.Pos[i].xyz;
         theta = 1.1; // greater than all cutoffs
+        shadow = CalcShadow(FragPosLightSpace, lightDir);
     }
     else
     {
@@ -106,11 +154,13 @@ void main()
 
     vec4 ambient = vec4(Lights.ambient, 1.0) * matAmbient;
     vec4 result = ambient;
+    
+    float shadow = 0.0;
 
     for(int i = 0; i < int(Lights.numLights); ++i)
     {
-        result += CalcLight(i, matDiffuse, matSpecular);
+        result += CalcLight(i, matDiffuse, matSpecular, shadow);
     }
 
-    FragColor = result;
+    FragColor = (1.0 - shadow) * result;
 }

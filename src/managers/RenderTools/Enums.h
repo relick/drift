@@ -4,6 +4,7 @@ namespace Core::Render
 {
 	enum e_Pass
 	{
+		Pass_DirectionalLight,
 		Pass_MainTarget,
 		Pass_RenderToScreen,
 
@@ -20,6 +21,7 @@ namespace Core::Render
 	{
 		Renderer_Main,
 		Renderer_TargetToScreen,
+		Renderer_DepthOnly,
 
 		e_Renderer_Count,
 	};

@@ -477,7 +477,7 @@ namespace Core
 			state.NextPass(Pass_DirectionalLight);
 			state.SetRenderer(Renderer_DepthOnly);
 
-			fMat4 const lightProj = GetDirectionalLightOrthoMat(25.0f, 1.0f, 50.0f);
+			fMat4 const lightProj = GetDirectionalLightOrthoMat(20.0f, 1.0f, 50.0f);
 			fVec3 const lightPos = frameScene.camera.pos - (frameScene.lights.directionalDir * 25.0f);
 			fMat4 const lightView = glm::lookAt(lightPos, lightPos + frameScene.lights.directionalDir, fVec3(0.0f, 1.0f, 0.0f));
 			fMat4 const lightSpace = lightProj * lightView;

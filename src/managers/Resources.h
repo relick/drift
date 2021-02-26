@@ -21,6 +21,7 @@ namespace Core
 	{
 		void Init();
 		void Setup();
+		void Cleanup();
 
 		struct TextureIDType {};
 		using TextureID = ID<TextureIDType>;

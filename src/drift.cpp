@@ -4,6 +4,7 @@
 #include "managers/Input.h"
 #include "managers/Resources.h"
 #include "managers/Render.h"
+#include "managers/Sound.h"
 
 #include "components.h"
 #include "systems.h"
@@ -24,23 +25,25 @@ void initialise_cb()
 		Core::Render::Init();
 		Core::Render::TextAndGLDebug::Init();
 		Core::Render::DImGui::Init();
-		Core::Render::InitPipeline(); //needs to come after imgui's hooks
+		Core::Sound::Init();
 		Core::Physics::Init();
 		stm_setup();
 		sapp_lock_mouse(true);
 	}
 
-
 	// system and data setup
 	{
 		Core::Resource::Setup();
+		Core::Render::SetupPipeline();
 		Core::Render::Setup();
 		Core::Render::TextAndGLDebug::Setup();
 		Core::Render::DImGui::Setup();
+		Core::Sound::Setup();
 		Core::Physics::Setup();
 		Core::Input::Setup();
 	}
 
+	// game setup
 	{
 		Game::Player::Setup();
 	}
@@ -272,9 +275,11 @@ void frame_cb()
 void cleanup_cb()
 {
 	Core::Physics::Cleanup();
+	Core::Sound::Cleanup();
 	Core::Render::DImGui::Cleanup();
 	Core::Render::TextAndGLDebug::Cleanup();
 	Core::Render::Cleanup();
+	Core::Resource::Cleanup();
 }
 
 void event_cb(sapp_event const* _event)

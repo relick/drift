@@ -81,12 +81,12 @@ namespace Core
 			});
 
 
-			ecs::make_system<ecs::opts::group<Sys::RENDER_PASS_START>>([](Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _t)
+			ecs::make_system<ecs::opts::group<Sys::RENDER_PASS_START>>([](Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _t, MT_Only&)
 			{
 				Core::Render::StartPass(_rfd, _cam, _t);
 			});
 
-			ecs::make_system<ecs::opts::group<Sys::RENDER>>([](Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam)
+			ecs::make_system<ecs::opts::group<Sys::RENDER>>([](Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, MT_Only&)
 			{
 				Core::Render::Render(_rfd);
 			});

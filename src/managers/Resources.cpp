@@ -44,6 +44,11 @@ namespace Core
 			};
 			defaultTextureID = sg_make_image(emptyTexDesc);
 		}
+
+		void Cleanup()
+		{
+		}
+
 		TextureID NewTextureID() { return nextTextureID++; }
 		ModelID NewModelID() { return nextModelID++; }
 

@@ -7,6 +7,7 @@
 #include "systems/Core/ImGui.h"
 #include "systems/Core/Physics.h"
 #include "systems/Core/Render.h"
+#include "systems/Core/Sound.h"
 #include "systems/Core/TextAndGLDebug.h"
 
 // Game

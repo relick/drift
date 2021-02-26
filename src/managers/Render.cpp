@@ -409,7 +409,7 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		void InitPipeline()
+		void SetupPipeline()
 		{
 			RenderStateFiller filler{ state };
 			InitBuffers(filler);

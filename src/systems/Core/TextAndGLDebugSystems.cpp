@@ -1,8 +1,8 @@
-#include "TextAndGLDebug.h"
+#include "TextAndGLDebugSystems.h"
 
 #include "components.h"
 #include "SystemOrdering.h"
-#include "ImGui.h"
+#include "systems/Core/ImGuiSystems.h"
 
 #include <sokol_app.h>
 #include <sokol_gfx.h>

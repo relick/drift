@@ -17,12 +17,12 @@ namespace Core
 // Required for Add/RemoveComponent overloads
 #include "managers/EntityManager.h"
 
-#include "components/Core/Camera.h"
-#include "components/Core/Frame.h"
-#include "components/Core/Physics.h"
-#include "components/Core/Render.h"
-#include "components/Core/Sound.h"
-#include "components/Core/Transform.h"
+#include "components/Core/CameraComponents.h"
+#include "components/Core/FrameComponents.h"
+#include "components/Core/PhysicsComponents.h"
+#include "components/Core/RenderComponents.h"
+#include "components/Core/SoundComponents.h"
+#include "components/Core/TransformComponents.h"
 
 // Game
-#include "components/Game/Player.h"
+#include "components/Game/PlayerComponents.h"

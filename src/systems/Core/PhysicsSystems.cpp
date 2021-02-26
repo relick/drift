@@ -1,8 +1,8 @@
-﻿#include "Physics.h"
+﻿#include "PhysicsSystems.h"
 
 #include "SystemOrdering.h"
 #include "components.h"
-#include "managers/Input.h"
+#include "managers/InputManager.h"
 
 #include <btBulletDynamicsCommon.h>
 
@@ -11,11 +11,10 @@
 #if PHYSICS_DEBUG
 #include <sokol_gfx.h>
 #include <util/sokol_gl.h>
-#include "ImGui.h"
 #include <imgui.h>
 
-#include "managers/Input.h"
-#include "systems/Core/TextAndGLDebug.h"
+#include "systems/Core/ImGuiSystems.h"
+#include "systems/Core/TextAndGLDebugSystems.h"
 
 std::unique_ptr<btIDebugDraw> debugDrawer;
 

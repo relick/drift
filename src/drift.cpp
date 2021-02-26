@@ -1,10 +1,10 @@
 ﻿#include "common.h"
 
 #include "managers/EntityManager.h"
-#include "managers/Input.h"
-#include "managers/Resources.h"
-#include "managers/Render.h"
-#include "managers/Sound.h"
+#include "managers/InputManager.h"
+#include "managers/ResourceManager.h"
+#include "managers/RenderManager.h"
+#include "managers/SoundManager.h"
 
 #include "components.h"
 #include "systems.h"

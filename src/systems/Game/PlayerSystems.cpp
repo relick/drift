@@ -1,10 +1,10 @@
-#include "Player.h"
+#include "PlayerSystems.h"
 
 #include "components.h"
 #include "systems/Core/SystemOrdering.h"
 #include <ecs/ecs.h>
 
-#include "managers/Input.h"
+#include "managers/InputManager.h"
 
 #include <sokol_app.h>
 

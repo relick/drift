@@ -4,11 +4,11 @@
 #include "systems/Core/SystemOrdering.h"
 
 // Core
-#include "systems/Core/ImGui.h"
-#include "systems/Core/Physics.h"
-#include "systems/Core/Render.h"
-#include "systems/Core/Sound.h"
-#include "systems/Core/TextAndGLDebug.h"
+#include "systems/Core/ImGuiSystems.h"
+#include "systems/Core/PhysicsSystems.h"
+#include "systems/Core/RenderSystems.h"
+#include "systems/Core/SoundSystems.h"
+#include "systems/Core/TextAndGLDebugSystems.h"
 
 // Game
-#include "systems/Game/Player.h"
+#include "systems/Game/PlayerSystems.h"

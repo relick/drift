@@ -1,11 +1,10 @@
 #include "common.h"
 
-#include "Sound.h"
+#include "SoundManager.h"
 
 #include <soloud.h>
 #include <soloud_wav.h>
 #include <soloud_wavstream.h>
-#include "..\systems\Core\Sound.h"
 
 namespace Core::Sound
 {

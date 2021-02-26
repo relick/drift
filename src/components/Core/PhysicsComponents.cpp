@@ -1,6 +1,6 @@
-#include "Physics.h"
+#include "PhysicsComponents.h"
 
-#include "systems/Core/Physics.h"
+#include "systems/Core/PhysicsSystems.h"
 
 #include <btBulletDynamicsCommon.h>
 

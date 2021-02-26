@@ -1,6 +1,6 @@
 #include "common.h"
 
-#include "Sound.h"
+#include "SoundComponents.h"
 
 namespace Core::Sound
 {

@@ -1,9 +1,9 @@
-#include "Render.h"
+#include "RenderSystems.h"
 
 #include "SystemOrdering.h"
 #include "components.h"
 
-#include "managers/Render.h"
+#include "managers/RenderManager.h"
 
 namespace Core
 {

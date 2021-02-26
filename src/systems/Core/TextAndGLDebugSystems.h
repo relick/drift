@@ -2,7 +2,7 @@
 
 #include "common.h"
 
-#include "components/Core/Transform.h"
+#include "components/Core/TransformComponents.h"
 
 namespace Core
 {

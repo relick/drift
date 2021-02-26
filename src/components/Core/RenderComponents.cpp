@@ -1,6 +1,6 @@
-#include "Render.h"
+#include "RenderComponents.h"
 
-#include "managers/Resources.h"
+#include "managers/ResourceManager.h"
 
 #include <iostream>
 

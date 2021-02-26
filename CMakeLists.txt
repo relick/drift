@@ -57,7 +57,9 @@ include_directories(${BULLET_INCLUDE_DIR})
 find_package(Assimp CONFIG REQUIRED)
 include_directories(assimp::assimp)
 
-include_directories("src" "ecs/include" "ecs/tls/include" "sokol" "imgui" "fontstash/src" "stb" "glm" "gcem/include")
+link_directories("lib")
+
+include_directories("src" "ecs/include" "ecs/tls/include" "sokol" "imgui" "fontstash/src" "stb" "glm" "gcem/include" "soloud/include")
 
 # Add source to this project's executable.
 set (SOURCE_H "src/systems/Core/SystemOrdering.h" "src/systems/Core/Render.h"  "src/systems/Core/ImGui.h" "src/components/Core/Frame.h" "src/systems/Core/TextAndGLDebug.h" "src/CubeTest.h" "src/components/Core/Camera.h" "src/managers/Input.h" "src/Entity.h" "src/systems/Core/Physics.h" "src/managers/Resources.h" "src/ID.h" "src/components/Game/Player.h" "src/systems/Game/Player.h" "src/managers/Render.h" "src/managers/RenderTools/Pipeline.h" "src/managers/RenderTools/Enums.h")
@@ -65,4 +67,4 @@ set (SOURCE_CPP "imgui/imgui.cpp" "imgui/imgui_demo.cpp" "imgui/imgui_tables.cpp
 
 add_executable (drift ${SOURCE_H} ${SOURCE_CPP} ${SHADERS_COMPILED})
 
-target_link_libraries(drift PRIVATE ${BULLET_LIBRARIES} assimp::assimp)
+target_link_libraries(drift PRIVATE ${BULLET_LIBRARIES} assimp::assimp "soloud_static_x64")

@@ -19,3 +19,6 @@
 [submodule "gcem"]
 	path = gcem
 	url = https://github.com/kthohr/gcem
+[submodule "soloud"]
+	path = soloud
+	url = https://github.com/jarikomppa/soloud

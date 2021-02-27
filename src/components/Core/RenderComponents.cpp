@@ -2,8 +2,6 @@
 
 #include "managers/ResourceManager.h"
 
-#include <iostream>
-
 namespace Core
 {
 	template<>
@@ -13,14 +11,11 @@ namespace Core
 
 		bool const loaded = Core::Resource::LoadModel(_desc.m_filePath, newComponent.m_modelID);
 
+		ASSERT(loaded, "couldn't load model, not adding component");
 		if (loaded)
 		{
 			// Add to ecs
 			ecs::add_component(_entity.GetValue(), newComponent);
-		}
-		else
-		{
-			std::cout << "couldn't load model, not adding component" << std::endl;
 		}
 	}
 

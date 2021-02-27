@@ -2,7 +2,7 @@
 
 #include "common.h"
 #include "managers/EntityManager.h"
-#include "managers/ResourceManager.h"
+#include "managers/ResourceIDs.h"
 
 #include <ecs/flags.h>
 

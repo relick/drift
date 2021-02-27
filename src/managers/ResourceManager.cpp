@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <unordered_map>
+#include <array>
 
 #include <stb_image.h>
 
@@ -17,6 +18,14 @@ Core::Resource::ModelID::ValueType nextModelID = 0;
 sg_image defaultTextureID{}; // used for missing textures
 std::unordered_map<Core::Resource::TextureID, Core::Resource::TextureData> textures;
 std::unordered_map<Core::Resource::ModelID, Core::Resource::ModelData> models;
+
+constexpr usize const g_maxSoundEffects = 128;
+constexpr usize const g_maxMusic = 32;
+
+Core::Resource::SoundEffectID::ValueType nextSoundEffectID = 0;
+Core::Resource::MusicID::ValueType nextMusicID = 0;
+std::array<Core::Resource::SoundEffectData, g_maxSoundEffects> soundEffects;
+std::array<Core::Resource::MusicData, g_maxMusic> music;
 
 namespace Core
 {
@@ -59,6 +68,65 @@ namespace Core
 		ModelData const& GetModel(ModelID _model)
 		{
 			return models.at(_model);
+		}
+
+		SoundEffectID NewSoundEffectID() { ASSERT(nextSoundEffectID < g_maxSoundEffects, "ran out of sound effects"); return nextSoundEffectID++; }
+		MusicID NewMusicID() { ASSERT(nextMusicID < g_maxMusic, "ran out of music"); return nextMusicID++; }
+
+		SoundEffectID GetSoundEffectID
+		(
+			std::string const& _path
+		)
+		{
+			for (SoundEffectID::ValueType i = 0; i < nextSoundEffectID; ++i)
+			{
+				if (soundEffects[i].m_path == _path)
+				{
+					return i;
+				}
+			}
+
+			SoundEffectID const newID = NewSoundEffectID();
+			SoundEffectData& newSoundEffect = soundEffects[newID.GetValue()];
+			if (newSoundEffect.m_sound.load(_path.c_str()) == SoLoud::SO_NO_ERROR)
+			{
+				newSoundEffect.m_path = _path;
+				return newID;
+			}
+			return SoundEffectID();
+		}
+
+		MusicID GetMusicID
+		(
+			std::string const& _path
+		)
+		{
+			for (MusicID::ValueType i = 0; i < nextMusicID; ++i)
+			{
+				if (music[i].m_path == _path)
+				{
+					return i;
+				}
+			}
+
+			MusicID const newID = NewMusicID();
+			MusicData& newMusic = music[newID.GetValue()];
+			if (newMusic.m_music.load(_path.c_str()) == SoLoud::SO_NO_ERROR)
+			{
+				newMusic.m_path = _path;
+				return newID;
+			}
+			return MusicID();
+		}
+
+		SoundEffectData& GetSoundEffect(SoundEffectID _soundEffect)
+		{
+			return soundEffects[_soundEffect.GetValue()];
+		}
+
+		MusicData& GetMusic(MusicID _music)
+		{
+			return music[_music.GetValue()];
 		}
 
 		TextureID FindExistingTexture(char const* _texPath)
@@ -282,7 +350,7 @@ namespace Core
 
 		bool LoadModel
 		(
-			std::string _path,
+			std::string const& _path,
 			ModelID& o_modelID
 		)
 		{

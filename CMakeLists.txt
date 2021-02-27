@@ -44,6 +44,10 @@ elseif(USE_OPENGL330)
 	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSOKOL_GLCORE33")
 endif()
 
+## so there's this absolute nonsense where one of the headers in windows will generate min and max macros.
+## and this define stops it doing that because WHY THE HELL WOULD ANYONE DO THAT
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNOMINMAX")
+
 
 ## Define DEBUG_TOOLS on debug builds for all platforms
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG_TOOLS")
@@ -62,7 +66,7 @@ link_directories("lib")
 include_directories("src" "ecs/include" "ecs/tls/include" "sokol" "imgui" "fontstash/src" "stb" "glm" "gcem/include" "soloud/include")
 
 # Add source to this project's executable.
-set (SOURCE_H "src/systems/Core/SystemOrdering.h" "src/systems/Core/RenderSystems.h"  "src/systems/Core/ImGuiSystems.h" "src/components/Core/FrameComponents.h" "src/systems/Core/TextAndGLDebugSystems.h" "src/CubeTest.h" "src/components/Core/CameraComponents.h" "src/managers/InputManager.h" "src/Entity.h" "src/systems/Core/PhysicsSystems.h" "src/managers/ResourceManager.h" "src/ID.h" "src/components/Game/PlayerComponents.h" "src/systems/Game/PlayerSystems.h" "src/managers/RenderManager.h" "src/managers/RenderTools/Pipeline.h" "src/managers/RenderTools/Enums.h" "src/managers/SoundManager.h" "src/systems/Core/SoundSystems.h" "src/components/Core/SoundComponents.h")
+set (SOURCE_H "src/systems/Core/SystemOrdering.h" "src/systems/Core/RenderSystems.h"  "src/systems/Core/ImGuiSystems.h" "src/components/Core/FrameComponents.h" "src/systems/Core/TextAndGLDebugSystems.h" "src/CubeTest.h" "src/components/Core/CameraComponents.h" "src/managers/InputManager.h" "src/Entity.h" "src/systems/Core/PhysicsSystems.h" "src/managers/ResourceManager.h" "src/ID.h" "src/components/Game/PlayerComponents.h" "src/systems/Game/PlayerSystems.h" "src/managers/RenderManager.h" "src/managers/RenderTools/Pipeline.h" "src/managers/RenderTools/Enums.h" "src/managers/SoundManager.h" "src/systems/Core/SoundSystems.h" "src/components/Core/SoundComponents.h" "src/managers/ResourceIDs.h" )
 set (SOURCE_CPP "imgui/imgui.cpp" "imgui/imgui_demo.cpp" "imgui/imgui_tables.cpp" "imgui/imgui_draw.cpp" "imgui/imgui_widgets.cpp" "src/drift.cpp" "src/managers/EntityManager.cpp" "src/systems/Core/ImGuiSystems.cpp" "src/systems/Core/TextAndGLDebugSystems.cpp" "src/CubeTest.cpp" "src/managers/InputManager.cpp" "src/systems/Core/PhysicsSystems.cpp" "src/components/Core/PhysicsComponents.cpp" "src/managers/ResourceManager.cpp" "src/systems/Core/RenderSystems.cpp" "src/components/Core/RenderComponents.cpp" "src/systems/Game/PlayerSystems.cpp" "src/managers/RenderManager.cpp" "src/stbImpl.cpp" "src/managers/SoundManager.cpp" "src/systems/Core/SoundSystems.cpp" "src/components/Core/SoundComponents.cpp")
 
 add_executable (drift ${SOURCE_H} ${SOURCE_CPP} ${SHADERS_COMPILED})

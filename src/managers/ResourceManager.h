@@ -1,11 +1,14 @@
 #pragma once
 
 #include "common.h"
-#include "ID.h"
+#include "ResourceIDs.h"
 
 #include <vector>
 #include <string>
 #include <sokol_gfx.h>
+
+#include <soloud_wav.h>
+#include <soloud_wavstream.h>
 
 #include "shaders/main.h"
 
@@ -22,12 +25,6 @@ namespace Core
 		void Init();
 		void Setup();
 		void Cleanup();
-
-		struct TextureIDType {};
-		using TextureID = ID<TextureIDType>;
-
-		struct ModelIDType {};
-		using ModelID = ID<ModelIDType>;
 
 		struct TextureData
 		{
@@ -91,6 +88,23 @@ namespace Core
 		TextureData const& GetTexture(TextureID _texture);
 		ModelData const& GetModel(ModelID _model);
 
-		bool LoadModel(std::string _path, ModelID& o_modelID);
+		bool LoadModel(std::string const& _path, ModelID& o_modelID);
+
+		struct SoundEffectData
+		{
+			std::string m_path;
+			SoLoud::Wav m_sound;
+		};
+
+		struct MusicData
+		{
+			std::string m_path;
+			SoLoud::WavStream m_music;
+		};
+
+		SoundEffectID GetSoundEffectID(std::string const& _path);
+		MusicID GetMusicID(std::string const& _path);
+		SoundEffectData& GetSoundEffect(SoundEffectID _soundEffect);
+		MusicData& GetMusic(MusicID _music);
 	}
 }

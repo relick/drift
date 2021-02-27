@@ -205,6 +205,7 @@ void setup_cube()
 
 		Core::AddComponent(cube, rbDesc);
 	}
+	Core::AddComponent(cube, Core::Sound::BGMDesc{ .m_filePath = "assets/bgm/lls.mp3" });
 
 	Core::EntityID cube2 = Core::CreateEntity();
 	fTrans const cube2Trans{ fQuatIdentity(), fVec3(-0.5f, 1.5f, 0.0f) };
@@ -226,14 +227,14 @@ void setup_cube()
 		Core::AddComponent(cube2, rbDesc);
 	}
 
-	Core::EntityID backpack = Core::CreateEntity();
+	/*Core::EntityID backpack = Core::CreateEntity();
 	Core::AddComponent(backpack, Core::Transform(fQuatIdentity(), fVec3(0.0f, 1.0f, -2.0f)));
 	{
 		Core::Render::ModelDesc modelDesc{};
 		modelDesc.m_filePath = "assets/models/backpack/backpack.obj";
 		Core::AddComponent(backpack, modelDesc);
 		Core::AddComponent(backpack, Core::Render::CubeTest{ true, 0.0f, 0.0f });
-	}
+	}*/
 
 	Core::EntityID lightCube = Core::CreateEntity();
 	Core::AddComponent(lightCube, Core::Transform(RotationFromForward(fVec3(-1.0f, -1.0f, 0.0f)), fVec3(1.2f, 1.0f, 2.0f)));

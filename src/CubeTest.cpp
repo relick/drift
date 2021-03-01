@@ -205,12 +205,12 @@ void setup_cube()
 
 		Core::AddComponent(cube, rbDesc);
 	}
-	Core::AddComponent(cube, Core::Sound::BGMDesc{ .m_filePath = "assets/bgm/lls.mp3" });
+	Core::AddComponent(cube, Core::Sound::BGMDesc{ .m_filePath = "assets/bgm/rom.mp3", .m_initVolume = 1.0f, });
+	//Core::AddComponent(cube, Core::Sound::FadeChangeBGM{ .m_timeToFade = 5.0f, .m_targetVolume = 1.0f, .m_nextBGMFilePath = "assets/bgm/ztd.mp3", });
 
 	Core::EntityID cube2 = Core::CreateEntity();
 	fTrans const cube2Trans{ fQuatIdentity(), fVec3(-0.5f, 1.5f, 0.0f) };
 	Core::AddComponent(cube2, Core::Transform(cube2Trans));
-	Core::AddComponent(cube2, Core::Render::CubeTest{false, 0.0f, 0.0f});
 	{
 		Core::Render::ModelDesc modelDesc{};
 		modelDesc.m_filePath = "assets/models/cube/bluecube.obj";

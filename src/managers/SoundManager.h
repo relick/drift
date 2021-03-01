@@ -16,6 +16,7 @@ namespace Core::Sound
 	void PauseBGM();
 	void EndBGM();
 	void ChangeBGMVolume(float _volume);
+	float GetBGMVolume();
 
 	// 3D Music
 }

@@ -17,6 +17,7 @@ namespace Core
 		if (musicID.IsValid())
 		{
 			// Add to ecs
+			newComponent.m_music = musicID;
 			ecs::add_component(_entity.GetValue(), newComponent);
 			Sound::PlayBGM(musicID, _desc.m_initVolume);
 		}
@@ -25,11 +26,32 @@ namespace Core
 	template<>
 	void RemoveComponent<Sound::BGM>(EntityID const _entity)
 	{
-		Sound::BGM* const oldComponent = ecs::get_component<Sound::BGM>(_entity.GetValue());
-		ASSERT(oldComponent);
-
 		Sound::EndBGM();
-
 		ecs::remove_component<Sound::BGM>(_entity.GetValue());
+	}
+
+	template<>
+	void AddComponent(EntityID const _entity, Sound::SoundEffectDesc const& _desc)
+	{
+		Sound::SoundEffect newComponent{};
+
+		Resource::SoundEffectID const sfxID = Resource::GetSoundEffectID(_desc.m_filePath);
+
+		ASSERT(sfxID.IsValid(), "couldn't load music, not adding component");
+		if (sfxID.IsValid())
+		{
+			// Add to ecs
+			newComponent.m_is3D = _desc.m_is3D;
+			newComponent.m_soundEffect = sfxID;
+			ecs::add_component(_entity.GetValue(), newComponent);
+			if (_desc.m_is3D)
+			{
+				Sound::PlaySoundEffect3D(sfxID, fVec3{});
+			}
+			else
+			{
+				Sound::PlaySoundEffect(sfxID);
+			}
+		}
 	}
 }

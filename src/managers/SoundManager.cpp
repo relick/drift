@@ -105,4 +105,14 @@ namespace Core::Sound
 			soundState.soloud.setVolume(soundState.currentPlayingBGM.handle, _volume);
 		}
 	}
+
+	//--------------------------------------------------------------------------------
+	float GetBGMVolume()
+	{
+		if (soundState.currentPlayingBGM.music.IsValid())
+		{
+			return soundState.soloud.getVolume(soundState.currentPlayingBGM.handle);
+		}
+		return 0.0f;
+	}
 }

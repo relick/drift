@@ -2,7 +2,6 @@
 
 #if DEBUG_TOOLS
 	#define IMGUI_DEBUG_ENABLED 1
-	#undef NDEBUG
 #endif
 
 // Define some number types

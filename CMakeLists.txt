@@ -11,7 +11,7 @@ set (CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
 ## Set C++ details
 set (CMAKE_CXX_STANDARD 20)
 if (MSVC)
-	set (CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /W3 /GR /EHsc")
+	set (CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /W3 /GR- /EHsc")
 	if (CXX_COMPILER_ID MATCHES Clang)
 		set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-m64 -fdiagnostics-absolute-paths")
 	endif ()

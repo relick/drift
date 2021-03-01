@@ -5,7 +5,7 @@
 #include <assimp/postprocess.h>
 
 #include <iostream>
-#include <unordered_map>
+#include <absl/container/flat_hash_map.h>
 #include <array>
 
 #include <stb_image.h>
@@ -16,8 +16,8 @@ Core::Resource::TextureID::ValueType nextTextureID = 0;
 Core::Resource::ModelID::ValueType nextModelID = 0;
 
 sg_image defaultTextureID{}; // used for missing textures
-std::unordered_map<Core::Resource::TextureID, Core::Resource::TextureData> textures;
-std::unordered_map<Core::Resource::ModelID, Core::Resource::ModelData> models;
+absl::flat_hash_map<Core::Resource::TextureID, Core::Resource::TextureData> textures;
+absl::flat_hash_map<Core::Resource::ModelID, Core::Resource::ModelData> models;
 
 constexpr usize const g_maxSoundEffects = 128;
 constexpr usize const g_maxMusic = 32;
@@ -403,7 +403,7 @@ namespace Core
 					newModel.m_vertexBufferData.push_back(vertex.uv.x);
 					newModel.m_vertexBufferData.push_back(vertex.uv.y);
 				}
-				for (uint16 const& index : mesh.m_indices)
+				for (auto const& index : mesh.m_indices)
 				{
 					newModel.m_indexBufferData.push_back(static_cast<uint32>(meshVertexOffset + index));
 				}

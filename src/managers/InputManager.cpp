@@ -162,6 +162,10 @@ namespace Core
 				inputState.nextFrame.dMouseScroll += _event->scroll_y;
 				break;
 			}
+			default:
+			{
+				break; // only respond to interesting things
+			}
 			}
 		}
 

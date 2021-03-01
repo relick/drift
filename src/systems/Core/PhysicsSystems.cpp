@@ -139,7 +139,6 @@ namespace Core
 				// playerStep
 				{
 					/* Handle turning */
-					float const turnVel = 1.0f;
 					float const walkAccel = 250.0f;
 					float const maxLinearVel2 = powf(15.0f / 3.6f, 2);
 

@@ -24,7 +24,7 @@
 
 #include <vector>
 #include <mutex>
-#include <unordered_map>
+#include <absl/container/flat_hash_map.h>
 
 FONScontext* fonsContext{ nullptr };
 uint32 fonsFontCount = 0;
@@ -53,7 +53,7 @@ namespace Core
 			fVec3 m_start{};
 			fVec3 m_end{};
 		};
-		std::unordered_map<uint32, std::vector<LineToDraw>> linesToDraw{};
+		absl::flat_hash_map<uint32, std::vector<LineToDraw>> linesToDraw{};
 		std::mutex linesToDrawLock{};
 
 		void FlushGL()

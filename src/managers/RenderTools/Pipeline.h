@@ -273,6 +273,8 @@ namespace Core::Render
 		{
 #if DEBUG_TOOLS
 			return m_validPasses[e_Pass_Count];
+#else
+			return true;
 #endif
 		}
 	};

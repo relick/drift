@@ -22,3 +22,6 @@
 [submodule "soloud"]
 	path = soloud
 	url = https://github.com/jarikomppa/soloud
+[submodule "abseil-cpp"]
+	path = abseil-cpp
+	url = https://github.com/abseil/abseil-cpp.git

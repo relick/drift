@@ -6,6 +6,11 @@
 
 #include <ecs/flags.h>
 
+namespace SoLoud
+{
+	typedef unsigned int handle;
+}
+
 namespace Core::Sound
 {
 	struct FadeInBGM
@@ -48,19 +53,19 @@ namespace Core::Sound
 		Resource::MusicID m_music;
 	};
 
-	struct SoundEffectDesc
+	struct SoundEffect3DDesc
 	{
 		std::string m_filePath;
 		float m_initVolume{ -1.0f };
-		bool m_is3D{ false };
 	};
 
-	struct SoundEffect
+	struct SoundEffect3D
 	{
 		use_initialiser;
 
 		Resource::SoundEffectID m_soundEffect;
-		bool m_is3D;
+		std::optional<fVec3> m_lastPos{};
+		SoLoud::handle m_handle{ 0 };
 	};
 
 }
@@ -74,8 +79,5 @@ namespace Core
 	void RemoveComponent<Sound::BGM>(EntityID const _entity);
 
 	template<>
-	void AddComponent(EntityID const _entity, Sound::SoundEffectDesc const& _desc);
-
-	template<>
-	void RemoveComponent<Sound::SoundEffect>(EntityID const _entity);
+	void AddComponent(EntityID const _entity, Sound::SoundEffect3DDesc const& _desc);
 }

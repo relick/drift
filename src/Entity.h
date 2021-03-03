@@ -5,21 +5,47 @@
 
 namespace Core
 {
+	// don't you just love forward declares!
+	class EntityID;
+
+	namespace detail
+	{
+		inline ecs::entity_id AccessECSID(EntityID const);
+	}
+
 	class EntityID
 	{
-		static constexpr ecs::entity_id null_id{ static_cast<ecs::entity_id>(-1) };
-		ecs::entity_id m_entity{ null_id };
 	public:
-		ecs::entity_id GetValue() const { return m_entity; }
-		bool IsValid() const { return m_entity != null_id; }
-		bool IsNull() const { return m_entity == null_id; }
+		using CoreType = ecs::entity_id;
+
+	protected:
+		friend CoreType detail::AccessECSID(EntityID const);
+
+		static constexpr CoreType s_nullID{ static_cast<CoreType>(-1) };
+		CoreType m_entity{ s_nullID };
+	public:
+		bool IsValid() const { return m_entity != s_nullID; }
+		bool IsNull() const { return m_entity == s_nullID; }
 		auto operator<=>(EntityID const&) const = default;
 		bool operator==(EntityID const&) const = default;
 
 		EntityID() = default;
-		EntityID(ecs::entity_id _entity) : m_entity{ _entity } {}
+		EntityID(CoreType _entity) : m_entity{ _entity } {}
 		EntityID& operator=(EntityID const&) = default;
+
+#if DEBUG_TOOLS
+		CoreType GetDebugValue() const { return m_entity; }
+		// GetDebugString()
+#endif
 	};
+
+	namespace detail
+	{
+		inline EntityID::CoreType AccessECSID(EntityID const _e)
+		{
+			return _e.m_entity;
+		}
+	}
 }
 
 namespace std
@@ -29,7 +55,7 @@ namespace std
 	{
 		std::size_t operator()(Core::EntityID const& _k) const
 		{
-			return hash<ecs::detail::entity_type>()(_k.GetValue());
+			return hash<ecs::detail::entity_type>()(Core::detail::AccessECSID(_k));
 		}
 	};
 }

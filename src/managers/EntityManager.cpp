@@ -2,7 +2,7 @@
 
 namespace Core
 {
-	ecs::entity_id nextID = 0;
+	EntityID::CoreType nextID = 0;
 
 	EntityID CreateEntity()
 	{

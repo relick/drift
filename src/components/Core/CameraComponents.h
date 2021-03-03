@@ -12,6 +12,8 @@ namespace Core
 		struct Camera
 		{
 			float m_povY{ 60.0f }; // degrees
+
+			std::optional<fVec3> m_lastPos; // used to calculate sound velocity
 		};
 
 		struct DebugCameraControl

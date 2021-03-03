@@ -56,13 +56,13 @@ namespace Core
 #endif
 		physicsWorlds.emplace(_entity, PhysicsWorldInternalData{ 0u });
 
-		ecs::add_component(_entity.GetValue(), newComponent);
+		Core::ECS::AddComponent(_entity, newComponent);
 	}
 
 	template<>
 	void RemoveComponent<Physics::World>(EntityID const _entity)
 	{
-		Physics::World* const oldComponent = ecs::get_component<Physics::World>(_entity.GetValue());
+		Physics::World* const oldComponent = Core::GetComponent<Physics::World>(_entity);
 		ASSERT(oldComponent);
 		SafeDelete(oldComponent->m_collisionConfiguration);
 		SafeDelete(oldComponent->m_dispatcher);
@@ -76,7 +76,7 @@ namespace Core
 		ASSERT(physicsWorlds.at(_entity).numBodies == 0u);
 		physicsWorlds.erase(_entity);
 
-		ecs::remove_component<Physics::World>(_entity.GetValue());
+		Core::ECS::RemoveComponent<Physics::World>(_entity);
 	}
 
 	template<>
@@ -130,13 +130,13 @@ namespace Core
 		physicsWorlds.at(newComponent.m_physicsWorld).numBodies++;
 
 		// Add to ecs
-		ecs::add_component(_entity.GetValue(), newComponent);
+		Core::ECS::AddComponent(_entity, newComponent);
 	}
 
 	template<>
 	void RemoveComponent<Physics::RigidBody>(EntityID const _entity)
 	{
-		Physics::RigidBody* const oldComponent = ecs::get_component<Physics::RigidBody>(_entity.GetValue());
+		Physics::RigidBody* const oldComponent = Core::GetComponent<Physics::RigidBody>(_entity);
 		ASSERT(oldComponent);
 
 		Core::Physics::World& physicsWorld = Physics::GetWorld(oldComponent->m_physicsWorld);
@@ -148,7 +148,7 @@ namespace Core
 		SafeDelete(oldComponent->m_body);
 		SafeDelete(oldComponent->m_shape);
 
-		ecs::remove_component<Physics::World>(_entity.GetValue());
+		Core::ECS::RemoveComponent<Physics::RigidBody>(_entity);
 	}
 
 	template<>
@@ -184,13 +184,13 @@ namespace Core
 		physicsWorlds.at(newComponent.m_physicsWorld).numBodies++;
 
 		// Add to ecs
-		ecs::add_component(_entity.GetValue(), newComponent);
+		Core::ECS::AddComponent(_entity, newComponent);
 	}
 
 	template<>
 	void RemoveComponent<Physics::CharacterController>(EntityID const _entity)
 	{
-		Physics::CharacterController* const oldComponent = ecs::get_component<Physics::CharacterController>(_entity.GetValue());
+		Physics::CharacterController* const oldComponent = Core::GetComponent<Physics::CharacterController>(_entity);
 		ASSERT(oldComponent);
 
 		Core::Physics::World& physicsWorld = Physics::GetWorld(oldComponent->m_physicsWorld);
@@ -202,6 +202,6 @@ namespace Core
 		SafeDelete(oldComponent->m_body);
 		SafeDelete(oldComponent->m_shape);
 
-		ecs::remove_component<Physics::World>(_entity.GetValue());
+		Core::ECS::RemoveComponent<Physics::CharacterController>(_entity);
 	}
 }

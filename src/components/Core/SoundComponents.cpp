@@ -1,6 +1,7 @@
 #include "common.h"
 
 #include "SoundComponents.h"
+#include "components.h"
 #include "managers/ResourceManager.h"
 #include "managers/SoundManager.h"
 
@@ -18,7 +19,7 @@ namespace Core
 		{
 			// Add to ecs
 			newComponent.m_music = musicID;
-			ecs::add_component(_entity.GetValue(), newComponent);
+			Core::ECS::AddComponent(_entity, newComponent);
 			Sound::PlayBGM(musicID, _desc.m_initVolume);
 		}
 	}
@@ -27,13 +28,13 @@ namespace Core
 	void RemoveComponent<Sound::BGM>(EntityID const _entity)
 	{
 		Sound::EndBGM();
-		ecs::remove_component<Sound::BGM>(_entity.GetValue());
+		Core::ECS::RemoveComponent<Sound::BGM>(_entity);
 	}
 
 	template<>
-	void AddComponent(EntityID const _entity, Sound::SoundEffectDesc const& _desc)
+	void AddComponent(EntityID const _entity, Sound::SoundEffect3DDesc const& _desc)
 	{
-		Sound::SoundEffect newComponent{};
+		Sound::SoundEffect3D newComponent{};
 
 		Resource::SoundEffectID const sfxID = Resource::GetSoundEffectID(_desc.m_filePath);
 
@@ -41,17 +42,13 @@ namespace Core
 		if (sfxID.IsValid())
 		{
 			// Add to ecs
-			newComponent.m_is3D = _desc.m_is3D;
+			Core::Transform const* transform = Core::GetComponent<Core::Transform>(_entity);
+			ASSERT(transform != nullptr, "missing Transform component when trying to add SoundEffect3D");
+
 			newComponent.m_soundEffect = sfxID;
-			ecs::add_component(_entity.GetValue(), newComponent);
-			if (_desc.m_is3D)
-			{
-				Sound::PlaySoundEffect3D(sfxID, fVec3{});
-			}
-			else
-			{
-				Sound::PlaySoundEffect(sfxID);
-			}
+			newComponent.m_handle = Sound::AddSoundEffect3D(sfxID, transform->CalculateWorldTransform().m_origin);
+
+			Core::ECS::AddComponent(_entity, newComponent);
 		}
 	}
 }

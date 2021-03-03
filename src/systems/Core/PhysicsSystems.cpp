@@ -145,7 +145,7 @@ namespace Core
 					btVector3 linearVelocity = _cc.m_body->getLinearVelocity();
 					float yLinVel = linearVelocity.y();
 
-					fVec3 forward = _cc.m_viewObject.IsValid() ? (ecs::get_component<Core::Transform>(_cc.m_viewObject.GetValue())->T().forward()) : _t.T().forward();
+					fVec3 forward = _cc.m_viewObject.IsValid() ? (Core::GetComponent<Core::Transform>(_cc.m_viewObject)->T().forward()) : _t.T().forward();
 					forward.y = 0;
 					forward = glm::normalize(forward);
 					fVec3 right = glm::normalize(glm::cross(forward, fVec3(0, 1, 0)));
@@ -317,7 +317,7 @@ namespace Core
 			// Multiple worlds can run I guess
 			ecs::make_system<ecs::opts::group<Sys::PHYSICS_STEP>>([](
 #if PHYSICS_DEBUG
-			ecs::entity_id _entity,
+			Core::EntityID::CoreType _entity,
 #endif 
 				Core::FrameData const& _fd, Core::Physics::World& _pw)
 			{
@@ -346,8 +346,8 @@ namespace Core
 
 						for (ImGuiWorldData& world : imGuiData.physicsWorlds)
 						{
-							ImGui::PushID((int32)world.worldEntity.GetValue());
-							ImGui::Text("World %u", (uint32)world.worldEntity.GetValue());
+							ImGui::PushID((int32)world.worldEntity.GetDebugValue());
+							ImGui::Text("World %u", (uint32)world.worldEntity.GetDebugValue());
 							ImGui::Checkbox("- Show debug", &world.showDebugDraw);
 							ImGui::PopID();
 						}

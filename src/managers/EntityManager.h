@@ -5,7 +5,7 @@
 
 namespace Core
 {
-	extern ecs::entity_id nextID;
+	extern EntityID::CoreType nextID;
 
 	EntityID CreateEntity();
 
@@ -16,14 +16,33 @@ namespace Core
 		concept DoesNotNeedInitialiser = !requires{ typename std::remove_cvref_t<T>::_initialiser_only; };
 	}
 
-	// Wrap add_component. This allows for specialisation for components that want to initialise things
+	// functions used by elements of the ECS itself and not by game code
+	// wrapping the underlying ecs lib makes it possible to actually destroy entities, keep track of what to serialise, etc.
+	namespace ECS
+	{
+		// Wraps ecs::add_component, shouldn't be used directly except by specialisations of AddComponent
+		template <typename T_Component>
+		void AddComponent(EntityID const _entity, T_Component const& _component)
+		{
+			ecs::add_component(Core::detail::AccessECSID(_entity), static_cast<std::remove_const_t<T_Component>>(_component));
+		}
+
+		// Wraps ecs::remove_component, shouldn't be used directly except by specialisations of RemoveComponent
+		template<typename T_Component>
+		void RemoveComponent(EntityID const _entity)
+		{
+			ecs::remove_component<T_Component>(Core::detail::AccessECSID(_entity));
+		}
+	}
+
+	// Basic AddComponent. This allows for specialisation for components that want to initialise things
 	template<detail::DoesNotNeedInitialiser T_Component>
 	void AddComponent(EntityID const _entity, T_Component const& _component)
 	{
-		ecs::add_component(_entity.GetValue(), static_cast<std::remove_const_t<T_Component>>(_component));
+		ECS::AddComponent(_entity, _component);
 	}
 
-	// Expand it here - add_component does this anyway so shouldn't be any different.
+	// Expanded form for convenience - don't specialise this.
 	template<detail::DoesNotNeedInitialiser T_FirstComponent, detail::DoesNotNeedInitialiser... T_Components>
 	void AddComponents(EntityID const _entity, T_FirstComponent const& _firstComponent, T_Components const&... _components)
 	{
@@ -31,12 +50,18 @@ namespace Core
 		(AddComponent(_entity, _components), ...);
 	}
 
-	// Wrap remove_component. This allows for specialisation for components that want to destroy things
+	// Basic RemoveComponent. This allows for specialisation for components that want to destroy things
 	// pre-condition: entity has the component.
 	template<typename T_Component>
 	void RemoveComponent(EntityID const _entity)
 	{
-		ecs::remove_component<T_Component>(_entity.GetValue());
+		ECS::RemoveComponent<T_Component>(_entity);
 	}
 
+	// Wrap get_component. Nothing special
+	template<typename T_Component>
+	T_Component* GetComponent(EntityID const _entity)
+	{
+		return ecs::get_component<T_Component>(Core::detail::AccessECSID(_entity));
+	}
 }

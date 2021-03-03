@@ -1,7 +1,7 @@
 #pragma once
 
-#include <ecs/ecs.h>
 #include "Entity.h"
+#include "managers/EntityManager.h"
 #include "common.h"
 
 namespace Core
@@ -44,7 +44,7 @@ namespace Core
 			fTrans finalTransform = fTrans();
 			while (nextParent.IsValid())
 			{
-				Transform const* const parentTrans = ecs::get_component<Transform>(nextParent.GetValue());
+				Transform const* const parentTrans = Core::GetComponent<Transform>(nextParent);
 				ASSERT(parentTrans != nullptr);
 
 				finalTransform = parentTrans->m_transform * finalTransform;
@@ -60,7 +60,7 @@ namespace Core
 			fTrans finalTransform = m_transform;
 			while (nextParent.IsValid())
 			{
-				Transform const* const parentTrans = ecs::get_component<Transform>(nextParent.GetValue());
+				Transform const* const parentTrans = Core::GetComponent<Transform>(nextParent);
 				ASSERT(parentTrans != nullptr);
 
 				finalTransform = parentTrans->m_transform * finalTransform;

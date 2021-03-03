@@ -15,18 +15,18 @@ namespace Core
 		if (loaded)
 		{
 			// Add to ecs
-			ecs::add_component(_entity.GetValue(), newComponent);
+			Core::ECS::AddComponent(_entity, newComponent);
 		}
 	}
 
 	template<>
 	void RemoveComponent<Render::Model>(EntityID const _entity)
 	{
-		Render::Model* const oldComponent = ecs::get_component<Render::Model>(_entity.GetValue());
+		Render::Model* const oldComponent = Core::GetComponent<Render::Model>(_entity);
 		ASSERT(oldComponent);
 
 		// TODO cleanup shit
 
-		ecs::remove_component<Render::Model>(_entity.GetValue());
+		Core::ECS::RemoveComponent<Render::Model>(_entity);
 	}
 }

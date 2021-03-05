@@ -30,31 +30,29 @@ uniform lights {
     vec4 Cut[MAX_LIGHTS]; // x is innerCutoff, y is outerCutoff
 } Lights;
 
-uniform sampler2D directionalShadowMap;
+uniform sampler2DShadow directionalShadowMap;
 
 out vec4 FragColor;
 
 
 float CalcShadow(in vec4 fragPosLightSpace, in vec3 lightDir)
 {
-#if SOKOL_GLSL
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+#if SOKOL_GLSL
     projCoords = projCoords * 0.5 + 0.5;
 #else
-    vec3 projCoords;
-    projCoords.x = 0.5 + (fragPosLightSpace.x / fragPosLightSpace.w * 0.5);
-    projCoords.y = 0.5 - (fragPosLightSpace.y / fragPosLightSpace.w * 0.5);
-    projCoords.z = fragPosLightSpace.z / fragPosLightSpace.w;
+    projCoords.x = 0.5 + (0.5 * projCoords.x);
+    projCoords.y = 0.5 - (0.5 * projCoords.y);
 #endif
-    // todo: make better bias?
-    float bias = 0.004; //max(0.01 * (1.0 - dot(normalize(Normal), lightDir)), 0.005);
-    float currentDepth = projCoords.z - bias;
+    float bias = max(0.003 * (1.0 - dot(normalize(Normal), lightDir)), 0.002);
+    projCoords.z -= bias;
     
+    // basic box style pcf
     float shadow = 0.0;
     if(clamp(projCoords.x, 0.0, 1.0) == projCoords.x &&
        clamp(projCoords.y, 0.0, 1.0) == projCoords.y &&
-       currentDepth > 0.0 &&
-       currentDepth <= 1.0
+       projCoords.z > 0.0 &&
+       projCoords.z <= 1.0
        )
     {
         vec2 texelSize = 1.0 / textureSize(directionalShadowMap, 0);
@@ -62,8 +60,7 @@ float CalcShadow(in vec4 fragPosLightSpace, in vec3 lightDir)
         {
             for(int y = -1; y <= 1; ++y)
             {
-                float pcfDepth = texture(directionalShadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
-                shadow += currentDepth > pcfDepth ? 1.0 : 0.0;        
+                shadow += texture(directionalShadowMap, projCoords + vec3(vec2(x, y) * texelSize, 0)); 
             }    
         }
         shadow /= 9.0;

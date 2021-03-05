@@ -270,7 +270,7 @@ namespace Core
 			// Directional light
 			{
 				// directional lighting depth buffer
-				io_state.Pass(Pass_DirectionalLight) = Pass{ 1024, 1024, {.use_depth = true, .sampled = true}, 0, "directionalLight" };
+				io_state.Pass(Pass_DirectionalLight) = Pass{ 2048, 2048, {.use_depth = true, .sampled = true, .linear_filter = true,}, 0, "directionalLight" };
 				sg_pass_action passAction{
 					.depth = {
 						.action = SG_ACTION_CLEAR,
@@ -398,7 +398,7 @@ namespace Core
 					},
 					.no_color = true,
 					.index_type = SG_INDEXTYPE_UINT32,
-					.cull_mode = SG_CULLMODE_BACK,
+					.cull_mode = SG_CULLMODE_NONE,
 					.label = "depth-only-pipeline",
 				};
 

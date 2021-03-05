@@ -37,6 +37,7 @@ namespace Core::Render
 		{
 			bool use_depth{ false };
 			bool sampled{ false };
+			bool linear_filter{ false };
 		};
 
 		Pass
@@ -67,6 +68,11 @@ namespace Core::Render
 					.border_color = SG_BORDERCOLOR_OPAQUE_WHITE,
 					.will_be_sampled = _depthDetail.sampled,
 				};
+				if (_depthDetail.linear_filter)
+				{
+					depthTargetDesc.min_filter = SG_FILTER_LINEAR;
+					depthTargetDesc.mag_filter = SG_FILTER_LINEAR;
+				}
 #if DEBUG_TOOLS
 				std::string const depthDebugStr = _debugName + "-depth";
 				depthTargetDesc.label = depthDebugStr.c_str();

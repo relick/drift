@@ -205,7 +205,7 @@ void setup_cube()
 
 		Core::AddComponent(cube, rbDesc);
 	}
-	Core::AddComponent(cube, Core::Sound::BGMDesc{ .m_filePath = "assets/bgm/rom.mp3", .m_initVolume = 1.0f, });
+	//Core::AddComponent(cube, Core::Sound::BGMDesc{ .m_filePath = "assets/bgm/rom.mp3", .m_initVolume = 1.0f, });
 	//Core::AddComponent(cube, Core::Sound::FadeChangeBGM{ .m_timeToFade = 5.0f, .m_targetVolume = 1.0f, .m_nextBGMFilePath = "assets/bgm/ztd.mp3", });
 
 	Core::EntityID cube2 = Core::CreateEntity();
@@ -237,7 +237,7 @@ void setup_cube()
 	}*/
 
 	Core::EntityID lightCube = Core::CreateEntity();
-	Core::AddComponent(lightCube, Core::Transform(RotationFromForward(fVec3(-1.0f, -1.0f, 0.0f)), fVec3(1.2f, 1.0f, 2.0f)));
+	Core::AddComponent(lightCube, Core::Transform(RotationFromForward(fVec3(-1.0f, -1.0f, 1.0f)), fVec3(1.2f, 1.0f, 2.0f)));
 	{
 		Core::Render::Light lightComponent{};
 		lightComponent.m_colour = fVec3(1.0f, 1.0f, 1.0f);

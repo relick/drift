@@ -57,7 +57,7 @@ void initialise_cb()
 	}
 
 
-	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::FrameData const& _fd)
+	Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd)
 	{
 		static double speed = 1.0;
 		if (Core::Input::PressedOnce(Core::Input::Action::Pause))
@@ -106,7 +106,7 @@ void initialise_cb()
 
 	// Setup systems
 	// debug camera control
-	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::FrameData const& _fd, Core::Render::Camera& _cam, Core::Transform& _t, Core::Render::DebugCameraControl& _debugCamera)
+	Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Render::Camera& _cam, Core::Transform& _t, Core::Render::DebugCameraControl& _debugCamera)
 	{
 		static bool debugCameraEnabled = false;
 

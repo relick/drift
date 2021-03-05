@@ -134,7 +134,7 @@ namespace Core
 		
 		void AddCharacterControllerSystems()
 		{
-			ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::FrameData const& _fd, Core::Physics::CharacterController& _cc, Core::Transform& _t)
+			Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Physics::CharacterController& _cc, Core::Transform& _t)
 			{
 				// playerStep
 				{
@@ -225,7 +225,7 @@ namespace Core
 				}
 			});
 
-			ecs::make_system<ecs::opts::group<Sys::PHYSICS_TRANSFORMS_IN>>([](Core::FrameData const& _fd, Core::Physics::CharacterController& _cc, Core::Transform const& _t)
+			Core::MakeSystem<Sys::PHYSICS_TRANSFORMS_IN>([](Core::FrameData const& _fd, Core::Physics::CharacterController& _cc, Core::Transform const& _t)
 			{
 				btTransform xform;
 				_cc.m_motionState->getWorldTransform(xform);
@@ -289,7 +289,7 @@ namespace Core
 				}
 			});
 
-			ecs::make_system<ecs::opts::group<Sys::PHYSICS_TRANSFORMS_OUT>>([](Core::Physics::CharacterController const& _cc, Core::Transform& _t)
+			Core::MakeSystem<Sys::PHYSICS_TRANSFORMS_OUT>([](Core::Physics::CharacterController const& _cc, Core::Transform& _t)
 			{
 				btTransform trans;
 				_cc.m_body->getMotionState()->getWorldTransform(trans);
@@ -303,7 +303,7 @@ namespace Core
 
 
 			// Object transforms being pushed into physics
-			ecs::make_system<ecs::opts::group<Sys::PHYSICS_TRANSFORMS_IN>>([](Core::Physics::RigidBody& _rb, Core::Transform const& _t)
+			Core::MakeSystem<Sys::PHYSICS_TRANSFORMS_IN>([](Core::Physics::RigidBody& _rb, Core::Transform const& _t)
 			{
 				// Can't set transforms for non-kinematic bodies.
 				if (_rb.m_body->isKinematicObject())
@@ -315,7 +315,7 @@ namespace Core
 
 			// Physics update step
 			// Multiple worlds can run I guess
-			ecs::make_system<ecs::opts::group<Sys::PHYSICS_STEP>>([](
+			Core::MakeSystem<Sys::PHYSICS_STEP>([](
 #if PHYSICS_DEBUG
 			Core::EntityID::CoreType _entity,
 #endif 
@@ -336,7 +336,7 @@ namespace Core
 #if PHYSICS_DEBUG
 			Core::Render::DImGui::AddMenuItem("Physics", "Physics Worlds", &imGuiData.showImguiWin);
 
-			ecs::make_system<ecs::opts::group<Sys::IMGUI>>([](Core::MT_Only&)
+			Core::MakeSystem<Sys::IMGUI>([](Core::MT_Only&)
 			{
 				if (imGuiData.showImguiWin)
 				{
@@ -359,7 +359,7 @@ namespace Core
 
 			// Physics propogating transforms
 			// Just reading and throwing into the transform components so should be parallel.
-			ecs::make_system<ecs::opts::group<Sys::PHYSICS_TRANSFORMS_OUT>>([](Core::Physics::RigidBody const& _rb, Core::Transform& _t)
+			Core::MakeSystem<Sys::PHYSICS_TRANSFORMS_OUT>([](Core::Physics::RigidBody const& _rb, Core::Transform& _t)
 			{
 				if (_rb.m_body->isActive())
 				{

@@ -89,7 +89,7 @@ namespace Core
 			void Setup()
 			{
 				// Prepare GL matrices.
-				ecs::make_system<ecs::opts::group<Sys::GL_START>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _camT)
+				Core::MakeSystem<Sys::GL_START>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _camT)
 				{
 					sgl_defaults();
 					sgl_matrix_mode_projection();
@@ -105,7 +105,7 @@ namespace Core
 				});
 
 				// Prepare text matrices.
-				ecs::make_system<ecs::opts::group<Sys::TEXT_START>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _camT)
+				Core::MakeSystem<Sys::TEXT_START>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _camT)
 				{
 					FlushGL();
 
@@ -126,7 +126,7 @@ namespace Core
 
 				Core::Render::DImGui::AddMenuItem("GL", "Text Debug", &fsTest.showImguiWin);
 
-				ecs::make_system<ecs::opts::group<Sys::IMGUI>>([](Core::MT_Only&)
+				Core::MakeSystem<Sys::IMGUI>([](Core::MT_Only&)
 				{
 					if (fsTest.showImguiWin)
 					{
@@ -141,7 +141,7 @@ namespace Core
 					}
 				});
 
-				ecs::make_system<ecs::opts::group<Sys::TEXT>>([](Core::MT_Only&)
+				Core::MakeSystem<Sys::TEXT>([](Core::MT_Only&)
 				{
 					fonsClearState(fonsContext);
 

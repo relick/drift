@@ -11,7 +11,7 @@ namespace Core
 	{
 		void Setup()
 		{
-			ecs::make_system<ecs::opts::group<Sys::RENDER_QUEUE>>([](Core::Render::Light const& _light, Core::Transform const& _t)
+			Core::MakeSystem<Sys::RENDER_QUEUE>([](Core::Render::Light const& _light, Core::Transform const& _t)
 			{
 				switch (_light.m_type)
 				{
@@ -71,7 +71,7 @@ namespace Core
 				}
 			});
 
-			ecs::make_system<ecs::opts::group<Sys::RENDER_QUEUE>>([](Core::Render::Model const& _model, Core::Transform const& _t)
+			Core::MakeSystem<Sys::RENDER_QUEUE>([](Core::Render::Model const& _model, Core::Transform const& _t)
 			{
 				if (_model.m_drawDefaultPass)
 				{
@@ -81,12 +81,12 @@ namespace Core
 			});
 
 
-			ecs::make_system<ecs::opts::group<Sys::RENDER_PASS_START>>([](Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _t, MT_Only&)
+			Core::MakeSystem<Sys::RENDER_PASS_START>([](Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _t, MT_Only&)
 			{
 				Core::Render::StartPass(_rfd, _cam, _t);
 			});
 
-			ecs::make_system<ecs::opts::group<Sys::RENDER>>([](Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, MT_Only&)
+			Core::MakeSystem<Sys::RENDER>([](Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, MT_Only&)
 			{
 				Core::Render::Render(_rfd);
 			});

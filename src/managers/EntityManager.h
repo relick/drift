@@ -64,4 +64,17 @@ namespace Core
 	{
 		return ecs::get_component<T_Component>(Core::detail::AccessECSID(_entity));
 	}
+
+	// Wrap ecs::make_system
+	template<int _Group, typename T_SystemFn, typename T_SortFn = std::nullptr_t>
+	auto& MakeSystem(T_SystemFn _sysFn, T_SortFn _sortFn = nullptr)
+	{
+		return ecs::make_system<ecs::opts::group<_Group>>(_sysFn, _sortFn);
+	}
+
+	template<int _Group, typename T_SystemFn, typename T_SortFn = std::nullptr_t>
+	auto& MakeSerialSystem(T_SystemFn _sysFn, T_SortFn _sortFn = nullptr)
+	{
+		return ecs::make_system<ecs::opts::group<_Group>, ecs::opts::not_parallel>(_sysFn, _sortFn);
+	}
 }

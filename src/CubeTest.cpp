@@ -268,7 +268,7 @@ void setup_cube()
 		Core::AddComponent(lightCube3, lightComponent);
 	}
 
-	ecs::make_system<ecs::opts::group<Sys::GAME>>([](Core::FrameData const& _fd, Core::Render::CubeTest& _cubeTest, Core::Transform& _t)
+	Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Render::CubeTest& _cubeTest, Core::Transform& _t)
 	{
 		if (_cubeTest.isLightCube)
 		{
@@ -284,34 +284,4 @@ void setup_cube()
 			_t.T().m_basis = glm::yawPitchRoll(0.0f, _cubeTest.rx, _cubeTest.ry);
 		}
 	});
-
-	/*ecs::make_system<ecs::opts::group<Sys::DEFAULT_PASS_START>>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _t, Core::Render::DefaultPass_Tag)
-	{
-		//camera_state.proj = glm::perspective(glm::radians(_cam.m_povY), _rfd.fW / _rfd.fH, 0.01f, 1000.0f);
-		camera_state.proj = glm::perspective(glm::radians(_cam.m_povY), 320.0f / 240.0f, 0.01f, 1000.0f);
-
-		fTrans const cameraTrans = _t.CalculateWorldTransform();
-		fMat4 const cameraMat = glm::lookAt(cameraTrans.m_origin, cameraTrans.m_origin + cameraTrans.forward(), fVec3(0.0f, 1.0f, 0.0f));
-		camera_state.view = cameraMat;
-	});
-
-	ecs::make_system<ecs::opts::group<Sys::RENDER_PASSES>, ecs::opts::not_parallel>([](Core::MT_Only&, Core::Render::FrameData const& _fd, Core::Render::CubeTest const& _cubeTest, Core::Transform const& _t)
-	{
-		fVec3 const& pos = _t.T().m_origin;
-
-		if (_cubeTest.isLightCube)
-		{
-			fMat4 lightCubeModel = glm::translate(fMat4(1.0f), pos);
-			lightCubeModel = lightCubeModel * glm::scale(fMat4(1.0f), fVec3(0.2f, 0.2f, 0.2f));
-
-			unlit_vs_params_t vs_params;
-			vs_params.view_model = camera_state.view * lightCubeModel;
-			vs_params.projection = camera_state.proj;
-
-			sg_apply_pipeline(CubeTestState.lightCubePip);
-			sg_apply_bindings(&CubeTestState.bind);
-			sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_unlit_vs_params, &vs_params, sizeof(vs_params));
-			sg_draw(0, 36, 1);
-		}
-	});*/
 }

@@ -17,14 +17,11 @@ struct aiNode;
 struct aiScene;
 struct aiMesh;
 
+// structs
 namespace Core
 {
 	namespace Resource
 	{
-		void Init();
-		void Setup();
-		void Cleanup();
-
 		struct TextureData
 		{
 			enum class Type
@@ -100,11 +97,6 @@ namespace Core
 #endif
 		};
 
-		TextureData const& GetTexture(TextureID _texture);
-		ModelData const& GetModel(ModelID _model);
-
-		bool LoadModel(std::string const& _path, ModelID& o_modelID);
-
 		struct SoundEffectData
 		{
 			std::string m_path;
@@ -116,10 +108,22 @@ namespace Core
 			std::string m_path;
 			SoLoud::WavStream m_music;
 		};
-
-		SoundEffectID GetSoundEffectID(std::string const& _path);
-		MusicID GetMusicID(std::string const& _path);
-		SoundEffectData& GetSoundEffect(SoundEffectID _soundEffect);
-		MusicData& GetMusic(MusicID _music);
 	}
+}
+
+// functions
+namespace Core::Resource
+{
+	void Init();
+	void Setup();
+	void Cleanup();
+
+	TextureData const& GetTexture(TextureID _texture);
+	ModelData const& GetModel(ModelID _model);
+	SoundEffectData& GetSoundEffect(SoundEffectID _soundEffect);
+	MusicData& GetMusic(MusicID _music);
+
+	bool LoadModel(std::string const& _path, ModelID& o_modelID);
+	bool LoadSoundEffect(std::string const& _path, SoundEffectID& o_soundEffectID);
+	bool LoadMusic(std::string const& _path, MusicID& o_musicID);
 }

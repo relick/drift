@@ -31,11 +31,13 @@ namespace Core
 {
 	namespace Resource
 	{
+		//--------------------------------------------------------------------------------
 		void Init()
 		{
 			stbi_set_flip_vertically_on_load(true);
 		}
 
+		//--------------------------------------------------------------------------------
 		void Setup()
 		{
 			uint8 emptyTex[] = { 255, 255, 255, 255 };
@@ -54,81 +56,81 @@ namespace Core
 			defaultTextureID = sg_make_image(emptyTexDesc);
 		}
 
+		//--------------------------------------------------------------------------------
 		void Cleanup()
 		{
 		}
 
+		//--------------------------------------------------------------------------------
 		TextureID NewTextureID() { return nextTextureID++; }
 		ModelID NewModelID() { return nextModelID++; }
-
-		TextureData const& GetTexture(TextureID _texture)
-		{
-			return textures.at(_texture);
-		}
-		ModelData const& GetModel(ModelID _model)
-		{
-			return models.at(_model);
-		}
-
 		SoundEffectID NewSoundEffectID() { ASSERT(nextSoundEffectID < g_maxSoundEffects, "ran out of sound effects"); return nextSoundEffectID++; }
 		MusicID NewMusicID() { ASSERT(nextMusicID < g_maxMusic, "ran out of music"); return nextMusicID++; }
 
-		SoundEffectID GetSoundEffectID
+		//--------------------------------------------------------------------------------
+		TextureData const& GetTexture(TextureID _texture) { return textures.at(_texture); }
+		ModelData const& GetModel(ModelID _model) { return models.at(_model); }
+		SoundEffectData& GetSoundEffect(SoundEffectID _soundEffect) { return soundEffects[_soundEffect.GetValue()]; }
+		MusicData& GetMusic(MusicID _music) { return music[_music.GetValue()]; }
+
+		//--------------------------------------------------------------------------------
+		/// sound
+		//--------------------------------------------------------------------------------
+		bool LoadSoundEffect
 		(
-			std::string const& _path
+			std::string const& _path,
+			SoundEffectID& o_soundEffectID
 		)
 		{
 			for (SoundEffectID::ValueType i = 0; i < nextSoundEffectID; ++i)
 			{
 				if (soundEffects[i].m_path == _path)
 				{
-					return i;
+					o_soundEffectID = i;
+					return true;
 				}
 			}
 
-			SoundEffectID const newID = NewSoundEffectID();
-			SoundEffectData& newSoundEffect = soundEffects[newID.GetValue()];
+			o_soundEffectID = NewSoundEffectID();
+			SoundEffectData& newSoundEffect = soundEffects[o_soundEffectID.GetValue()];
 			if (newSoundEffect.m_sound.load(_path.c_str()) == SoLoud::SO_NO_ERROR)
 			{
 				newSoundEffect.m_path = _path;
-				return newID;
+				return true;
 			}
-			return SoundEffectID();
+			return false;
 		}
 
-		MusicID GetMusicID
+		//--------------------------------------------------------------------------------
+		bool LoadMusic
 		(
-			std::string const& _path
+			std::string const& _path,
+			MusicID& o_musicID
 		)
 		{
 			for (MusicID::ValueType i = 0; i < nextMusicID; ++i)
 			{
 				if (music[i].m_path == _path)
 				{
-					return i;
+					o_musicID = i;
+					return true;
 				}
 			}
 
-			MusicID const newID = NewMusicID();
-			MusicData& newMusic = music[newID.GetValue()];
+			o_musicID = NewMusicID();
+			MusicData& newMusic = music[o_musicID.GetValue()];
 			if (newMusic.m_music.load(_path.c_str()) == SoLoud::SO_NO_ERROR)
 			{
 				newMusic.m_path = _path;
-				return newID;
+				return true;
 			}
-			return MusicID();
+			return false;
 		}
 
-		SoundEffectData& GetSoundEffect(SoundEffectID _soundEffect)
-		{
-			return soundEffects[_soundEffect.GetValue()];
-		}
 
-		MusicData& GetMusic(MusicID _music)
-		{
-			return music[_music.GetValue()];
-		}
-
+		//--------------------------------------------------------------------------------
+		/// model
+		//--------------------------------------------------------------------------------
 		TextureID FindExistingTexture(char const* _texPath)
 		{
 			for (auto const& texPair : textures)
@@ -142,6 +144,7 @@ namespace Core
 			return TextureID{};
 		}
 
+		//--------------------------------------------------------------------------------
 		ModelID FindExistingModel(char const* _modelPath)
 		{
 			for (auto const& modelPair : models)
@@ -155,6 +158,7 @@ namespace Core
 			return ModelID{};
 		}
 
+		//--------------------------------------------------------------------------------
 		bool LoadTextureFromFile(std::string const& _directory, char const* _path, sg_image& o_imageID, bool _gamma = false)
 		{
 			std::string const filename = _directory + '/' + _path;
@@ -187,6 +191,7 @@ namespace Core
 			}
 		}
 
+		//--------------------------------------------------------------------------------
 		void LoadMaterialTextures(std::string const& _directory, aiMaterial* _mat, std::vector<TextureID>& o_textures)
 		{
 			auto fn_loadTextureType = [&_directory, &_mat, &o_textures](aiTextureType _type)
@@ -248,6 +253,7 @@ namespace Core
 			fn_loadTextureType(aiTextureType_NORMALS);
 		}
 
+		//--------------------------------------------------------------------------------
 		MeshData ProcessMesh(std::string const& _directory, aiMesh* _mesh, aiScene const* _scene)
 		{
 			MeshData newMesh;
@@ -334,6 +340,7 @@ namespace Core
 			return newMesh;
 		}
 
+		//--------------------------------------------------------------------------------
 		void ProcessNode(std::string const& _directory, ModelData& io_model, aiNode* _node, aiScene const* _scene)
 		{
 			// process all the node's meshes (if any)
@@ -349,6 +356,7 @@ namespace Core
 			}
 		}
 
+		//--------------------------------------------------------------------------------
 		bool LoadModel
 		(
 			std::string const& _path,

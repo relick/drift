@@ -10,6 +10,9 @@ namespace Core::Resource
 	struct ModelIDType {};
 	using ModelID = ID<ModelIDType>;
 
+	struct SpriteIDType {};
+	using SpriteID = ID<SpriteIDType>;
+
 
 	struct SoundEffectIDType {};
 	using SoundEffectID = ID<SoundEffectIDType>;

@@ -242,10 +242,12 @@ namespace Core
 			CameraState camera{};
 			std::vector<ModelToDraw> models;
 			std::vector<ModelScratchData> modelScratchData;
+			std::mutex lightsMutex{};
+			std::mutex modelsMutex{};
+			std::mutex spritesMutex{};
 		};
 
 		FrameScene frameScene{};
-		std::mutex frameSceneMutex{};
 	}
 }
 
@@ -588,32 +590,43 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		LightSetter AddLightToScene()
 		{
-			std::scoped_lock lock(frameSceneMutex);
+			std::scoped_lock lock(frameScene.lightsMutex);
 			return frameScene.lights.AddLight();
 		}
 
 		//--------------------------------------------------------------------------------
 		void AddAmbientLightToScene(fVec3 const& _col)
 		{
-			std::scoped_lock lock(frameSceneMutex);
+			std::scoped_lock lock(frameScene.lightsMutex);
 			frameScene.lights.ambientLight += _col;
 		}
 
 		//--------------------------------------------------------------------------------
 		void SetDirectionalLightDir(fVec3 const& _dir)
 		{
-			std::scoped_lock lock(frameSceneMutex);
+			std::scoped_lock lock(frameScene.lightsMutex);
 			frameScene.lights.directionalDir = _dir;
+		}
+
+		//--------------------------------------------------------------------------------
+		void AddSpriteToScene
+		(
+			Core::Resource::SpriteID _sprite,
+			fTrans const& _screenTrans
+		)
+		{
+			std::scoped_lock lock(frameScene.spritesMutex);
+			//frameScene.sprites.emplace_back(_sprite, _screenTrans);
 		}
 
 		//--------------------------------------------------------------------------------
 		void AddModelToScene
 		(
-			Core::Resource::ModelID const& _model,
+			Core::Resource::ModelID _model,
 			fTrans const& _worldTrans
 		)
 		{
-			std::scoped_lock lock(frameSceneMutex);
+			std::scoped_lock lock(frameScene.modelsMutex);
 			frameScene.models.emplace_back(_model, _worldTrans);
 		}
 	}

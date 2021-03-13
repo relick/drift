@@ -17,6 +17,12 @@
 
 #include "CubeTest.h"
 
+constexpr int const g_renderAreaWidth = 320;
+constexpr int const g_renderAreaHeight = 240;
+constexpr int const g_renderAreaToWindowStartMultiplier = 3;
+constexpr int const g_windowStartWidth = (g_renderAreaWidth * g_renderAreaToWindowStartMultiplier);
+constexpr int const g_windowStartHeight = (g_renderAreaHeight * g_renderAreaToWindowStartMultiplier);
+
 void initialise_cb()
 {
 	// initialisation
@@ -34,7 +40,7 @@ void initialise_cb()
 	// system and data setup
 	{
 		Core::Resource::Setup();
-		Core::Render::SetupPipeline();
+		Core::Render::SetupPipeline(g_renderAreaWidth, g_renderAreaHeight);
 		Core::Render::Setup();
 		Core::Render::TextAndGLDebug::Setup();
 		Core::Render::DImGui::Setup();
@@ -262,9 +268,9 @@ void frame_cb()
 		rfd.contextWindow.fW = static_cast<float>(rfd.contextWindow.w);
 		rfd.contextWindow.h = sapp_height();
 		rfd.contextWindow.fH = static_cast<float>(rfd.contextWindow.h);
-		rfd.renderArea.w = RENDER_AREA_WIDTH;
+		rfd.renderArea.w = g_renderAreaWidth;
 		rfd.renderArea.fW = static_cast<float>(rfd.renderArea.w);
-		rfd.renderArea.h = RENDER_AREA_HEIGHT;
+		rfd.renderArea.h = g_renderAreaHeight;
 		rfd.renderArea.fH = static_cast<float>(rfd.renderArea.h);
 	}
 
@@ -302,8 +308,8 @@ sapp_desc sokol_main(int argc, char* argv[])
 		.event_cb = &event_cb,
 		.fail_cb = &fail_cb,
 
-		.width = WINDOW_START_WIDTH,
-		.height = WINDOW_START_HEIGHT,
+		.width = g_windowStartWidth,
+		.height = g_windowStartHeight,
 		.sample_count = 1,
 		.swap_interval = 0,
 		.window_title = "drift",

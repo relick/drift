@@ -16,10 +16,10 @@ namespace Core
 
 			struct Target
 			{
-				int w{ WINDOW_START_WIDTH };
-				int h{ WINDOW_START_HEIGHT };
-				float fW{ static_cast<float>(w) };
-				float fH{ static_cast<float>(h) };
+				int w{ 0 };
+				int h{ 0 };
+				float fW{ 0 };
+				float fH{ 0 };
 			};
 			Target contextWindow{};
 			Target renderArea{};

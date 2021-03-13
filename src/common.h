@@ -158,12 +158,6 @@ inline btVector3 ConvertTobtVector3(fVec3 const& _fVec3)
 	return btVector3(_fVec3.x, _fVec3.y, _fVec3.z);
 }
 
-#define RENDER_AREA_WIDTH 320
-#define RENDER_AREA_HEIGHT 240
-#define RENDER_AREA_TO_WINDOW_START_MULTIPLIER 3
-#define WINDOW_START_WIDTH (RENDER_AREA_WIDTH * RENDER_AREA_TO_WINDOW_START_MULTIPLIER)
-#define WINDOW_START_HEIGHT (RENDER_AREA_HEIGHT * RENDER_AREA_TO_WINDOW_START_MULTIPLIER)
-
 namespace Colour
 {
 	constexpr uint32 white = static_cast<uint32>(-1);

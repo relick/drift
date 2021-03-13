@@ -270,12 +270,14 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		void InitBuffers
 		(
+			int _mainRenderWidth,
+			int _mainRenderHeight,
 			RenderStateFiller& io_state
 		)
 		{
 			// Main target
 			{
-				io_state.Pass(Pass_MainTarget) = Pass{ RENDER_AREA_WIDTH, RENDER_AREA_HEIGHT, {.use_depth = true}, 1, "mainTarget" };
+				io_state.Pass(Pass_MainTarget) = Pass{ _mainRenderWidth, _mainRenderHeight, { .use_depth = true }, 1, "mainTarget" };
 				sg_pass_action passAction{};
 				sg_color_attachment_action colourAttachAction{
 					.action = SG_ACTION_CLEAR,
@@ -426,10 +428,14 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		void SetupPipeline()
+		void SetupPipeline
+		(
+			int _mainRenderWidth,
+			int _mainRenderHeight
+		)
 		{
 			RenderStateFiller filler{ state };
-			InitBuffers(filler);
+			InitBuffers(_mainRenderWidth, _mainRenderHeight, filler);
 			InitShaders(filler);
 		}
 

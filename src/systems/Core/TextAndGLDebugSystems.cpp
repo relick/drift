@@ -52,6 +52,8 @@ namespace Core
 		{
 			fVec3 m_start{};
 			fVec3 m_end{};
+
+			LineToDraw(fVec3 const& _start, fVec3 const& _end) : m_start{ _start }, m_end{ _end } {}
 		};
 		absl::flat_hash_map<uint32, std::vector<LineToDraw>> linesToDraw{};
 		std::mutex linesToDrawLock{};
@@ -183,7 +185,7 @@ namespace Core
 			)
 			{
 				std::scoped_lock lock(linesToDrawLock);
-				linesToDraw[_col].push_back(LineToDraw{ _start, _end });
+				linesToDraw[_col].emplace_back(_start, _end);
 			}
 
 			void DrawLine
@@ -195,7 +197,7 @@ namespace Core
 			{
 				std::scoped_lock lock(linesToDrawLock);
 				uint32 const col = Colour::ConvertRGB(_col);
-				linesToDraw[col].push_back(LineToDraw{ _start, _end });
+				linesToDraw[col].emplace_back(_start, _end);
 			}
 		}
 

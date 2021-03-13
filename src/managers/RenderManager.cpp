@@ -343,16 +343,16 @@ namespace Core
 			{
 				sg_layout_desc mainLayoutDesc{};
 				mainLayoutDesc.attrs[ATTR_main_vs_aPos] = {
-					.format = SG_VERTEXFORMAT_FLOAT3,
 					.offset = 0,
+					.format = SG_VERTEXFORMAT_FLOAT3,
 				};
 				mainLayoutDesc.attrs[ATTR_main_vs_aNormal] = {
-					.format = SG_VERTEXFORMAT_FLOAT3,
 					.offset = sizeof(fVec3),
+					.format = SG_VERTEXFORMAT_FLOAT3,
 				};
 				mainLayoutDesc.attrs[ATTR_main_vs_aTexCoord] = {
-					.format = SG_VERTEXFORMAT_FLOAT2,
 					.offset = sizeof(fVec3) + sizeof(fVec3),
+					.format = SG_VERTEXFORMAT_FLOAT2,
 				};
 				mainLayoutDesc.buffers[0].stride = sizeof(Resource::VertexData);
 

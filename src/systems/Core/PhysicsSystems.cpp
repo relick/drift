@@ -22,6 +22,8 @@ struct ImGuiWorldData
 {
 	Core::EntityID worldEntity;
 	bool showDebugDraw{ false };
+
+	ImGuiWorldData(Core::EntityID _entity) : worldEntity(_entity) {}
 };
 
 struct ImGuiData
@@ -99,7 +101,7 @@ namespace Core
 
 		void AddPhysicsWorld(Core::EntityID _entity)
 		{
-			imGuiData.physicsWorlds.push_back(ImGuiWorldData{ _entity });
+			imGuiData.physicsWorlds.emplace_back(_entity);
 		}
 
 		void RemovePhysicsWorld(Core::EntityID _entity)

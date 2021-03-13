@@ -61,7 +61,7 @@ set (SOURCE_CPP "src/drift.cpp" "src/managers/EntityManager.cpp" "src/systems/Co
 add_executable (drift ${SOURCE_H} ${SOURCE_CPP} ${SHADERS_COMPILED})
 
 target_include_directories (drift PUBLIC "src" "ecs/include" "ecs/tls/include" "sokol" "fontstash/src" "stb" "glm" "gcem/include" ${BULLET_INCLUDE_DIR})
-target_link_libraries (drift PRIVATE ${BULLET_LIBRARIES} assimp::assimp absl::flat_hash_map SoLoud ImGui)
+target_link_libraries (drift PRIVATE ${BULLET_LIBRARIES} assimp::assimp absl::flat_hash_map absl::inlined_vector SoLoud ImGui)
 
 
 ## Compiler options

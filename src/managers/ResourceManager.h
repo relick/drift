@@ -5,7 +5,6 @@
 
 #include <vector>
 #include <string>
-#include <optional>
 #include <sokol_gfx.h>
 
 #include <soloud_wav.h>
@@ -22,6 +21,7 @@ namespace Core
 {
 	namespace Resource
 	{
+		//-------------------------------------------------
 		struct TextureData
 		{
 			enum class Type
@@ -36,67 +36,49 @@ namespace Core
 			std::string m_path;
 		};
 
+		//-------------------------------------------------
 		struct VertexData
 		{
 			fVec3 position;
 			fVec3 normal;
 			fVec2 uv{ 0.0f, 0.0f };
 		};
-
 		using IndexType = uint32;
+
+		//-------------------------------------------------
 		using MaterialData = main_material_t;
-		struct MeshLoadData
-		{
-			std::vector<VertexData> m_vertices;
-			std::vector<IndexType> m_indices;
-		};
 
 		struct MeshData
 		{
-			std::optional<MeshLoadData> m_loadData;
-
 			uint32 m_indexCount{ 0 };
 			MaterialData m_material;
 			std::vector<TextureID> m_textures;
 			sg_bindings m_bindings{};
 
 			uint32 NumToDraw() const { return m_indexCount; }
-			void CleanData()
-			{
-				if (m_loadData.has_value())
-				{
-					m_indexCount = static_cast<uint32>(m_loadData->m_indices.size());
-					m_loadData = std::optional<MeshLoadData>{};
-				}
-			}
-		};
-		
-		struct ModelLoadData
-		{
-			std::vector<float> m_vertexBufferData;
-			std::vector<uint32> m_indexBufferData;
+			void SetNumToDraw(uint32 _indexCount) { m_indexCount = _indexCount; }
 		};
 
+		//-------------------------------------------------
 		struct ModelData
 		{
-			std::optional<ModelLoadData> m_loadData;
 			// for now just stores meshes, no transform tree
 			std::vector<MeshData> m_meshes;
 			std::string m_path;
 
-			void CleanData()
-			{
-				if (m_loadData.has_value())
-				{
-					m_loadData = std::optional<ModelLoadData>{};
-				}
-			}
 #if DEBUG_TOOLS
 			std::string _traceName_vBufData;
 			std::string _traceName_iBufData;
 #endif
 		};
 
+		//-------------------------------------------------
+		struct SpriteData
+		{
+
+		};
+
+		//-------------------------------------------------
 		struct SoundEffectData
 		{
 			std::string m_path;
@@ -120,10 +102,12 @@ namespace Core::Resource
 
 	TextureData const& GetTexture(TextureID _texture);
 	ModelData const& GetModel(ModelID _model);
+	SpriteData const& GetSprite(SpriteID _sprite);
 	SoundEffectData& GetSoundEffect(SoundEffectID _soundEffect);
 	MusicData& GetMusic(MusicID _music);
 
 	bool LoadModel(std::string const& _path, ModelID& o_modelID);
+	bool LoadSprite(std::string const& _path, SpriteID& o_spriteID);
 	bool LoadSoundEffect(std::string const& _path, SoundEffectID& o_soundEffectID);
 	bool LoadMusic(std::string const& _path, MusicID& o_musicID);
 }

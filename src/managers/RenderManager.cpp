@@ -216,16 +216,32 @@ namespace Core
 
 		struct ModelToDraw
 		{
-			Resource::ModelID model{};
-			fTrans transform{};
+			Resource::ModelID m_model{};
+			fTrans m_transform{};
+
+			ModelToDraw(Resource::ModelID _model, fTrans const& _trans)
+				: m_model{ _model }
+				, m_transform{ _trans }
+			{}
+		};
+
+		struct ModelScratchData
+		{
+			Resource::ModelData const& m_model;
+			fMat4 const m_renderMatrix;
+
+			ModelScratchData(Resource::ModelData const& _model, fMat4 const& _renderMatrix)
+				: m_model{ _model }
+				, m_renderMatrix{ _renderMatrix }
+			{}
 		};
 
 		struct FrameScene
 		{
 			LightsState lights{};
 			CameraState camera{};
-			std::vector<ModelToDraw> models{};
-
+			std::vector<ModelToDraw> models;
+			std::vector<ModelScratchData> modelScratchData;
 		};
 
 		FrameScene frameScene{};
@@ -323,21 +339,20 @@ namespace Core
 
 			// main renderer, used for colour image, done last
 			{
-				// deinterleaved data in separate buffers.
 				sg_layout_desc mainLayoutDesc{};
-				mainLayoutDesc.attrs[ATTR_main_vs_aPos].format = SG_VERTEXFORMAT_FLOAT3;
-				mainLayoutDesc.attrs[ATTR_main_vs_aNormal].format = SG_VERTEXFORMAT_FLOAT3;
-				mainLayoutDesc.attrs[ATTR_main_vs_aTexCoord].format = SG_VERTEXFORMAT_FLOAT2;
-#if USE_INTERLEAVED
+				mainLayoutDesc.attrs[ATTR_main_vs_aPos] = {
+					.format = SG_VERTEXFORMAT_FLOAT3,
+					.offset = 0,
+				};
+				mainLayoutDesc.attrs[ATTR_main_vs_aNormal] = {
+					.format = SG_VERTEXFORMAT_FLOAT3,
+					.offset = sizeof(fVec3),
+				};
+				mainLayoutDesc.attrs[ATTR_main_vs_aTexCoord] = {
+					.format = SG_VERTEXFORMAT_FLOAT2,
+					.offset = sizeof(fVec3) + sizeof(fVec3),
+				};
 				mainLayoutDesc.buffers[0].stride = sizeof(Resource::VertexData);
-				mainLayoutDesc.attrs[ATTR_main_vs_aPos].offset = 0;
-				mainLayoutDesc.attrs[ATTR_main_vs_aNormal].offset = sizeof(fVec3);
-				mainLayoutDesc.attrs[ATTR_main_vs_aTexCoord].offset = sizeof(fVec3) + sizeof(fVec3);
-#else
-				mainLayoutDesc.attrs[ATTR_main_vs_aPos].buffer_index = 0;
-				mainLayoutDesc.attrs[ATTR_main_vs_aNormal].buffer_index = 1;
-				mainLayoutDesc.attrs[ATTR_main_vs_aTexCoord].buffer_index = 2;
-#endif
 
 				sg_pipeline_desc mainPipeDesc{
 					.shader = sg_make_shader(main_sg_shader_desc(sg_query_backend())),
@@ -440,13 +455,11 @@ namespace Core
 		template<typename T_ModelVisitor, typename T_MeshVisitor>
 		void RenderMainScene(T_ModelVisitor const& _fnModelVisitor, T_MeshVisitor const& _fnMeshVisitor)
 		{
-			for (ModelToDraw const& mtd : frameScene.models)
+			for (ModelScratchData const& mtd : frameScene.modelScratchData)
 			{
-				Resource::ModelData const& model = Resource::GetModel(mtd.model);
+				_fnModelVisitor(mtd.m_renderMatrix, mtd.m_model);
 
-				_fnModelVisitor(mtd.transform.GetRenderMatrix(), model);
-
-				for (Resource::MeshData const& mesh : model.m_meshes)
+				for (Resource::MeshData const& mesh : mtd.m_model.m_meshes)
 				{
 					_fnMeshVisitor(mesh);
 
@@ -473,6 +486,13 @@ namespace Core
 			Core::Render::FrameData const& _rfd
 		)
 		{
+			frameScene.modelScratchData.clear();
+			frameScene.modelScratchData.reserve(frameScene.models.size());
+			for (ModelToDraw const& mtd : frameScene.models)
+			{
+				frameScene.modelScratchData.emplace_back(Resource::GetModel(mtd.m_model), mtd.m_transform.GetRenderMatrix());
+			}
+
 			// RENDER_PASSES
 			state.NextPass(Pass_DirectionalLight);
 			state.SetRenderer(Renderer_DepthOnly);
@@ -594,7 +614,7 @@ namespace Core
 		)
 		{
 			std::scoped_lock lock(frameSceneMutex);
-			frameScene.models.push_back({ _model, _worldTrans });
+			frameScene.models.emplace_back(_model, _worldTrans);
 		}
 	}
 }

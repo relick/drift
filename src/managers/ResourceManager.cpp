@@ -251,20 +251,21 @@ namespace Core
 		MeshData ProcessMesh(std::string const& _directory, aiMesh* _mesh, aiScene const* _scene)
 		{
 			MeshData newMesh;
+			newMesh.m_loadData = MeshLoadData{};
 			// setup allocations
-			newMesh.m_vertices.resize(_mesh->mNumVertices);
+			newMesh.m_loadData->m_vertices.resize(_mesh->mNumVertices);
 
 			static constexpr usize numIndicesPerFace = 3u;
-			newMesh.m_indices.resize(_mesh->mNumFaces * numIndicesPerFace);
+			newMesh.m_loadData->m_indices.resize(_mesh->mNumFaces * numIndicesPerFace);
 
 			// process vertices
 			for (uint32 i = 0; i < _mesh->mNumVertices; i++)
 			{
-				newMesh.m_vertices[i].position = fVec3(_mesh->mVertices[i].x, _mesh->mVertices[i].y, _mesh->mVertices[i].z);
-				newMesh.m_vertices[i].normal = fVec3(_mesh->mNormals[i].x, _mesh->mNormals[i].y, _mesh->mNormals[i].z);
+				newMesh.m_loadData->m_vertices[i].position = fVec3(_mesh->mVertices[i].x, _mesh->mVertices[i].y, _mesh->mVertices[i].z);
+				newMesh.m_loadData->m_vertices[i].normal = fVec3(_mesh->mNormals[i].x, _mesh->mNormals[i].y, _mesh->mNormals[i].z);
 				if (_mesh->mTextureCoords[0])
 				{
-					newMesh.m_vertices[i].uv = fVec2(_mesh->mTextureCoords[0][i].x, _mesh->mTextureCoords[0][i].y);
+					newMesh.m_loadData->m_vertices[i].uv = fVec2(_mesh->mTextureCoords[0][i].x, _mesh->mTextureCoords[0][i].y);
 				}
 			}
 
@@ -274,7 +275,7 @@ namespace Core
 				ASSERT(face.mNumIndices == numIndicesPerFace);
 				for (usize j = 0; j < face.mNumIndices; j++)
 				{
-					newMesh.m_indices[i * numIndicesPerFace + j] = static_cast<uint16>(face.mIndices[j]);
+					newMesh.m_loadData->m_indices[i * numIndicesPerFace + j] = static_cast<uint16>(face.mIndices[j]);
 				}
 			}
 
@@ -373,11 +374,12 @@ namespace Core
 
 			o_modelID = NewModelID();
 			ModelData& newModel = models[o_modelID];
+			newModel.m_loadData = ModelLoadData{};
 			newModel.m_path = _path;
 			ProcessNode(directory, newModel, scene->mRootNode, scene);
 
 			// Make bindings for model
-#if USE_INTERLEAVED
+
 			// First, fill scratch data.
 			usize meshVertexOffset = 0;
 			usize meshIndexOffset = 0;
@@ -385,31 +387,31 @@ namespace Core
 			usize totalIndexCount = 0;
 			for (MeshData const& mesh : newModel.m_meshes)
 			{
-				totalVertexCount += mesh.m_vertices.size();
-				totalIndexCount += mesh.m_indices.size();
+				totalVertexCount += mesh.m_loadData->m_vertices.size();
+				totalIndexCount += mesh.m_loadData->m_indices.size();
 			}
-			newModel.m_vertexBufferData.reserve((sizeof(Resource::VertexData)/sizeof(float)) * totalVertexCount);
-			newModel.m_indexBufferData.reserve(totalIndexCount);
+			newModel.m_loadData->m_vertexBufferData.reserve((sizeof(Resource::VertexData)/sizeof(float)) * totalVertexCount);
+			newModel.m_loadData->m_indexBufferData.reserve(totalIndexCount);
 			for (MeshData& mesh : newModel.m_meshes)
 			{
-				for (VertexData const& vertex : mesh.m_vertices)
+				for (VertexData const& vertex : mesh.m_loadData->m_vertices)
 				{
-					newModel.m_vertexBufferData.push_back(vertex.position.x);
-					newModel.m_vertexBufferData.push_back(vertex.position.y);
-					newModel.m_vertexBufferData.push_back(vertex.position.z);
-					newModel.m_vertexBufferData.push_back(vertex.normal.x);
-					newModel.m_vertexBufferData.push_back(vertex.normal.y);
-					newModel.m_vertexBufferData.push_back(vertex.normal.z);
-					newModel.m_vertexBufferData.push_back(vertex.uv.x);
-					newModel.m_vertexBufferData.push_back(vertex.uv.y);
+					newModel.m_loadData->m_vertexBufferData.push_back(vertex.position.x);
+					newModel.m_loadData->m_vertexBufferData.push_back(vertex.position.y);
+					newModel.m_loadData->m_vertexBufferData.push_back(vertex.position.z);
+					newModel.m_loadData->m_vertexBufferData.push_back(vertex.normal.x);
+					newModel.m_loadData->m_vertexBufferData.push_back(vertex.normal.y);
+					newModel.m_loadData->m_vertexBufferData.push_back(vertex.normal.z);
+					newModel.m_loadData->m_vertexBufferData.push_back(vertex.uv.x);
+					newModel.m_loadData->m_vertexBufferData.push_back(vertex.uv.y);
 				}
-				for (auto const& index : mesh.m_indices)
+				for (auto const& index : mesh.m_loadData->m_indices)
 				{
-					newModel.m_indexBufferData.push_back(static_cast<uint32>(meshVertexOffset + index));
+					newModel.m_loadData->m_indexBufferData.push_back(static_cast<uint32>(meshVertexOffset + index));
 				}
 				mesh.m_bindings.index_buffer_offset = static_cast<int>(meshIndexOffset * sizeof(Resource::IndexType));
-				meshVertexOffset += mesh.m_vertices.size();
-				meshIndexOffset += mesh.m_indices.size();
+				meshVertexOffset += mesh.m_loadData->m_vertices.size();
+				meshIndexOffset += mesh.m_loadData->m_indices.size();
 			}
 
 			// Now, create buffers and bind to all meshes
@@ -418,7 +420,7 @@ namespace Core
 			{
 				sg_buffer_desc vBufDesc{};
 				vBufDesc.type = SG_BUFFERTYPE_VERTEXBUFFER;
-				vBufDesc.data = { &newModel.m_vertexBufferData[0], newModel.m_vertexBufferData.size() * sizeof(float), };
+				vBufDesc.data = { &newModel.m_loadData->m_vertexBufferData[0], newModel.m_loadData->m_vertexBufferData.size() * sizeof(float), };
 #if DEBUG_TOOLS
 				newModel._traceName_vBufData = directory + "/vertices";
 				vBufDesc.label = newModel._traceName_vBufData.c_str();
@@ -429,7 +431,7 @@ namespace Core
 			{
 				sg_buffer_desc iBufDesc{};
 				iBufDesc.type = SG_BUFFERTYPE_INDEXBUFFER;
-				iBufDesc.data = { &newModel.m_indexBufferData[0], newModel.m_indexBufferData.size() * sizeof(Resource::IndexType), };
+				iBufDesc.data = { &newModel.m_loadData->m_indexBufferData[0], newModel.m_loadData->m_indexBufferData.size() * sizeof(Resource::IndexType), };
 #if DEBUG_TOOLS
 				newModel._traceName_iBufData = directory + "/indices";
 				iBufDesc.label = newModel._traceName_iBufData.c_str();
@@ -443,94 +445,11 @@ namespace Core
 			}
 
 			// Clear all loaded data now it's in our gpu
-			newModel.m_vertexBufferData.clear();
-			newModel.m_indexBufferData.clear();
+			newModel.CleanData();
 			for (MeshData& mesh : newModel.m_meshes)
 			{
 				mesh.CleanData();
 			}
-#else
-			uint32 meshVertexOffset = 0;
-			uint32 meshIndexOffset = 0;
-			for (MeshData& mesh : newModel.m_meshes)
-			{
-				for (usize i = 0; i < mesh.m_vertexPositions.size(); ++i)
-				{
-					newModel.m_vertexPositionData.push_back(mesh.m_vertexPositions[i].x);
-					newModel.m_vertexPositionData.push_back(mesh.m_vertexPositions[i].y);
-					newModel.m_vertexPositionData.push_back(mesh.m_vertexPositions[i].z);
-					newModel.m_vertexNormalData.push_back(mesh.m_vertexNormals[i].x);
-					newModel.m_vertexNormalData.push_back(mesh.m_vertexNormals[i].y);
-					newModel.m_vertexNormalData.push_back(mesh.m_vertexNormals[i].z);
-					newModel.m_vertexTexCoordData.push_back(mesh.m_vertexTexCoords[i].x);
-					newModel.m_vertexTexCoordData.push_back(mesh.m_vertexTexCoords[i].y);
-				}
-				for (usize i = 0; i < mesh.m_indices.size(); ++i)
-				{
-					newModel.m_indexBufferData.push_back(meshVertexOffset + mesh.m_indices[i]);
-				}
-				//mesh.m_bindings.vertex_buffer_offsets[0] = meshVertexOffset;
-				mesh.m_bindings.index_buffer_offset = meshIndexOffset * sizeof(Resource::IndexType);
-				meshVertexOffset += mesh.m_vertexPositions.size();
-				meshIndexOffset += mesh.m_indices.size();
-			}
-			sg_buffer vPosBuf{};
-			sg_buffer vNormBuf{};
-			sg_buffer vTexCoordBuf{};
-			sg_buffer iBuf{};
-			{
-				sg_buffer_desc vPosBufDesc{};
-				vPosBufDesc.type = SG_BUFFERTYPE_VERTEXBUFFER;
-				vPosBufDesc.size = static_cast<int>(newModel.m_vertexPositionData.size() * sizeof(float));
-				vPosBufDesc.content = &newModel.m_vertexPositionData[0];
-#if DEBUG_TOOLS
-				newModel._traceName_vertexPositions = directory + "/vPositions";
-				vPosBufDesc.label = newModel._traceName_vertexPositions.c_str();
-#endif
-				vPosBuf = sg_make_buffer(vPosBufDesc);
-			}
-			{
-				sg_buffer_desc vNormBufDesc{};
-				vNormBufDesc.type = SG_BUFFERTYPE_VERTEXBUFFER;
-				vNormBufDesc.size = static_cast<int>(newModel.m_vertexNormalData.size() * sizeof(float));
-				vNormBufDesc.content = &newModel.m_vertexNormalData[0];
-#if DEBUG_TOOLS
-				newModel._traceName_vertexNormals = directory + "/vNormals";
-				vNormBufDesc.label = newModel._traceName_vertexNormals.c_str();
-#endif
-				vNormBuf = sg_make_buffer(vNormBufDesc);
-			}
-			{
-				sg_buffer_desc vTexCoordBufDesc{};
-				vTexCoordBufDesc.type = SG_BUFFERTYPE_VERTEXBUFFER;
-				vTexCoordBufDesc.size = static_cast<int>(newModel.m_vertexTexCoordData.size() * sizeof(float));
-				vTexCoordBufDesc.content = &newModel.m_vertexTexCoordData[0];
-#if DEBUG_TOOLS
-				newModel._traceName_vertexTexCoords = directory + "/vTexCoords";
-				vTexCoordBufDesc.label = newModel._traceName_vertexTexCoords.c_str();
-#endif
-				vTexCoordBuf = sg_make_buffer(vTexCoordBufDesc);
-			}
-
-			{
-				sg_buffer_desc iBufDesc{};
-				iBufDesc.type = SG_BUFFERTYPE_INDEXBUFFER;
-				iBufDesc.size = static_cast<int>(newModel.m_indexBufferData.size() * sizeof(index_type));
-				iBufDesc.content = &newModel.m_indexBufferData[0];
-#if DEBUG_TOOLS
-				newModel._traceName_iBufData = directory + "/indices";
-				iBufDesc.label = newModel._traceName_iBufData.c_str();
-#endif
-				iBuf = sg_make_buffer(iBufDesc);
-			}
-			for (MeshData& mesh : newModel.m_meshes)
-			{
-				mesh.m_bindings.vertex_buffers[0] = vPosBuf;
-				mesh.m_bindings.vertex_buffers[1] = vNormBuf;
-				mesh.m_bindings.vertex_buffers[2] = vTexCoordBuf;
-				mesh.m_bindings.index_buffer = iBuf;
-			}
-#endif
 
 			return true;
 		}

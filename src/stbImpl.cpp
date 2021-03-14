@@ -2,8 +2,6 @@
 
 // All stb-style implementations should be defined in this file
 
-#define SOKOL_ASSERT(c) ASSERT(c)
-
 #define SOKOL_IMPL
 #if DEBUG_TOOLS
 	#define SOKOL_TRACE_HOOKS

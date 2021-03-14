@@ -39,7 +39,7 @@ namespace Core
 				}
 				else
 				{
-					ASSERT(false, "ran out of lights");
+					kaError("ran out of lights");
 				}
 
 				return LightSetter{ lightData.Col[thisLightI], lightData.Pos[thisLightI], lightData.Att[thisLightI], lightData.Dir[thisLightI], lightData.Cut[thisLightI], };
@@ -78,7 +78,7 @@ namespace Core
 					sg_end_pass();
 				}
 
-				ASSERT(_pass < e_Pass_Count);
+				kaAssert(_pass < e_Pass_Count);
 
 				if (_pass == e_DefaultPass)
 				{
@@ -87,7 +87,7 @@ namespace Core
 				}
 				else
 				{
-					ASSERT(m_passes[_pass].has_value());
+					kaAssert(m_passes[_pass].has_value());
 					if (m_passes[_pass]->Begin())
 					{
 						m_currentPass = _pass;
@@ -97,17 +97,17 @@ namespace Core
 						m_currentPass = e_Pass_Count;
 					}
 
-					ASSERT(m_currentPass == _pass);
+					kaAssert(m_currentPass == _pass);
 				}
 			}
 
 			void SetPassGlue(e_PassGlue _passGlue)
 			{
-				ASSERT(_passGlue < e_PassGlue_Count);
-				ASSERT(m_currentPass < e_Pass_Count);
-				ASSERT(m_currentRenderer < e_Renderer_Count);
+				kaAssert(_passGlue < e_PassGlue_Count);
+				kaAssert(m_currentPass < e_Pass_Count);
+				kaAssert(m_currentRenderer < e_Renderer_Count);
 
-				ASSERT(m_passGlues[_passGlue].has_value());
+				kaAssert(m_passGlues[_passGlue].has_value());
 				if (m_passGlues[_passGlue]->Set(m_currentPass, m_currentRenderer))
 				{
 					m_currentPassGlue = _passGlue;
@@ -118,14 +118,14 @@ namespace Core
 				}
 				m_storedBindingNumToDraw = 0;
 
-				ASSERT(m_currentPassGlue == _passGlue);
+				kaAssert(m_currentPassGlue == _passGlue);
 			}
 
 			void SetBinding(sg_bindings const& _binds, int _numToDraw)
 			{
-				ASSERT(m_currentPass < e_Pass_Count);
-				ASSERT(m_currentRenderer < e_Renderer_Count);
-				ASSERT(m_renderers[m_currentRenderer]->CanUseGeneralBindings());
+				kaAssert(m_currentPass < e_Pass_Count);
+				kaAssert(m_currentRenderer < e_Renderer_Count);
+				kaAssert(m_renderers[m_currentRenderer]->CanUseGeneralBindings());
 
 				sg_apply_bindings(_binds);
 				m_currentPassGlue = e_PassGlue_Count;
@@ -134,10 +134,10 @@ namespace Core
 
 			void SetRenderer(e_Renderer _renderer)
 			{
-				ASSERT(_renderer < e_Renderer_Count);
-				ASSERT(m_currentPass < e_Pass_Count);
+				kaAssert(_renderer < e_Renderer_Count);
+				kaAssert(m_currentPass < e_Pass_Count);
 
-				ASSERT(m_renderers[_renderer].has_value());
+				kaAssert(m_renderers[_renderer].has_value());
 				if (m_renderers[_renderer]->Activate(m_currentPass))
 				{
 					m_currentRenderer = _renderer;
@@ -147,14 +147,14 @@ namespace Core
 					m_currentRenderer = e_Renderer_Count;
 				}
 
-				ASSERT(m_currentRenderer == _renderer);
+				kaAssert(m_currentRenderer == _renderer);
 			}
 
 			void Draw(int numElements, int baseElement, int numInstances)
 			{
-				ASSERT(m_currentPass < e_Pass_Count);
-				ASSERT(m_currentRenderer < e_Renderer_Count);
-				ASSERT(numElements > 0);
+				kaAssert(m_currentPass < e_Pass_Count);
+				kaAssert(m_currentRenderer < e_Renderer_Count);
+				kaAssert(numElements > 0);
 
 				sg_draw(baseElement, numElements, numInstances);
 			}

@@ -11,7 +11,7 @@ namespace Core
 
 		bool const loaded = Core::Resource::LoadModel(_desc.m_filePath, newComponent.m_modelID);
 
-		ASSERT(loaded, "couldn't load model, not adding component");
+		kaAssert(loaded, "couldn't load model, not adding component");
 		if (loaded)
 		{
 			// Add to ecs
@@ -23,7 +23,7 @@ namespace Core
 	void RemoveComponent<Render::Model>(EntityID const _entity)
 	{
 		Render::Model* const oldComponent = Core::GetComponent<Render::Model>(_entity);
-		ASSERT(oldComponent);
+		kaAssert(oldComponent);
 
 		// TODO cleanup shit
 

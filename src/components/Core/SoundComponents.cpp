@@ -14,7 +14,7 @@ namespace Core
 
 		bool const loaded = Resource::LoadMusic(_desc.m_filePath, newComponent.m_music);
 
-		ASSERT(loaded, "couldn't load music, not adding component");
+		kaAssert(loaded, "couldn't load music, not adding component");
 		if (loaded)
 		{
 			// Add to ecs
@@ -37,12 +37,12 @@ namespace Core
 
 		bool const loaded = Resource::LoadSoundEffect(_desc.m_filePath, newComponent.m_soundEffect);
 
-		ASSERT(loaded, "couldn't load music, not adding component");
+		kaAssert(loaded, "couldn't load music, not adding component");
 		if (loaded)
 		{
 			// Add to ecs
 			Core::Transform const* transform = Core::GetComponent<Core::Transform>(_entity);
-			ASSERT(transform != nullptr, "missing Transform component when trying to add SoundEffect3D");
+			kaAssert(transform != nullptr, "missing Transform component when trying to add SoundEffect3D");
 
 			newComponent.m_handle = Sound::AddSoundEffect3D(newComponent.m_soundEffect, transform->CalculateWorldTransform().m_origin);
 

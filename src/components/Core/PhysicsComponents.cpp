@@ -17,7 +17,7 @@ namespace Core
 	{
 		Core::EntityID GetPrimaryWorldEntity()
 		{
-			ASSERT(!physicsWorlds.empty());
+			kaAssert(!physicsWorlds.empty());
 			return physicsWorlds.begin()->first;
 		}
 	}
@@ -31,7 +31,7 @@ namespace Core
 		}
 		else
 		{
-			ASSERT(newComponent.m_dispatcher);
+			kaAssert(newComponent.m_dispatcher);
 		}
 		if (!newComponent.m_dispatcher)
 		{
@@ -46,7 +46,7 @@ namespace Core
 			newComponent.m_solver = new btSequentialImpulseConstraintSolver();
 		}
 
-		ASSERT(!newComponent.m_dynamicsWorld);
+		kaAssert(!newComponent.m_dynamicsWorld);
 		newComponent.m_dynamicsWorld = new btDiscreteDynamicsWorld(newComponent.m_dispatcher, newComponent.m_overlappingPairCache, newComponent.m_solver, newComponent.m_collisionConfiguration);
 		newComponent.m_dynamicsWorld->setGravity(btVector3(0, -8.0f, 0));
 
@@ -63,7 +63,7 @@ namespace Core
 	void RemoveComponent<Physics::World>(EntityID const _entity)
 	{
 		Physics::World* const oldComponent = Core::GetComponent<Physics::World>(_entity);
-		ASSERT(oldComponent);
+		kaAssert(oldComponent);
 		SafeDelete(oldComponent->m_collisionConfiguration);
 		SafeDelete(oldComponent->m_dispatcher);
 		SafeDelete(oldComponent->m_overlappingPairCache);
@@ -73,7 +73,7 @@ namespace Core
 #if PHYSICS_DEBUG
 		Physics::RemovePhysicsWorld(_entity);
 #endif
-		ASSERT(physicsWorlds.at(_entity).numBodies == 0u);
+		kaAssert(physicsWorlds.at(_entity).numBodies == 0u);
 		physicsWorlds.erase(_entity);
 
 		Core::ECS::RemoveComponent<Physics::World>(_entity);
@@ -84,7 +84,7 @@ namespace Core
 	{
 		Physics::RigidBody newComponent{};
 
-		ASSERT(_desc.m_physicsWorld.IsValid());
+		kaAssert(_desc.m_physicsWorld.IsValid());
 		newComponent.m_physicsWorld = _desc.m_physicsWorld;
 
 		// Select shape
@@ -137,7 +137,7 @@ namespace Core
 	void RemoveComponent<Physics::RigidBody>(EntityID const _entity)
 	{
 		Physics::RigidBody* const oldComponent = Core::GetComponent<Physics::RigidBody>(_entity);
-		ASSERT(oldComponent);
+		kaAssert(oldComponent);
 
 		Core::Physics::World& physicsWorld = Physics::GetWorld(oldComponent->m_physicsWorld);
 		physicsWorld.m_dynamicsWorld->removeCollisionObject(oldComponent->m_body);
@@ -156,7 +156,7 @@ namespace Core
 	{
 		Physics::CharacterController newComponent{};
 
-		ASSERT(_desc.m_physicsWorld.IsValid());
+		kaAssert(_desc.m_physicsWorld.IsValid());
 		newComponent.m_physicsWorld = _desc.m_physicsWorld;
 		newComponent.m_viewObject = _desc.m_viewObject;
 
@@ -191,7 +191,7 @@ namespace Core
 	void RemoveComponent<Physics::CharacterController>(EntityID const _entity)
 	{
 		Physics::CharacterController* const oldComponent = Core::GetComponent<Physics::CharacterController>(_entity);
-		ASSERT(oldComponent);
+		kaAssert(oldComponent);
 
 		Core::Physics::World& physicsWorld = Physics::GetWorld(oldComponent->m_physicsWorld);
 		physicsWorld.m_dynamicsWorld->removeCollisionObject(oldComponent->m_body);

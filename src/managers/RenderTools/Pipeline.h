@@ -168,14 +168,14 @@ namespace Core::Render
 
 		sg_image GetColourImage(uint8 _i) const
 		{
-			ASSERT(_i < 4);
-			ASSERT(m_colTargets[_i].has_value());
+			kaAssert(_i < 4);
+			kaAssert(m_colTargets[_i].has_value());
 			return *m_colTargets[_i];
 		}
 
 		sg_image GetDepthImage() const
 		{
-			ASSERT(m_depthTarget.has_value());
+			kaAssert(m_depthTarget.has_value());
 			return *m_depthTarget;
 		}
 	};
@@ -200,8 +200,8 @@ namespace Core::Render
 		bool Set(e_Pass _currentPass, e_Renderer _currentRenderer)
 		{
 #if DEBUG_TOOLS
-			ASSERT(m_validPasses[_currentPass]);
-			ASSERT(m_validRenderers[_currentRenderer]);
+			kaAssert(m_validPasses[_currentPass]);
+			kaAssert(m_validRenderers[_currentRenderer]);
 			if (!m_validPasses[_currentPass] || !m_validRenderers[_currentRenderer])
 			{
 				return false;
@@ -249,7 +249,7 @@ namespace Core::Render
 		bool Activate(e_Pass _currentPass)
 		{
 #if DEBUG_TOOLS
-			ASSERT(m_validPasses[_currentPass]);
+			kaAssert(m_validPasses[_currentPass]);
 			if (!m_validPasses[_currentPass])
 			{
 				return false;

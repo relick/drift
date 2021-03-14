@@ -84,7 +84,7 @@ namespace Core
 		inline Physics::World& GetWorld(EntityID const _physicsWorld)
 		{
 			Core::Physics::World* const physicsWorld = Core::GetComponent<Core::Physics::World>(_physicsWorld);
-			ASSERT(physicsWorld);
+			kaAssert(physicsWorld);
 			return *physicsWorld;
 		}
 	}

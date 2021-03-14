@@ -86,8 +86,8 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		TextureID NewTextureID() { return nextTextureID++; }
 		ModelID NewModelID() { return nextModelID++; }
-		SoundEffectID NewSoundEffectID() { ASSERT(nextSoundEffectID < g_maxSoundEffects, "ran out of sound effects"); return nextSoundEffectID++; }
-		MusicID NewMusicID() { ASSERT(nextMusicID < g_maxMusic, "ran out of music"); return nextMusicID++; }
+		SoundEffectID NewSoundEffectID() { kaAssert(nextSoundEffectID < g_maxSoundEffects, "ran out of sound effects"); return nextSoundEffectID++; }
+		MusicID NewMusicID() { kaAssert(nextMusicID < g_maxMusic, "ran out of music"); return nextMusicID++; }
 
 		//--------------------------------------------------------------------------------
 		TextureData const& GetTexture(TextureID _texture) { return textures.at(_texture); }
@@ -183,8 +183,7 @@ namespace Core
 			}
 			else
 			{
-				ASSERT(false, "texture failed to load");
-				std::cout << "Texture failed to load at path: " << _filename << std::endl;
+				kaError("Texture failed to load at path: " + _filename);
 				stbi_image_free(data);
 				return false;
 			}
@@ -219,7 +218,7 @@ namespace Core
 						bool const loaded = LoadTextureFromFile(filename, imageID, hasAlpha);
 						if (loaded)
 						{
-							ASSERT(!hasAlpha, "non-opaque textures nyi");
+							kaAssert(!hasAlpha, "non-opaque textures nyi");
 
 							TextureID const newTextureID = NewTextureID();
 							TextureData& newTexture = textures[newTextureID];
@@ -243,7 +242,7 @@ namespace Core
 							}
 							default:
 							{
-								ASSERT(false, "tried to load unsupported texture type");
+								kaError("tried to load unsupported texture type");
 								break;
 							}
 							}
@@ -309,7 +308,7 @@ namespace Core
 			for (usize i = 0; i < _mesh->mNumFaces; i++)
 			{
 				aiFace const& face = _mesh->mFaces[i];
-				ASSERT(face.mNumIndices == numIndicesPerFace);
+				kaAssert(face.mNumIndices == numIndicesPerFace);
 				for (usize j = 0; j < face.mNumIndices; j++)
 				{
 					o_loadData.m_indices[i * numIndicesPerFace + j] = static_cast<uint16>(face.mIndices[j]);
@@ -433,7 +432,7 @@ namespace Core
 			newModel.m_path = _path;
 			ProcessNode(directory, newModel, loadData, scene->mRootNode, scene);
 
-			ASSERT(newModel.m_meshes.size() == loadData.m_meshes.size());
+			kaAssert(newModel.m_meshes.size() == loadData.m_meshes.size());
 
 			// Make bindings for model
 

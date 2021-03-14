@@ -45,7 +45,7 @@ namespace Core
 			while (nextParent.IsValid())
 			{
 				Transform const* const parentTrans = Core::GetComponent<Transform>(nextParent);
-				ASSERT(parentTrans != nullptr);
+				kaAssert(parentTrans != nullptr);
 
 				finalTransform = parentTrans->m_transform * finalTransform;
 				nextParent = parentTrans->m_parent;
@@ -61,7 +61,7 @@ namespace Core
 			while (nextParent.IsValid())
 			{
 				Transform const* const parentTrans = Core::GetComponent<Transform>(nextParent);
-				ASSERT(parentTrans != nullptr);
+				kaAssert(parentTrans != nullptr);
 
 				finalTransform = parentTrans->m_transform * finalTransform;
 				nextParent = parentTrans->m_parent;

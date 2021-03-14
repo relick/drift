@@ -76,7 +76,14 @@ namespace Core
 		//-------------------------------------------------
 		struct SpriteData
 		{
-
+			std::string m_path;
+			struct
+			{
+				TextureID id;
+				sg_image image;
+			} m_texture;
+			fVec2 m_dimensions;
+			fVec2 m_topLeftUV;
 		};
 
 		//-------------------------------------------------

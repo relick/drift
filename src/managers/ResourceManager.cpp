@@ -5,6 +5,7 @@
 #include <assimp/postprocess.h>
 
 #include <iostream>
+#include <fstream>
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/inlined_vector.h>
 #include <array>
@@ -21,6 +22,7 @@ sg_image defaultNormalTextureID{}; // used for missing normal textures
 absl::flat_hash_map<Core::Resource::TextureID, Core::Resource::TextureData> textures;
 absl::flat_hash_map<Core::Resource::ModelID, Core::Resource::ModelData> models;
 
+Core::Resource::SpriteID::ValueType nextSpriteID = 0;
 absl::flat_hash_map<Core::Resource::SpriteID, Core::Resource::SpriteData> sprites;
 
 constexpr usize const g_maxSoundEffects = 128;
@@ -86,6 +88,7 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		TextureID NewTextureID() { return nextTextureID++; }
 		ModelID NewModelID() { return nextModelID++; }
+		SpriteID NewSpriteID() { return nextSpriteID++; }
 		SoundEffectID NewSoundEffectID() { kaAssert(nextSoundEffectID < g_maxSoundEffects, "ran out of sound effects"); return nextSoundEffectID++; }
 		MusicID NewMusicID() { kaAssert(nextMusicID < g_maxMusic, "ran out of music"); return nextMusicID++; }
 
@@ -105,11 +108,11 @@ namespace Core
 			std::string const& _texPath
 		)
 		{
-			for (auto const& texPair : textures)
+			for (auto const& [textureID, texture] : textures)
 			{
-				if (texPair.second.m_path == _texPath)
+				if (texture.m_path == _texPath)
 				{
-					return texPair.first;
+					return textureID;
 				}
 			}
 
@@ -122,11 +125,11 @@ namespace Core
 			std::string const& _modelPath
 		)
 		{
-			for (auto const& modelPair : models)
+			for (auto const& [modelID, model] : models)
 			{
-				if (modelPair.second.m_path == _modelPath)
+				if (model.m_path == _modelPath)
 				{
-					return modelPair.first;
+					return modelID;
 				}
 			}
 
@@ -421,7 +424,7 @@ namespace Core
 			bool const fileLoaded = scene && (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) == 0 && scene->mRootNode;
 			if (!fileLoaded)
 			{
-				std::cout << "ERROR::ASSIMP::" << import.GetErrorString() << std::endl;
+				kaError(std::string("assimp error: ") + import.GetErrorString());
 				return false;
 			}
 			std::string const directory = _path.substr(0, _path.find_last_of('/'));
@@ -523,7 +526,96 @@ namespace Core
 			SpriteID& o_spriteID
 		)
 		{
-			return false;
+			for (auto const& [spriteID, sprite] : sprites)
+			{
+				if (sprite.m_path == _path)
+				{
+					o_spriteID = spriteID;
+					return true;
+				}
+			}
+
+			std::ifstream spriteFile{ _path };
+			if (!spriteFile.is_open())
+			{
+				kaError("could not open sprite file: " + _path);
+				return false;
+			}
+
+			SpriteID const newID = NewSpriteID();
+			SpriteData& newSprite = sprites[newID];
+
+			// line 1: texture file
+			std::string line;
+			if (std::getline(spriteFile, line))
+			{
+				std::string const& texturePath = line;
+				TextureID const textureID = FindExistingTexture(texturePath);
+				if (textureID.IsValid())
+				{
+					TextureData const& textureData = GetTexture(textureID);
+
+					newSprite.m_texture.id = textureID;
+					newSprite.m_texture.image = textureData.m_texID;
+				}
+				else
+				{
+					sg_image imageID;
+					bool hasAlpha{ false };
+					bool const loaded = LoadTextureFromFile(texturePath, imageID, hasAlpha);
+					if (loaded)
+					{
+						TextureID const newTextureID = NewTextureID();
+						TextureData& newTextureData = textures[newTextureID];
+						newTextureData.m_texID = imageID;
+						newTextureData.m_path = texturePath;
+						newTextureData.m_type = TextureData::Type::Diffuse;
+
+						newSprite.m_texture.id = newTextureID;
+						newSprite.m_texture.image = imageID;
+					}
+					else
+					{
+						kaError("failed to load texture for sprite");
+					}
+				}
+			}
+			else
+			{
+				kaError("sprite file missing texture name");
+				return false;
+			}
+
+			// line 2: dimensions
+			if (std::getline(spriteFile, line))
+			{
+				usize const mid = line.find_first_of(' ');
+				float const width = std::atof(line.substr(0, mid).c_str());
+				float const height = std::atof(line.substr(mid + 1).c_str());
+				newSprite.m_dimensions = { width, height };
+			}
+			else
+			{
+				kaError("sprite file missing dimensions");
+				return false;
+			}
+
+			// todo: animations?
+			// temp: line 3, top-left UV
+			if (std::getline(spriteFile, line))
+			{
+				usize const mid = line.find_first_of(' ');
+				float const x = std::atof(line.substr(0, mid).c_str());
+				float const y = std::atof(line.substr(mid + 1).c_str());
+				newSprite.m_dimensions = { x, y };
+			}
+			else
+			{
+				kaError("sprite file missing top-left UV");
+				return false;
+			}
+
+			return true;
 		}
 
 

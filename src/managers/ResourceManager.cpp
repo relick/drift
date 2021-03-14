@@ -132,12 +132,29 @@ namespace Core
 
 			return ModelID{};
 		}
-
+		
+		bool CheckRGBAForAlpha
+		(
+			uint8* _data,
+			usize _dataSize
+		)
+		{
+			for (usize i = 3; i < _dataSize; i += 4)
+			{
+				if (_data[i] < 255)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+		
 		//--------------------------------------------------------------------------------
 		bool LoadTextureFromFile
 		(
 			std::string const& _filename,
 			sg_image& o_imageID,
+			bool& o_hasAlpha,
 			bool _gamma = false
 		)
 		{
@@ -147,9 +164,12 @@ namespace Core
 			uint8* data = stbi_load(_filename.c_str(), &imageDesc.width, &imageDesc.height, &nrComponents, 4);
 			if (data)
 			{
+				usize const dataSize = imageDesc.width * imageDesc.height * nrComponents;
+				o_hasAlpha = CheckRGBAForAlpha(data, dataSize);
+
 				imageDesc.pixel_format = SG_PIXELFORMAT_RGBA8;
 				imageDesc.data.subimage[0][0].ptr = data;
-				imageDesc.data.subimage[0][0].size = imageDesc.width * imageDesc.height * nrComponents;
+				imageDesc.data.subimage[0][0].size = dataSize;
 
 				imageDesc.generate_mipmaps = true;
 				imageDesc.min_filter = SG_FILTER_LINEAR_MIPMAP_LINEAR;
@@ -195,9 +215,12 @@ namespace Core
 					else
 					{   // if texture hasn't been loaded already, load it
 						sg_image imageID;
-						bool const loaded = LoadTextureFromFile(filename, imageID);
+						bool hasAlpha{ false };
+						bool const loaded = LoadTextureFromFile(filename, imageID, hasAlpha);
 						if (loaded)
 						{
+							ASSERT(!hasAlpha, "non-opaque textures nyi");
+
 							TextureID const newTextureID = NewTextureID();
 							TextureData& newTexture = textures[newTextureID];
 							newTexture.m_texID = imageID;

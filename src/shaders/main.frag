@@ -1,8 +1,8 @@
 //#version 330
 in vec3 FragPos;
-in vec3 Normal;
 in vec2 TexCoord;
 in vec4 FragPosLightSpace;
+in mat3 TBN;
 
 // material assumed to be layout(location=0)
 uniform material {
@@ -14,6 +14,7 @@ uniform material {
 
 uniform sampler2D mat_diffuseTex;
 uniform sampler2D mat_specularTex;
+uniform sampler2D mat_normalTex;
 
 const int MAX_LIGHTS = 16;
 
@@ -35,7 +36,7 @@ uniform sampler2DShadow directionalShadowMap;
 out vec4 FragColor;
 
 
-float CalcShadow(in vec4 fragPosLightSpace, in vec3 lightDir)
+float CalcShadow(in vec4 fragPosLightSpace, in vec3 lightDir, in vec3 viewNormal)
 {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
 #if SOKOL_GLSL
@@ -44,7 +45,7 @@ float CalcShadow(in vec4 fragPosLightSpace, in vec3 lightDir)
     projCoords.x = 0.5 + (0.5 * projCoords.x);
     projCoords.y = 0.5 - (0.5 * projCoords.y);
 #endif
-    float bias = max(0.003 * (1.0 - dot(normalize(Normal), lightDir)), 0.002);
+    float bias = max(0.003 * (1.0 - dot(viewNormal, lightDir)), 0.002);
     projCoords.z -= bias;
     
     // basic box style pcf
@@ -75,7 +76,7 @@ bool IsDirectionalLight(in int i)
 }
 
 // point, directional, spotlight, done in this. ambient done in main.
-vec4 CalcLight(in int i, in vec4 matDiffuse, in vec4 matSpecular, inout float shadow)
+vec4 CalcLight(in int i, in vec4 matDiffuse, in vec4 matSpecular, inout float shadow, in vec3 viewNormal)
 {
     vec4 diffuse = vec4(0.0);
     vec3 specular = vec3(0.0);
@@ -91,7 +92,7 @@ vec4 CalcLight(in int i, in vec4 matDiffuse, in vec4 matSpecular, inout float sh
         // directional
         lightDir = Lights.Pos[i].xyz;
         theta = 1.1; // greater than all cutoffs
-        shadow = CalcShadow(FragPosLightSpace, lightDir);
+        shadow = CalcShadow(FragPosLightSpace, lightDir, viewNormal);
     }
     else
     {
@@ -107,8 +108,7 @@ vec4 CalcLight(in int i, in vec4 matDiffuse, in vec4 matSpecular, inout float sh
 
     if(theta > Lights.Cut[i].y)
     {
-        vec3 norm = normalize(Normal);
-        float diff = max(dot(norm, lightDir), 0.0);
+        float diff = max(dot(viewNormal, lightDir), 0.0);
         diffuse = (vec4(Lights.Col[i].xyz, 1.0) * Lights.Col[i].w * diff * matDiffuse) * atten;
         
         float specularIntensity = 0.0;
@@ -116,7 +116,7 @@ vec4 CalcLight(in int i, in vec4 matDiffuse, in vec4 matSpecular, inout float sh
         {
             vec3 viewDir = normalize(-FragPos);
             vec3 halfwayDir = normalize(lightDir + viewDir);
-            vec3 reflectDir = reflect(-lightDir, norm);
+            vec3 reflectDir = reflect(-lightDir, viewNormal);
 
             float fresnelPower = 5.0; // schlick's approx val, could get from spec map?
     
@@ -127,7 +127,7 @@ vec4 CalcLight(in int i, in vec4 matDiffuse, in vec4 matSpecular, inout float sh
     
             float specularIntensity =
                 //dot(viewDir, reflectDir) // phong
-                dot(norm, halfwayDir) // blinn
+                dot(viewNormal, halfwayDir) // blinn
             ;
             specularIntensity = pow(max(specularIntensity, 0.0), Material.shininess);
                 
@@ -140,6 +140,10 @@ vec4 CalcLight(in int i, in vec4 matDiffuse, in vec4 matSpecular, inout float sh
 
 void main()
 {
+    vec3 viewNormal = texture(mat_normalTex, TexCoord).rgb;
+    viewNormal = viewNormal * 2.0 - 1.0;
+    viewNormal = normalize(TBN * viewNormal);
+
     vec4 diffuseSample = texture(mat_diffuseTex, TexCoord);
     if (diffuseSample.a < 0.01)
     {
@@ -156,7 +160,7 @@ void main()
 
     for(int i = 0; i < int(Lights.numLights); ++i)
     {
-        result += CalcLight(i, matDiffuse, matSpecular, shadow);
+        result += CalcLight(i, matDiffuse, matSpecular, shadow, viewNormal);
     }
 
     FragColor = (1.0 - shadow) * result;

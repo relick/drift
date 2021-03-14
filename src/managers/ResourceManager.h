@@ -42,6 +42,7 @@ namespace Core
 			fVec3 position;
 			fVec3 normal;
 			fVec2 uv{ 0.0f, 0.0f };
+			fVec3 tangent;
 		};
 		using IndexType = uint32;
 

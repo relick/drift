@@ -356,6 +356,10 @@ namespace Core
 					.offset = sizeof(fVec3) + sizeof(fVec3),
 					.format = SG_VERTEXFORMAT_FLOAT2,
 				};
+				mainLayoutDesc.attrs[ATTR_main_vs_aTangent] = {
+					.offset = sizeof(fVec3) + sizeof(fVec3) + sizeof(fVec2),
+					.format = SG_VERTEXFORMAT_FLOAT3,
+				};
 				mainLayoutDesc.buffers[0].stride = sizeof(Resource::VertexData);
 
 				sg_pipeline_desc mainPipeDesc{
@@ -403,9 +407,11 @@ namespace Core
 			// depth only renderer, used for fast shadow mapping
 			{
 				sg_layout_desc depthOnlyLayoutDesc{};
-				depthOnlyLayoutDesc.attrs[ATTR_depth_only_vs_aPos].format = SG_VERTEXFORMAT_FLOAT3;
+				depthOnlyLayoutDesc.attrs[ATTR_depth_only_vs_aPos] = {
+					.offset = 0,
+					.format = SG_VERTEXFORMAT_FLOAT3,
+				};
 				depthOnlyLayoutDesc.buffers[0].stride = sizeof(Resource::VertexData);
-				depthOnlyLayoutDesc.attrs[ATTR_depth_only_vs_aPos].offset = 0;
 
 				sg_pipeline_desc depthOnlyDesc{
 					.shader = sg_make_shader(depth_only_sg_shader_desc(sg_query_backend())),

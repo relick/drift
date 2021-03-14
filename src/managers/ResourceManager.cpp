@@ -17,6 +17,7 @@ Core::Resource::TextureID::ValueType nextTextureID = 0;
 Core::Resource::ModelID::ValueType nextModelID = 0;
 
 sg_image defaultTextureID{}; // used for missing textures
+sg_image defaultNormalTextureID{}; // used for missing normal textures
 absl::flat_hash_map<Core::Resource::TextureID, Core::Resource::TextureData> textures;
 absl::flat_hash_map<Core::Resource::ModelID, Core::Resource::ModelData> models;
 
@@ -43,20 +44,38 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		void Setup()
 		{
-			uint8 emptyTex[] = { 255, 255, 255, 255 };
-			sg_image_data emptyTexData{};
-			emptyTexData.subimage[0][0].ptr = emptyTex;
-			emptyTexData.subimage[0][0].size = sizeof(emptyTex);
-			sg_image_desc emptyTexDesc{
-				.width = 1,
-				.height = 1,
-				.min_filter = SG_FILTER_LINEAR,
-				.mag_filter = SG_FILTER_LINEAR,
-				.wrap_u = SG_WRAP_REPEAT,
-				.wrap_v = SG_WRAP_REPEAT,
-				.data = emptyTexData,
-			};
-			defaultTextureID = sg_make_image(emptyTexDesc);
+			{
+				uint8 emptyTex[] = { 255, 255, 255, 255 };
+				sg_image_data emptyTexData{};
+				emptyTexData.subimage[0][0].ptr = emptyTex;
+				emptyTexData.subimage[0][0].size = sizeof(emptyTex);
+				sg_image_desc emptyTexDesc{
+					.width = 1,
+					.height = 1,
+					.min_filter = SG_FILTER_LINEAR,
+					.mag_filter = SG_FILTER_LINEAR,
+					.wrap_u = SG_WRAP_REPEAT,
+					.wrap_v = SG_WRAP_REPEAT,
+					.data = emptyTexData,
+				};
+				defaultTextureID = sg_make_image(emptyTexDesc);
+			}
+			{
+				uint8 emptyTex[] = { 128, 128, 255, 255 };
+				sg_image_data emptyTexData{};
+				emptyTexData.subimage[0][0].ptr = emptyTex;
+				emptyTexData.subimage[0][0].size = sizeof(emptyTex);
+				sg_image_desc emptyTexDesc{
+					.width = 1,
+					.height = 1,
+					.min_filter = SG_FILTER_LINEAR,
+					.mag_filter = SG_FILTER_LINEAR,
+					.wrap_u = SG_WRAP_REPEAT,
+					.wrap_v = SG_WRAP_REPEAT,
+					.data = emptyTexData,
+				};
+				defaultNormalTextureID = sg_make_image(emptyTexDesc);
+			}
 		}
 
 		//--------------------------------------------------------------------------------
@@ -83,13 +102,12 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		TextureID FindExistingTexture
 		(
-			aiString const& _texPath
+			std::string const& _texPath
 		)
 		{
 			for (auto const& texPair : textures)
 			{
-				bool const lengthsMatch = texPair.second.m_path.size() == _texPath.length;
-				if (lengthsMatch && std::memcmp(texPair.second.m_path.c_str(), _texPath.C_Str(), _texPath.length) == 0)
+				if (texPair.second.m_path == _texPath)
 				{
 					return texPair.first;
 				}
@@ -118,18 +136,15 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		bool LoadTextureFromFile
 		(
-			std::string const& _directory,
-			char const* _path,
+			std::string const& _filename,
 			sg_image& o_imageID,
 			bool _gamma = false
 		)
 		{
-			std::string const filename = _directory + '/' + _path;
-
 			sg_image_desc imageDesc{};
 
 			int nrComponents;
-			uint8* data = stbi_load(filename.c_str(), &imageDesc.width, &imageDesc.height, &nrComponents, 4);
+			uint8* data = stbi_load(_filename.c_str(), &imageDesc.width, &imageDesc.height, &nrComponents, 4);
 			if (data)
 			{
 				imageDesc.pixel_format = SG_PIXELFORMAT_RGBA8;
@@ -148,7 +163,8 @@ namespace Core
 			}
 			else
 			{
-				std::cout << "Texture failed to load at path: " << filename << std::endl;
+				ASSERT(false, "texture failed to load");
+				std::cout << "Texture failed to load at path: " << _filename << std::endl;
 				stbi_image_free(data);
 				return false;
 			}
@@ -168,7 +184,10 @@ namespace Core
 				{
 					aiString str;
 					_mat->GetTexture(_type, i, &str);
-					TextureID existingTexture = FindExistingTexture(str);
+
+					std::string const filename = _directory + '/' + str.C_Str();
+
+					TextureID existingTexture = FindExistingTexture(filename);
 					if (existingTexture.IsValid())
 					{
 						o_textures.emplace_back(existingTexture);
@@ -176,7 +195,7 @@ namespace Core
 					else
 					{   // if texture hasn't been loaded already, load it
 						sg_image imageID;
-						bool const loaded = LoadTextureFromFile(_directory, str.C_Str(), imageID);
+						bool const loaded = LoadTextureFromFile(filename, imageID);
 						if (loaded)
 						{
 							TextureID const newTextureID = NewTextureID();
@@ -201,11 +220,11 @@ namespace Core
 							}
 							default:
 							{
-								// unsupported texture type!!
-								ASSERT(false);
+								ASSERT(false, "tried to load unsupported texture type");
+								break;
 							}
 							}
-							newTexture.m_path = str.C_Str();
+							newTexture.m_path = filename;
 							o_textures.emplace_back(newTextureID);
 						}
 					}
@@ -261,6 +280,7 @@ namespace Core
 				{
 					o_loadData.m_vertices[i].uv = fVec2(_mesh->mTextureCoords[0][i].x, _mesh->mTextureCoords[0][i].y);
 				}
+				o_loadData.m_vertices[i].tangent = fVec3(_mesh->mTangents[i].x, _mesh->mTangents[i].y, _mesh->mTangents[i].z);
 			}
 
 			for (usize i = 0; i < _mesh->mNumFaces; i++)
@@ -300,7 +320,7 @@ namespace Core
 			// now finalise by making texture bindings
 			o_newMesh.m_bindings.fs_images[SLOT_main_mat_diffuseTex] = defaultTextureID;
 			o_newMesh.m_bindings.fs_images[SLOT_main_mat_specularTex] = defaultTextureID;
-			//newMesh.m_bindings.fs_images[SLOT_main_mat_normalTex] = defaultTextureID;
+			o_newMesh.m_bindings.fs_images[SLOT_main_mat_normalTex] = defaultNormalTextureID;
 			for (TextureID const& texID : o_newMesh.m_textures)
 			{
 				TextureData const& tex = GetTexture(texID);
@@ -318,8 +338,7 @@ namespace Core
 				}
 				case TextureData::Type::Normal:
 				{
-					// not supported yet
-					//newMesh.m_bindings.fs_images[SLOT_main_mat_normalTex] = tex.m_texID;
+					o_newMesh.m_bindings.fs_images[SLOT_main_mat_normalTex] = tex.m_texID;
 					break;
 				}
 				}
@@ -366,7 +385,16 @@ namespace Core
 			}
 
 			Assimp::Importer import;
-			aiScene const* scene = import.ReadFile(_path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenSmoothNormals | aiProcess_GenUVCoords | aiProcess_FlipWindingOrder | aiProcess_JoinIdenticalVertices);
+			aiScene const* scene = import.ReadFile(
+				_path
+				, aiProcess_Triangulate
+				| aiProcess_FlipUVs
+				| aiProcess_GenSmoothNormals
+				| aiProcess_GenUVCoords
+				| aiProcess_FlipWindingOrder
+				| aiProcess_JoinIdenticalVertices
+				| aiProcess_CalcTangentSpace
+			);
 
 			bool const fileLoaded = scene && (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) == 0 && scene->mRootNode;
 			if (!fileLoaded)
@@ -410,6 +438,9 @@ namespace Core
 					loadData.m_vertexBufferData.emplace_back(vertex.normal.z);
 					loadData.m_vertexBufferData.emplace_back(vertex.uv.x);
 					loadData.m_vertexBufferData.emplace_back(vertex.uv.y);
+					loadData.m_vertexBufferData.emplace_back(vertex.tangent.x);
+					loadData.m_vertexBufferData.emplace_back(vertex.tangent.y);
+					loadData.m_vertexBufferData.emplace_back(vertex.tangent.z);
 				}
 				for (auto const& index : loadData.m_meshes[meshI].m_indices)
 				{

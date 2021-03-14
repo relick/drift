@@ -18,10 +18,9 @@
 #include "CubeTest.h"
 
 constexpr int const g_renderAreaWidth = 320;
-constexpr int const g_renderAreaHeight = 240;
-constexpr int const g_renderAreaToWindowStartMultiplier = 3;
-constexpr int const g_windowStartWidth = (g_renderAreaWidth * g_renderAreaToWindowStartMultiplier);
-constexpr int const g_windowStartHeight = (g_renderAreaHeight * g_renderAreaToWindowStartMultiplier);
+constexpr int const g_renderAreaHeight = (g_renderAreaWidth / 4) * 3;
+constexpr int const g_windowStartWidth = 960;
+constexpr int const g_windowStartHeight = (g_windowStartWidth / 4) * 3;
 
 void initialise_cb()
 {

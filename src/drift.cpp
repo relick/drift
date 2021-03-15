@@ -153,8 +153,9 @@ void initialise_cb()
 			{
 				sapp_lock_mouse(true);
 				fVec2 const mouseDelta = Core::Input::GetMouseDelta();
-				_debugCamera.m_angle.x -= mouseDelta.y * 0.0005f;
-				_debugCamera.m_angle.y += mouseDelta.x * 0.0005f;
+				float const scale = 0.0005f;
+				_debugCamera.m_angle.x -= mouseDelta.y * scale;
+				_debugCamera.m_angle.y += mouseDelta.x * scale;
 			}
 			else
 			{
@@ -202,19 +203,15 @@ void initialise_cb()
 			float const pitch = _debugCamera.m_angle.x;
 
 
-			fVec3 forward;
-			forward.x = cosf(yaw) * cosf(pitch);
-			forward.y = sinf(pitch);
-			forward.z = sinf(yaw) * cosf(pitch);
-			forward = glm::normalize(forward);
+			fVec3 const forward = glm::normalize(fVec3{ cosf(yaw) * cosf(pitch), sinf(pitch), sinf(yaw) * cosf(pitch) });
 
 			_t.T().m_basis = RotationFromForward(forward);
 
 			// also re-calculate the Right and Up vector
-			fVec3 right = glm::normalize(glm::cross(forward, fVec3(0.0f, 1.0f, 0.0f)));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
-			fVec3 up = glm::normalize(glm::cross(right, forward));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+			fVec3 const right = glm::normalize(glm::cross(forward, fVec3(0.0f, 1.0f, 0.0f)));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+			fVec3 const up = glm::normalize(glm::cross(right, forward));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
 
-			float velocity = 0.8f * _fd.unscaled_dt;
+			float const velocity = 0.8f * _fd.unscaled_dt;
 			if (Core::Input::Pressed(Core::Input::Action::Forward))
 			{
 				_t.T().m_origin += forward * velocity;

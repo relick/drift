@@ -33,6 +33,13 @@ Core::Resource::MusicID::ValueType nextMusicID = 0;
 std::array<Core::Resource::SoundEffectData, g_maxSoundEffects> soundEffects;
 std::array<Core::Resource::MusicData, g_maxMusic> music;
 
+namespace
+{
+	constexpr uint8 const g_textureColourMax = std::numeric_limits<uint8>::max();
+	constexpr uint8 const g_textureNormalOne = std::numeric_limits<uint8>::max();
+	constexpr uint8 const g_textureNormalZero = std::numeric_limits<uint8>::max() / 2;
+}
+
 namespace Core
 {
 	namespace Resource
@@ -47,10 +54,9 @@ namespace Core
 		void Setup()
 		{
 			{
-				uint8 emptyTex[] = { 255, 255, 255, 255 };
+				uint8 const emptyTex[] = { g_textureColourMax, g_textureColourMax, g_textureColourMax, g_textureColourMax, };
 				sg_image_data emptyTexData{};
-				emptyTexData.subimage[0][0].ptr = emptyTex;
-				emptyTexData.subimage[0][0].size = sizeof(emptyTex);
+				emptyTexData.subimage[0][0] = SG_RANGE(emptyTex);
 				sg_image_desc emptyTexDesc{
 					.width = 1,
 					.height = 1,
@@ -63,10 +69,9 @@ namespace Core
 				defaultTextureID = sg_make_image(emptyTexDesc);
 			}
 			{
-				uint8 emptyTex[] = { 128, 128, 255, 255 };
+				uint8 const emptyTex[] = { g_textureNormalZero, g_textureNormalZero, g_textureNormalOne, 0, };
 				sg_image_data emptyTexData{};
-				emptyTexData.subimage[0][0].ptr = emptyTex;
-				emptyTexData.subimage[0][0].size = sizeof(emptyTex);
+				emptyTexData.subimage[0][0] = SG_RANGE(emptyTex);
 				sg_image_desc emptyTexDesc{
 					.width = 1,
 					.height = 1,
@@ -138,13 +143,13 @@ namespace Core
 		
 		bool CheckRGBAForAlpha
 		(
-			uint8* _data,
+			uint8 const* _data,
 			usize _dataSize
 		)
 		{
 			for (usize i = 3; i < _dataSize; i += 4)
 			{
-				if (_data[i] < 255)
+				if (_data[i] < g_textureColourMax)
 				{
 					return true;
 				}
@@ -163,16 +168,19 @@ namespace Core
 		{
 			sg_image_desc imageDesc{};
 
-			int nrComponents;
-			uint8* data = stbi_load(_filename.c_str(), &imageDesc.width, &imageDesc.height, &nrComponents, 4);
-			if (data)
+			int componentCount{ 0 };
+			uint8* data = stbi_load(_filename.c_str(), &imageDesc.width, &imageDesc.height, &componentCount, 4);
+			if (data != nullptr)
 			{
-				usize const dataSize = imageDesc.width * imageDesc.height * nrComponents;
+				kaAssert(componentCount > 0);
+				usize const dataSize = imageDesc.width * imageDesc.height * componentCount;
 				o_hasAlpha = CheckRGBAForAlpha(data, dataSize);
 
 				imageDesc.pixel_format = SG_PIXELFORMAT_RGBA8;
-				imageDesc.data.subimage[0][0].ptr = data;
-				imageDesc.data.subimage[0][0].size = dataSize;
+				imageDesc.data.subimage[0][0] = {
+					.ptr = data,
+					.size = dataSize,
+				};
 
 				imageDesc.generate_mipmaps = true;
 				imageDesc.min_filter = SG_FILTER_LINEAR_MIPMAP_LINEAR;
@@ -184,12 +192,10 @@ namespace Core
 				stbi_image_free(data);
 				return true;
 			}
-			else
-			{
-				kaError("Texture failed to load at path: " + _filename);
-				stbi_image_free(data);
-				return false;
-			}
+
+			kaError("Texture failed to load at path: " + _filename);
+			stbi_image_free(data);
+			return false;
 		}
 
 		//--------------------------------------------------------------------------------
@@ -301,7 +307,7 @@ namespace Core
 			{
 				o_loadData.m_vertices[i].position = fVec3(_mesh->mVertices[i].x, _mesh->mVertices[i].y, _mesh->mVertices[i].z);
 				o_loadData.m_vertices[i].normal = fVec3(_mesh->mNormals[i].x, _mesh->mNormals[i].y, _mesh->mNormals[i].z);
-				if (_mesh->mTextureCoords[0])
+				if (_mesh->mTextureCoords[0] != nullptr)
 				{
 					o_loadData.m_vertices[i].uv = fVec2(_mesh->mTextureCoords[0][i].x, _mesh->mTextureCoords[0][i].y);
 				}
@@ -421,7 +427,7 @@ namespace Core
 				| aiProcess_CalcTangentSpace
 			);
 
-			bool const fileLoaded = scene && (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) == 0 && scene->mRootNode;
+			bool const fileLoaded = scene != nullptr && (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) == 0 && scene->mRootNode != nullptr;
 			if (!fileLoaded)
 			{
 				kaError(std::string("assimp error: ") + import.GetErrorString());
@@ -590,8 +596,8 @@ namespace Core
 			if (std::getline(spriteFile, line))
 			{
 				usize const mid = line.find_first_of(' ');
-				float const width = std::atof(line.substr(0, mid).c_str());
-				float const height = std::atof(line.substr(mid + 1).c_str());
+				float const width = static_cast<float>(std::atof(line.substr(0, mid).c_str()));
+				float const height = static_cast<float>(std::atof(line.substr(mid + 1).c_str()));
 				newSprite.m_dimensions = { width, height };
 			}
 			else
@@ -605,8 +611,8 @@ namespace Core
 			if (std::getline(spriteFile, line))
 			{
 				usize const mid = line.find_first_of(' ');
-				float const x = std::atof(line.substr(0, mid).c_str());
-				float const y = std::atof(line.substr(mid + 1).c_str());
+				float const x = static_cast<float>(std::atof(line.substr(0, mid).c_str()));
+				float const y = static_cast<float>(std::atof(line.substr(mid + 1).c_str()));
 				newSprite.m_dimensions = { x, y };
 			}
 			else

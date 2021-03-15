@@ -162,82 +162,85 @@ void initialise_cb()
 				sapp_lock_mouse(false);
 			}
 
-#define CHECK_AXES 0
-#if CHECK_AXES
-			_t.T().m_origin = fVec3(0, 0, 0);
-			if (Core::Input::Pressed(Core::Input::Action::Forward))
+			constexpr bool d_checkAxes = false;
+			if constexpr (d_checkAxes)
 			{
-				_t.T().m_origin += fVec3(0, 0, 1);
-			}
-			if (Core::Input::Pressed(Core::Input::Action::Backward))
-			{
-				_t.T().m_origin += fVec3(0, 0, -1);
-			}
-			if (Core::Input::Pressed(Core::Input::Action::Left))
-			{
-				_t.T().m_origin += fVec3(-1, 0, 0);
-			}
-			if (Core::Input::Pressed(Core::Input::Action::Right))
-			{
-				_t.T().m_origin += fVec3(1, 0, 0);
-			}
-			if (Core::Input::Pressed(Core::Input::Action::Debug_RaiseCamera))
-			{
-				_t.T().m_origin += fVec3(0, 1, 0);
-			}
-			if (Core::Input::Pressed(Core::Input::Action::Debug_LowerCamera))
-			{
-				_t.T().m_origin += fVec3(0, -1, 0);
-			}
+				_t.T().m_origin = fVec3(0, 0, 0);
+				if (Core::Input::Pressed(Core::Input::Action::Forward))
+				{
+					_t.T().m_origin += fVec3(0, 0, 1);
+				}
+				if (Core::Input::Pressed(Core::Input::Action::Backward))
+				{
+					_t.T().m_origin += fVec3(0, 0, -1);
+				}
+				if (Core::Input::Pressed(Core::Input::Action::Left))
+				{
+					_t.T().m_origin += fVec3(-1, 0, 0);
+				}
+				if (Core::Input::Pressed(Core::Input::Action::Right))
+				{
+					_t.T().m_origin += fVec3(1, 0, 0);
+				}
+				if (Core::Input::Pressed(Core::Input::Action::Debug_RaiseCamera))
+				{
+					_t.T().m_origin += fVec3(0, 1, 0);
+				}
+				if (Core::Input::Pressed(Core::Input::Action::Debug_LowerCamera))
+				{
+					_t.T().m_origin += fVec3(0, -1, 0);
+				}
 
-			if (Core::Input::PressedOnce(Core::Input::Action::Select))
-			{
-				fVec3 const col0 = _t.T().m_basis[0];
-				_t.T().m_basis[0] = _t.T().m_basis[1];
-				_t.T().m_basis[1] = _t.T().m_basis[2];
-				_t.T().m_basis[2] = col0;
+				if (Core::Input::PressedOnce(Core::Input::Action::Select))
+				{
+					fVec3 const col0 = _t.T().m_basis[0];
+					_t.T().m_basis[0] = _t.T().m_basis[1];
+					_t.T().m_basis[1] = _t.T().m_basis[2];
+					_t.T().m_basis[2] = col0;
+				}
 			}
-#else
-			// when at identity, forward == z
-			float const yaw = _debugCamera.m_angle.y;
-			float const pitch = _debugCamera.m_angle.x;
+			else
+			{
+				// when at identity, forward == z
+				float const yaw = _debugCamera.m_angle.y;
+				float const pitch = _debugCamera.m_angle.x;
 
 
-			fVec3 const forward = glm::normalize(fVec3{ cosf(yaw) * cosf(pitch), sinf(pitch), sinf(yaw) * cosf(pitch) });
+				fVec3 const forward = glm::normalize(fVec3{ cosf(yaw) * cosf(pitch), sinf(pitch), sinf(yaw) * cosf(pitch) });
 
-			_t.T().m_basis = RotationFromForward(forward);
+				_t.T().m_basis = RotationFromForward(forward);
 
-			// also re-calculate the Right and Up vector
-			fVec3 const right = glm::normalize(glm::cross(forward, fVec3(0.0f, 1.0f, 0.0f)));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
-			fVec3 const up = glm::normalize(glm::cross(right, forward));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+				// also re-calculate the Right and Up vector
+				fVec3 const right = glm::normalize(glm::cross(forward, fVec3(0.0f, 1.0f, 0.0f)));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+				fVec3 const up = glm::normalize(glm::cross(right, forward));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
 
-			float const velocity = 0.8f * _fd.unscaled_dt;
-			if (Core::Input::Pressed(Core::Input::Action::Forward))
-			{
-				_t.T().m_origin += forward * velocity;
+				float const velocity = 0.8f * _fd.unscaled_dt;
+				if (Core::Input::Pressed(Core::Input::Action::Forward))
+				{
+					_t.T().m_origin += forward * velocity;
+				}
+				if (Core::Input::Pressed(Core::Input::Action::Backward))
+				{
+					_t.T().m_origin -= forward * velocity;
+				}
+				if (Core::Input::Pressed(Core::Input::Action::Left))
+				{
+					_t.T().m_origin -= right * velocity;
+				}
+				if (Core::Input::Pressed(Core::Input::Action::Right))
+				{
+					_t.T().m_origin += right * velocity;
+				}
+				// should this up really be used? or world up?
+				if (Core::Input::Pressed(Core::Input::Action::Debug_RaiseCamera))
+				{
+					_t.T().m_origin += up * velocity;
+				}
+				if (Core::Input::Pressed(Core::Input::Action::Debug_LowerCamera))
+				{
+					_t.T().m_origin -= up * velocity;
+				}
 			}
-			if (Core::Input::Pressed(Core::Input::Action::Backward))
-			{
-				_t.T().m_origin -= forward * velocity;
-			}
-			if (Core::Input::Pressed(Core::Input::Action::Left))
-			{
-				_t.T().m_origin -= right * velocity;
-			}
-			if (Core::Input::Pressed(Core::Input::Action::Right))
-			{
-				_t.T().m_origin += right * velocity;
-			}
-			// should this up really be used? or world up?
-			if (Core::Input::Pressed(Core::Input::Action::Debug_RaiseCamera))
-			{
-				_t.T().m_origin += up * velocity;
-			}
-			if (Core::Input::Pressed(Core::Input::Action::Debug_LowerCamera))
-			{
-				_t.T().m_origin -= up * velocity;
-			}
-#endif
 		}
 	});
 

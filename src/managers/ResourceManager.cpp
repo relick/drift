@@ -35,9 +35,8 @@ std::array<Core::Resource::MusicData, g_maxMusic> music;
 
 namespace
 {
-	constexpr uint8 const g_textureColourMax = std::numeric_limits<uint8>::max();
-	constexpr uint8 const g_textureNormalOne = std::numeric_limits<uint8>::max();
-	constexpr uint8 const g_textureNormalZero = std::numeric_limits<uint8>::max() / 2;
+	constexpr uint8 const g_textureNormalOne = 0xFF;
+	constexpr uint8 const g_textureNormalZero = 0xFF / 2;
 }
 
 namespace Core
@@ -54,9 +53,8 @@ namespace Core
 		void Setup()
 		{
 			{
-				uint8 const emptyTex[] = { g_textureColourMax, g_textureColourMax, g_textureColourMax, g_textureColourMax, };
 				sg_image_data emptyTexData{};
-				emptyTexData.subimage[0][0] = SG_RANGE(emptyTex);
+				emptyTexData.subimage[0][0] = SG_RANGE(Colour::white);
 				sg_image_desc emptyTexDesc{
 					.width = 1,
 					.height = 1,
@@ -149,7 +147,7 @@ namespace Core
 		{
 			for (usize i = 3; i < _dataSize; i += 4)
 			{
-				if (_data[i] < g_textureColourMax)
+				if (_data[i] < Colour::componentMax)
 				{
 					return true;
 				}

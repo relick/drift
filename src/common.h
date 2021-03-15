@@ -160,16 +160,44 @@ inline btVector3 ConvertTobtVector3(fVec3 const& _fVec3)
 
 namespace Colour
 {
-	constexpr uint32 white = static_cast<uint32>(-1);
-	constexpr uint32 green = static_cast<uint32>(65280u);
+	constexpr uint8 componentMax = 0xFF;
 
-	inline constexpr uint32 ConvertRGB(fVec3 const& _col)
+	namespace detail
 	{
-		uint32 const r = static_cast<uint32>(gcem::round(_col.r * 255.0f));
-		uint32 const g = static_cast<uint32>(gcem::round(_col.g * 255.0f));
-		uint32 const b = static_cast<uint32>(gcem::round(_col.b * 255.0f));
-		constexpr uint32 const a = 0xFF;
-		return (a << 24) + (b << 16) + (g << 8) + (r);
+		constexpr int rShift = 0;
+		constexpr int gShift = 8;
+		constexpr int bShift = 16;
+		constexpr int aShift = 24;
+	}
+	constexpr uint32 RGBA(uint8 _r, uint8 _g, uint8 _b, uint8 _a = componentMax)
+	{
+		return (_a << detail::aShift) + (_b << detail::bShift) + (_g << detail::gShift) + (_r << detail::rShift);
+	}
+
+	enum class Component
+	{
+		R, G, B, A,
+	};
+	template<Component _component>
+	constexpr uint8 GetComponent(uint32 _rgba)
+	{
+		if constexpr (_component == Component::R) { return static_cast<uint8>((_rgba >> detail::rShift) & componentMax); }
+		else if constexpr (_component == Component::G) { return static_cast<uint8>((_rgba >> detail::gShift) & componentMax); }
+		else if constexpr (_component == Component::B) { return static_cast<uint8>((_rgba >> detail::bShift) & componentMax); }
+		else if constexpr (_component == Component::A) { return static_cast<uint8>((_rgba >> detail::aShift) & componentMax); }
+	}
+
+	constexpr uint32 white = RGBA(componentMax, componentMax, componentMax);
+	constexpr uint32 red = RGBA(componentMax, 0, 0);
+	constexpr uint32 green = RGBA(0, componentMax, 0);
+	constexpr uint32 blue = RGBA(0, 0, componentMax);
+
+	constexpr uint32 ConvertRGB(fVec3 const& _col)
+	{
+		auto const r = static_cast<uint32>(gcem::round(_col.r * componentMax));
+		auto const g = static_cast<uint32>(gcem::round(_col.g * componentMax));
+		auto const b = static_cast<uint32>(gcem::round(_col.b * componentMax));
+		return RGBA(r, g, b);
 	}
 }
 

@@ -1,8 +1,14 @@
 #pragma once
 
+#include "common.h"
+
 #include <sokol_gfx.h>
 
 #include "Enums.h"
+
+#include <array>
+#include <optional>
+#include <string>
 
 namespace Core::Render
 {
@@ -22,8 +28,8 @@ namespace Core::Render
 		sg_pass m_pass{};
 		sg_pass_action m_defaultAction{};
 		bool m_valid{ false };
-		std::optional<sg_image> m_depthTarget;
-		std::array<std::optional<sg_image>, 4> m_colTargets;
+		std::optional<sg_image> m_depthTarget{};
+		std::array<std::optional<sg_image>, 4> m_colTargets{};
 
 		void Destroy()
 		{
@@ -275,7 +281,7 @@ namespace Core::Render
 			m_validPasses[e_Pass_Count] = true;
 #endif
 		}
-		bool CanUseGeneralBindings() const
+		constexpr bool CanUseGeneralBindings() const
 		{
 #if DEBUG_TOOLS
 			return m_validPasses[e_Pass_Count];

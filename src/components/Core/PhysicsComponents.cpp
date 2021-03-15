@@ -51,8 +51,8 @@ namespace Core
 		newComponent.m_dynamicsWorld->setGravity(btVector3(0, -8.0f, 0));
 
 #if PHYSICS_DEBUG
-		newComponent.m_dynamicsWorld->setDebugDrawer(Physics::GetDebugDrawer());
-		Physics::AddPhysicsWorld(_entity);
+		newComponent.m_dynamicsWorld->setDebugDrawer(Physics::Debug::GetDebugDrawer());
+		Physics::Debug::AddPhysicsWorld(_entity);
 #endif
 		physicsWorlds.emplace(_entity, PhysicsWorldInternalData{ 0u });
 
@@ -71,7 +71,7 @@ namespace Core
 		SafeDelete(oldComponent->m_dynamicsWorld);
 
 #if PHYSICS_DEBUG
-		Physics::RemovePhysicsWorld(_entity);
+		Physics::Debug::RemovePhysicsWorld(_entity);
 #endif
 		kaAssert(physicsWorlds.at(_entity).numBodies == 0u);
 		physicsWorlds.erase(_entity);

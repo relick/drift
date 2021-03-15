@@ -12,6 +12,10 @@ namespace Game
 		{
 			float m_yaw{ 0.0f };
 			float m_pitch{ 0.0f };
+
+#if DEBUG_TOOLS
+			bool m_debugCameraEnabled{ false };
+#endif
 		};
 	}
 }

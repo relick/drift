@@ -10,7 +10,7 @@ namespace Core
 
 	namespace detail
 	{
-		inline ecs::entity_id AccessECSID(EntityID const);
+		inline ecs::entity_id AccessECSID(EntityID);
 	}
 
 	class EntityID
@@ -18,11 +18,12 @@ namespace Core
 	public:
 		using CoreType = ecs::entity_id;
 
-	protected:
-		friend CoreType detail::AccessECSID(EntityID const);
+	private:
+		friend CoreType detail::AccessECSID(EntityID);
 
 		static constexpr CoreType s_nullID{ static_cast<CoreType>(-1) };
 		CoreType m_entity{ s_nullID };
+
 	public:
 		bool IsValid() const { return m_entity != s_nullID; }
 		bool IsNull() const { return m_entity == s_nullID; }
@@ -31,7 +32,6 @@ namespace Core
 
 		EntityID() = default;
 		EntityID(CoreType _entity) : m_entity{ _entity } {}
-		EntityID& operator=(EntityID const&) = default;
 
 #if DEBUG_TOOLS
 		CoreType GetDebugValue() const { return m_entity; }
@@ -48,6 +48,7 @@ namespace Core
 	}
 }
 
+#include <functional>
 namespace std
 {
 	template<>

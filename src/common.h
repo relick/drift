@@ -112,7 +112,7 @@ struct fTrans
 	fTrans ToLocal(fTrans const& _a) const
 	{
 		fMat3 const invB = glm::inverse(m_basis);
-		return fTrans(_a.m_basis * invB, (_a.m_origin - m_origin) * invB);
+		return { _a.m_basis * invB, (_a.m_origin - m_origin) * invB };
 	}
 
 	fTrans() = default;
@@ -151,11 +151,11 @@ inline fMat3 RotationFromForward(fVec3 const& _f)
 
 inline fVec3 ConvertFrombtVector3(btVector3 const& _btVec3)
 {
-	return fVec3(_btVec3.x(), _btVec3.y(), _btVec3.z());
+	return { _btVec3.x(), _btVec3.y(), _btVec3.z() };
 }
 inline btVector3 ConvertTobtVector3(fVec3 const& _fVec3)
 {
-	return btVector3(_fVec3.x, _fVec3.y, _fVec3.z);
+	return { _fVec3.x, _fVec3.y, _fVec3.z };
 }
 
 namespace Colour
@@ -174,7 +174,7 @@ namespace Colour
 }
 
 #if DEBUG_TOOLS
-#include <assert.h>
+#include <cassert>
 
 #if _MSC_VER
 #define ASSERT_MESSAGE(cond, message) (void)(                                            \
@@ -217,5 +217,9 @@ _wassert(m.c_str(), _CRT_WIDE(__FILE__), (unsigned)(__LINE__)); }
 #define STBRP_ASSERT(c) STB_ASSERT(c)
 #define STBTE_ASSERT(c) STB_ASSERT(c)
 
-
-#define SafeDelete(OBJ) { delete OBJ; OBJ = nullptr; }
+template<typename T>
+constexpr void SafeDelete(T*& _obj)
+{
+	delete _obj;
+	_obj = nullptr;
+}

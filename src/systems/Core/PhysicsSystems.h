@@ -16,9 +16,12 @@ namespace Core
 		void Cleanup();
 
 #if PHYSICS_DEBUG
-		btIDebugDraw* GetDebugDrawer();
-		void AddPhysicsWorld(Core::EntityID _entity);
-		void RemovePhysicsWorld(Core::EntityID _entity);
+		namespace Debug
+		{
+			btIDebugDraw* GetDebugDrawer();
+			void AddPhysicsWorld(Core::EntityID _entity);
+			void RemovePhysicsWorld(Core::EntityID _entity);
+		}
 #endif
 	}
 }

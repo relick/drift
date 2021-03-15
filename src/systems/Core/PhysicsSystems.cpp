@@ -29,7 +29,7 @@ struct ImGuiWorldData
 struct ImGuiData
 {
 	bool showImguiWin{ false };
-	std::vector<ImGuiWorldData> physicsWorlds;
+	std::vector<ImGuiWorldData> physicsWorlds{};
 	bool showRBAxes{ false };
 } imGuiData;
 
@@ -39,79 +39,81 @@ namespace Core
 	namespace Physics
 	{
 #if PHYSICS_DEBUG
-		class DebugDrawer : public btIDebugDraw
+		namespace Debug
 		{
-			int m_debugMode{ btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb | btIDebugDraw::DBG_DrawContactPoints };
-
-			DefaultColors m_ourColors;
-
-		public:
-			DefaultColors getDefaultColors() const override
+			class DebugDrawer : public btIDebugDraw
 			{
-				return m_ourColors;
-			}
+				int m_debugMode{ btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb | btIDebugDraw::DBG_DrawContactPoints };
 
-			void setDefaultColors(DefaultColors const& _colours) override
-			{
-				m_ourColors = _colours;
-			}
+				DefaultColors m_ourColors;
 
-			void drawLine(btVector3 const& _from, btVector3 const& _to, btVector3 const& _colour) override
-			{
-				Render::Debug::DrawLine(ConvertFrombtVector3(_from), ConvertFrombtVector3(_to), ConvertFrombtVector3(_colour));
-			}
-
-			void drawContactPoint(btVector3 const& _pointOnB, btVector3 const& _normalOnB, btScalar _distance, int _lifeTime, btVector3 const& _colour) override
-			{
-				drawLine(_pointOnB, _pointOnB + _normalOnB * _distance, _colour);
-				btVector3 ncolor(0, 0, 0);
-				drawLine(_pointOnB, _pointOnB + _normalOnB * 0.01f, ncolor);
-			}
-
-			void reportErrorWarning(char const* _warningString) override
-			{}
-
-			void draw3dText(btVector3 const& _location, char const* _textString) override
-			{}
-
-			void setDebugMode(int _debugMode) override
-			{
-				m_debugMode = _debugMode;
-			}
-
-			int getDebugMode() const override
-			{
-				return m_debugMode;
-			}
-
-			void clearLines() override
-			{
-
-			}
-
-			void flushLines() override
-			{
-			}
-		};
-
-		btIDebugDraw* GetDebugDrawer()
-		{
-			return debugDrawer.get();
-		}
-
-		void AddPhysicsWorld(Core::EntityID _entity)
-		{
-			imGuiData.physicsWorlds.emplace_back(_entity);
-		}
-
-		void RemovePhysicsWorld(Core::EntityID _entity)
-		{
-			for (auto worldI = imGuiData.physicsWorlds.begin(); worldI != imGuiData.physicsWorlds.end(); ++worldI)
-			{
-				if (worldI->worldEntity == _entity)
+			public:
+				DefaultColors getDefaultColors() const override
 				{
-					imGuiData.physicsWorlds.erase(worldI);
-					return;
+					return m_ourColors;
+				}
+
+				void setDefaultColors(DefaultColors const& _colours) override
+				{
+					m_ourColors = _colours;
+				}
+
+				void drawLine(btVector3 const& _from, btVector3 const& _to, btVector3 const& _colour) override
+				{
+					Render::Debug::DrawLine(ConvertFrombtVector3(_from), ConvertFrombtVector3(_to), ConvertFrombtVector3(_colour));
+				}
+
+				void drawContactPoint(btVector3 const& _pointOnB, btVector3 const& _normalOnB, btScalar _distance, int _lifeTime, btVector3 const& _colour) override
+				{
+					drawLine(_pointOnB, _pointOnB + _normalOnB * _distance, _colour);
+					btVector3 ncolor(0, 0, 0);
+					drawLine(_pointOnB, _pointOnB + _normalOnB * 0.01f, ncolor);
+				}
+
+				void reportErrorWarning(char const* _warningString) override
+				{}
+
+				void draw3dText(btVector3 const& _location, char const* _textString) override
+				{}
+
+				void setDebugMode(int _debugMode) override
+				{
+					m_debugMode = _debugMode;
+				}
+
+				int getDebugMode() const override
+				{
+					return m_debugMode;
+				}
+
+				void clearLines() override
+				{
+
+				}
+
+				void flushLines() override
+				{			}
+			};
+
+			btIDebugDraw* GetDebugDrawer()
+			{
+				return debugDrawer.get();
+			}
+
+			void AddPhysicsWorld(Core::EntityID _entity)
+			{
+				imGuiData.physicsWorlds.emplace_back(_entity);
+			}
+
+			void RemovePhysicsWorld(Core::EntityID _entity)
+			{
+				for (auto worldI = imGuiData.physicsWorlds.begin(); worldI != imGuiData.physicsWorlds.end(); ++worldI)
+				{
+					if (worldI->worldEntity == _entity)
+					{
+						imGuiData.physicsWorlds.erase(worldI);
+						return;
+					}
 				}
 			}
 		}
@@ -126,7 +128,7 @@ namespace Core
 			colours.m_contactPoint = btVector3(0.0f, 1.0f, 0.0f);
 			colours.m_activeObject = btVector3(0.0f, 0.0f, 1.0f);
 
-			debugDrawer = std::make_unique<DebugDrawer>();
+			debugDrawer = std::make_unique<Debug::DebugDrawer>();
 			debugDrawer->setDefaultColors(colours);
 #endif
 		}

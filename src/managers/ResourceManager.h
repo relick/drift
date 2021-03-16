@@ -29,6 +29,7 @@ namespace Core
 				Diffuse,
 				Specular,
 				Normal,
+				Cubemap,
 			};
 
 			sg_image m_texID;
@@ -115,6 +116,7 @@ namespace Core::Resource
 	MusicData& GetMusic(MusicID _music);
 
 	bool LoadModel(std::string const& _path, ModelID& o_modelID);
+	bool LoadCubemap(std::string const& _folderPath, TextureID& o_cubemapID);
 	bool LoadSprite(std::string const& _path, SpriteID& o_spriteID);
 	bool LoadSoundEffect(std::string const& _path, SoundEffectID& o_soundEffectID);
 	bool LoadMusic(std::string const& _path, MusicID& o_musicID);

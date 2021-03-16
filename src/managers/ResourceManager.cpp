@@ -46,7 +46,6 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		void Init()
 		{
-			stbi_set_flip_vertically_on_load(true);
 		}
 
 		//--------------------------------------------------------------------------------
@@ -154,7 +153,71 @@ namespace Core
 			}
 			return false;
 		}
-		
+
+		//--------------------------------------------------------------------------------
+		bool LoadCubemapFromFolder
+		(
+			std::string const& _folder,
+			sg_image& o_imageID
+		)
+		{
+			sg_image_desc imageDesc{};
+			imageDesc.type = SG_IMAGETYPE_CUBE;
+			imageDesc.pixel_format = SG_PIXELFORMAT_RGBA8;
+			imageDesc.min_filter = SG_FILTER_LINEAR;
+			imageDesc.mag_filter = SG_FILTER_LINEAR;
+			imageDesc.wrap_u = SG_WRAP_CLAMP_TO_EDGE;
+			imageDesc.wrap_v = SG_WRAP_CLAMP_TO_EDGE;
+			imageDesc.wrap_w = SG_WRAP_CLAMP_TO_EDGE;
+
+			std::array<char const*, 6> cubemapFilenames =
+			{
+				"right.jpg",
+				"left.jpg",
+				"top.jpg",
+				"bottom.jpg",
+				"front.jpg",
+				"back.jpg",
+			};
+
+			stbi_set_flip_vertically_on_load(false);
+			for (usize i = 0; i < cubemapFilenames.size(); ++i)
+			{
+				std::string const filename = _folder + cubemapFilenames[i];
+				const int dataComponentCount{ 4 };
+				int imageComponentCount{ 0 };
+				uint8* data = stbi_load(filename.c_str(), &imageDesc.width, &imageDesc.height, &imageComponentCount, dataComponentCount);
+				if (data != nullptr)
+				{
+					kaAssert(imageComponentCount > 0);
+					usize const dataSize = imageDesc.width * imageDesc.height * dataComponentCount;
+					kaAssert(imageComponentCount <= 3 || !CheckRGBAForAlpha(data, dataSize), "cubemap cannot use alpha");
+
+					imageDesc.data.subimage[i][0] = {
+						.ptr = data,
+						.size = dataSize,
+					};
+				}
+				else
+				{
+					kaError("Texture failed to load at path: " + filename);
+					for (usize j = 0; j < i; ++j)
+					{
+						stbi_image_free((void*)imageDesc.data.subimage[j][0].ptr);
+					}
+					stbi_image_free(data);
+					return false;
+				}
+			}
+
+			o_imageID = sg_make_image(imageDesc);
+			for (usize i = 0; i < cubemapFilenames.size(); ++i)
+			{
+				stbi_image_free((void*)imageDesc.data.subimage[i][0].ptr);
+			}
+			return true;
+		}
+
 		//--------------------------------------------------------------------------------
 		bool LoadTextureFromFile
 		(
@@ -166,12 +229,14 @@ namespace Core
 		{
 			sg_image_desc imageDesc{};
 
-			int componentCount{ 0 };
-			uint8* data = stbi_load(_filename.c_str(), &imageDesc.width, &imageDesc.height, &componentCount, 4);
+			stbi_set_flip_vertically_on_load(true);
+			const int dataComponentCount{ 4 };
+			int imageComponentCount{ 0 };
+			uint8* data = stbi_load(_filename.c_str(), &imageDesc.width, &imageDesc.height, &imageComponentCount, dataComponentCount);
 			if (data != nullptr)
 			{
-				kaAssert(componentCount > 0);
-				usize const dataSize = imageDesc.width * imageDesc.height * componentCount;
+				kaAssert(imageComponentCount > 0);
+				usize const dataSize = imageDesc.width * imageDesc.height * dataComponentCount;
 				o_hasAlpha = CheckRGBAForAlpha(data, dataSize);
 
 				imageDesc.pixel_format = SG_PIXELFORMAT_RGBA8;
@@ -370,6 +435,11 @@ namespace Core
 					o_newMesh.m_bindings.fs_images[SLOT_main_mat_normalTex] = tex.m_texID;
 					break;
 				}
+				case TextureData::Type::Cubemap:
+				{
+					kaError("shouldn't have gotten a cubemap in a material texture load!");
+					break;
+				}
 				}
 			}
 		}
@@ -518,6 +588,35 @@ namespace Core
 			// All loaded data automatically gets cleared now it's in the GPU
 
 			return true;
+		}
+
+		bool LoadCubemap
+		(
+			std::string const& _folderPath,
+			TextureID& o_cubemapID
+		)
+		{
+			for (auto const& [texID, texData] : textures)
+			{
+				if (texData.m_type == TextureData::Type::Cubemap && texData.m_path == _folderPath)
+				{
+					o_cubemapID = texID;
+					return true;
+				}
+			}
+
+			sg_image newImageID{};
+			if (LoadCubemapFromFolder(_folderPath, newImageID))
+			{
+				o_cubemapID = NewTextureID();
+				TextureData& newTexData = textures[o_cubemapID];
+				newTexData.m_type = TextureData::Type::Cubemap;
+				newTexData.m_path = _folderPath;
+				newTexData.m_texID = newImageID;
+
+				return true;
+			}
+			return false;
 		}
 
 

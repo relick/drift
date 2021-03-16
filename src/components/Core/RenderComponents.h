@@ -63,12 +63,24 @@ namespace Core
 			bool m_drawDefaultPass{ true }; // expand to array for multiple passes?
 		};
 
+		struct SkyboxDesc
+		{
+			std::string m_folderPath;
+		};
+
+		struct Skybox
+		{
+			use_initialiser;
+
+			Resource::TextureID m_cubemapID;
+		};
+
 	}
 
 	template<>
 	void AddComponent(EntityID const _entity, Render::ModelDesc const& _desc);
 
 	template<>
-	void RemoveComponent<Render::Model>(EntityID const _entity);
+	void AddComponent(EntityID const _entity, Render::SkyboxDesc const& _desc);
 
 }

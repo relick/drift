@@ -245,6 +245,7 @@ void setup_cube()
 		lightComponent.m_type = Core::Render::Light::Type::Directional;
 		Core::AddComponent(lightCube, lightComponent);
 	}
+	Core::AddComponent(lightCube, Core::Render::SkyboxDesc{ .m_folderPath = "assets/skybox/test/" });
 	Core::EntityID lightCube2 = Core::CreateEntity();
 	Core::AddComponent(lightCube2, Core::Render::CubeTest{ true, 0.0f, 0.0f });
 
@@ -263,7 +264,7 @@ void setup_cube()
 	{
 		Core::Render::Light lightComponent{};
 		lightComponent.m_colour = fVec3(1.0f, 1.0f, 1.0f);
-		lightComponent.m_intensity = 0.3f;
+		lightComponent.m_intensity = 0.1f;
 		lightComponent.m_type = Core::Render::Light::Type::Ambient;
 		Core::AddComponent(lightCube3, lightComponent);
 	}

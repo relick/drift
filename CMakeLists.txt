@@ -23,7 +23,7 @@ else ()
 endif ()
 
 ## Compile shaders
-list (APPEND Shaders phong unlit main render_target_to_screen depth_only)
+list (APPEND Shaders phong unlit main render_target_to_screen depth_only skybox)
 
 if (MSVC)
 	set (SOKOL_SDHC_COMPILER "msvc")

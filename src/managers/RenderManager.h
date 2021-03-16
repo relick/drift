@@ -33,6 +33,7 @@ namespace Core
 
 		void AddSpriteToScene(Core::Resource::SpriteID _sprite, fTrans const& _screenTrans);
 		void AddModelToScene(Core::Resource::ModelID _model, fTrans const& _worldTrans);
+		void AddSkyboxToScene(Core::Resource::TextureID _skybox);
 		LightSetter AddLightToScene();
 		void AddAmbientLightToScene(fVec3 const& _col);
 		void SetDirectionalLightDir(fVec3 const& _dir);

@@ -20,13 +20,17 @@ namespace Core
 	}
 
 	template<>
-	void RemoveComponent<Render::Model>(EntityID const _entity)
+	void AddComponent(EntityID const _entity, Render::SkyboxDesc const& _desc)
 	{
-		Render::Model* const oldComponent = Core::GetComponent<Render::Model>(_entity);
-		kaAssert(oldComponent);
+		Render::Skybox newComponent{};
 
-		// TODO cleanup shit
+		bool const loaded = Core::Resource::LoadCubemap(_desc.m_folderPath, newComponent.m_cubemapID);
 
-		Core::ECS::RemoveComponent<Render::Model>(_entity);
+		kaAssert(loaded, "couldn't load cubemap for skybox, not adding component");
+		if (loaded)
+		{
+			// Add to ecs
+			Core::ECS::AddComponent(_entity, newComponent);
+		}
 	}
 }

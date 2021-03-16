@@ -7,6 +7,7 @@
 #include "shaders/main.h"
 #include "shaders/render_target_to_screen.h"
 #include "shaders/depth_only.h"
+#include "shaders/skybox.h"
 
 #include "RenderTools/Pipeline.h"
 
@@ -242,6 +243,8 @@ namespace Core
 			CameraState camera{};
 			std::vector<ModelToDraw> models;
 			std::vector<ModelScratchData> modelScratchData;
+			Resource::TextureID skybox{};
+			sg_bindings skyboxBinds{};
 			std::mutex lightsMutex{};
 			std::mutex modelsMutex{};
 			std::mutex spritesMutex{};
@@ -325,6 +328,59 @@ namespace Core
 				io_state.PassGlue(PassGlue_MainTarget_To_Screen)->AddValidPass(Pass_RenderToScreen);
 				io_state.PassGlue(PassGlue_MainTarget_To_Screen)->AddValidRenderer(Renderer_TargetToScreen);
 			}
+
+			{
+				float skyboxCube[] = {
+					-1.0, -1.0, -1.0, // 0
+					 1.0, -1.0, -1.0, // 1
+					 1.0,  1.0, -1.0, // 2
+					-1.0, -1.0, -1.0, // 0
+					 1.0,  1.0, -1.0, // 2
+					-1.0,  1.0, -1.0, // 3
+
+					 1.0,  1.0,  1.0, // 6
+					 1.0, -1.0,  1.0, // 5
+					-1.0, -1.0,  1.0, // 4
+					-1.0,  1.0,  1.0, // 7
+					 1.0,  1.0,  1.0, // 6
+					-1.0, -1.0,  1.0, // 4
+
+					-1.0, -1.0, -1.0, // 8
+					-1.0,  1.0, -1.0, // 9
+					-1.0,  1.0,  1.0, // 10
+					-1.0, -1.0, -1.0, // 8
+					-1.0,  1.0,  1.0, // 10
+					-1.0, -1.0,  1.0, // 11
+
+					1.0,  1.0,  1.0, // 14
+					1.0,  1.0, -1.0, // 13
+					1.0, -1.0, -1.0, // 12
+					1.0, -1.0,  1.0, // 15
+					1.0,  1.0,  1.0, // 14
+					1.0, -1.0, -1.0, // 12
+
+					-1.0, -1.0, -1.0, // 16
+					-1.0, -1.0,  1.0, // 17
+					 1.0, -1.0,  1.0, // 18
+					-1.0, -1.0, -1.0, // 16
+					 1.0, -1.0,  1.0, // 18
+					 1.0, -1.0, -1.0, // 19
+
+					 1.0,  1.0,  1.0, // 22
+					-1.0,  1.0,  1.0, // 21
+					-1.0,  1.0, -1.0, // 20
+					 1.0,  1.0, -1.0, // 23
+					 1.0,  1.0,  1.0, // 22
+					-1.0,  1.0, -1.0, // 20
+				};
+
+				sg_buffer_desc skyboxCubeDesc{
+					.type = SG_BUFFERTYPE_VERTEXBUFFER,
+					.data = SG_RANGE(skyboxCube),
+					.label = "skyboxCube-buffer",
+				};
+				frameScene.skyboxBinds.vertex_buffers[0] = sg_make_buffer(skyboxCubeDesc);
+			}
 		}
 
 		//--------------------------------------------------------------------------------
@@ -392,7 +448,7 @@ namespace Core
 					.shader = sg_make_shader(render_target_to_screen_sg_shader_desc(sg_query_backend())),
 					.layout = targetToScreenLayoutDesc,
 					.depth = {
-						.compare = SG_COMPAREFUNC_LESS_EQUAL,
+						.compare = SG_COMPAREFUNC_LESS,
 						.write_enabled = true,
 					},
 					.index_type = SG_INDEXTYPE_NONE,
@@ -418,18 +474,44 @@ namespace Core
 					.layout = depthOnlyLayoutDesc,
 					.depth = {
 						.pixel_format = SG_PIXELFORMAT_DEPTH_STENCIL,
-						.compare = SG_COMPAREFUNC_LESS_EQUAL,
+						.compare = SG_COMPAREFUNC_LESS,
 						.write_enabled = true,
 					},
 					.no_color = true,
 					.index_type = SG_INDEXTYPE_UINT32,
-					.cull_mode = SG_CULLMODE_NONE,
+					.cull_mode = SG_CULLMODE_FRONT,
 					.label = "depth-only-pipeline",
 				};
 
 				io_state.Renderer(Renderer_DepthOnly) = Renderer{ sg_make_pipeline(depthOnlyDesc) };
 				io_state.Renderer(Renderer_DepthOnly)->AllowGeneralBindings();
 				io_state.Renderer(Renderer_DepthOnly)->AddValidPass(Pass_DirectionalLight);
+			}
+
+			// skybox renderer
+			{
+				sg_layout_desc skyboxLayoutDesc{};
+				skyboxLayoutDesc.attrs[ATTR_skybox_vs_aPos] = {
+					.offset = 0,
+					.format = SG_VERTEXFORMAT_FLOAT3,
+				};
+				skyboxLayoutDesc.buffers[0].stride = sizeof(fVec3);
+
+				sg_pipeline_desc skyboxDesc{
+					.shader = sg_make_shader(skybox_sg_shader_desc(sg_query_backend())),
+					.layout = skyboxLayoutDesc,
+					.depth = {
+						.compare = SG_COMPAREFUNC_LESS_EQUAL,
+						.write_enabled = true,
+					},
+					.cull_mode = SG_CULLMODE_NONE,
+					.label = "skybox-pipeline",
+					//.primitive_type = SG_PRIMITIVETYPE_TRIANGLE_STRIP,
+				};
+
+				io_state.Renderer(Renderer_Skybox) = Renderer{ sg_make_pipeline(skyboxDesc) };
+				io_state.Renderer(Renderer_Skybox)->AddValidPass(Pass_MainTarget);
+				io_state.Renderer(Renderer_Skybox)->AllowGeneralBindings();
 			}
 		}
 
@@ -511,7 +593,7 @@ namespace Core
 			state.NextPass(Pass_DirectionalLight);
 			state.SetRenderer(Renderer_DepthOnly);
 
-			fMat4 const lightProj = GetDirectionalLightOrthoMat(20.0f, 1.0f, 50.0f);
+			fMat4 const lightProj = GetDirectionalLightOrthoMat(10.0f, 1.0f, 50.0f);
 			fVec3 const lightPos = frameScene.camera.pos - (frameScene.lights.directionalDir * 25.0f);
 			fMat4 const lightView = glm::lookAt(lightPos, lightPos + frameScene.lights.directionalDir, fVec3(0.0f, 1.0f, 0.0f));
 			fMat4 const lightSpace = lightProj * lightView;
@@ -560,6 +642,24 @@ namespace Core
 			};
 
 			RenderMainScene(fnMainModelVisitor, fnMainMeshVisitor);
+
+			// render skybox (if exists)
+			if (frameScene.skybox.IsValid())
+			{
+				state.SetRenderer(Renderer_Skybox);
+				skybox_vs_params_t vs_params{
+					.untranslated_projView = frameScene.camera.proj * fMat4(fMat3(frameScene.camera.view)),
+				};
+				sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_skybox_vs_params, SG_RANGE_REF(vs_params));
+
+				Resource::TextureData const& skyboxTex = Resource::GetTexture(frameScene.skybox);
+				frameScene.skyboxBinds.fs_images[SLOT_skybox_skybox] = skyboxTex.m_texID;
+
+				state.SetBinding(frameScene.skyboxBinds, 36);
+				state.Draw();
+
+				frameScene.skybox = Resource::TextureID{};
+			}
 
 			// temporary light cleanup
 			frameScene.lights.Reset();
@@ -640,6 +740,15 @@ namespace Core
 		{
 			std::scoped_lock lock(frameScene.modelsMutex);
 			frameScene.models.emplace_back(_model, _worldTrans);
+		}
+
+		//--------------------------------------------------------------------------------
+		void AddSkyboxToScene
+		(
+			Core::Resource::TextureID _skybox
+		)
+		{
+			frameScene.skybox = _skybox;
 		}
 	}
 }

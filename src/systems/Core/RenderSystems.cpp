@@ -80,6 +80,11 @@ namespace Core
 				}
 			});
 
+			Core::MakeSystem<Sys::RENDER_QUEUE>([](Core::Render::Skybox const& _skybox)
+			{
+				AddSkyboxToScene(_skybox.m_cubemapID);
+			});
+
 
 			Core::MakeSystem<Sys::RENDER_PASS_START>([](Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _t, MT_Only&)
 			{

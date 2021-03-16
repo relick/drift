@@ -33,7 +33,7 @@ uniform lights {
 
 uniform sampler2DShadow directionalShadowMap;
 
-out vec4 FragColor;
+out vec4 FragColour;
 
 
 float CalcShadow(in vec4 fragPosLightSpace, in vec3 lightDir, in vec3 viewNormal)
@@ -45,7 +45,7 @@ float CalcShadow(in vec4 fragPosLightSpace, in vec3 lightDir, in vec3 viewNormal
     projCoords.x = 0.5 + (0.5 * projCoords.x);
     projCoords.y = 0.5 - (0.5 * projCoords.y);
 #endif
-    float bias = max(0.003 * (1.0 - dot(viewNormal, lightDir)), 0.002);
+    float bias = max(0.0005 * (1.0 - max(dot(viewNormal, lightDir), 0.0)), 0.00025);
     projCoords.z -= bias;
     
     // basic box style pcf
@@ -76,7 +76,7 @@ bool IsDirectionalLight(in int i)
 }
 
 // point, directional, spotlight, done in this. ambient done in main.
-vec4 CalcLight(in int i, in vec4 matDiffuse, in vec4 matSpecular, inout float shadow, in vec3 viewNormal)
+vec4 CalcLight(in int i, in vec4 matSpecular, inout float shadow, in vec3 viewNormal)
 {
     vec4 diffuse = vec4(0.0);
     vec3 specular = vec3(0.0);
@@ -109,7 +109,7 @@ vec4 CalcLight(in int i, in vec4 matDiffuse, in vec4 matSpecular, inout float sh
     if(theta > Lights.Cut[i].y)
     {
         float diff = max(dot(viewNormal, lightDir), 0.0);
-        diffuse = (vec4(Lights.Col[i].xyz, 1.0) * Lights.Col[i].w * diff * matDiffuse) * atten;
+        diffuse = (vec4(Lights.Col[i].rgb, 1.0) * Lights.Col[i].a * diff) * atten;
         
         float specularIntensity = 0.0;
         if (Material.shininess > 0.0)
@@ -131,7 +131,7 @@ vec4 CalcLight(in int i, in vec4 matDiffuse, in vec4 matSpecular, inout float sh
             ;
             specularIntensity = pow(max(specularIntensity, 0.0), Material.shininess);
                 
-            specular = (Lights.Col[i].xyz * Lights.Col[i].w * matSpecular * specularIntensity) * atten;
+            specular = (Lights.Col[i].rgb * Lights.Col[i].a * matSpecular * specularIntensity) * atten;
         }
     }
 
@@ -143,25 +143,35 @@ void main()
     vec3 viewNormal = texture(mat_normalTex, TexCoord).rgb;
     viewNormal = viewNormal * 2.0 - 1.0;
     viewNormal = normalize(TBN * viewNormal);
-
+    
     vec4 diffuseSample = texture(mat_diffuseTex, TexCoord);
     if (diffuseSample.a < 0.01)
     {
         discard;
     }
-    vec4 matAmbient = vec4(Lights.ambient, 1.0) * diffuseSample * vec4(Material.ambientColour, 1.0);
+    float gamma = 2.2;
+    diffuseSample.rgb = pow(diffuseSample.rgb, vec3(gamma));
+
+    vec4 matAmbient = vec4(Material.ambientColour, 1.0);
     vec4 matDiffuse = diffuseSample * vec4(Material.diffuseColour, 1.0);
     vec4 matSpecular = texture(mat_specularTex, TexCoord);
 
-    vec4 ambient = vec4(Lights.ambient, 1.0) * matAmbient;
-    vec4 result = ambient;
-    
     float shadow = 0.0;
+    vec4 result = vec4(0.0);
 
     for(int i = 0; i < int(Lights.numLights); ++i)
     {
-        result += CalcLight(i, matDiffuse, matSpecular, shadow, viewNormal);
+        result += CalcLight(i, matSpecular, shadow, viewNormal);
     }
 
-    FragColor = (1.0 - shadow) * result;
+    vec4 ambient = vec4(Lights.ambient, 1.0) * matAmbient;
+    
+    result *= (1.0 - shadow);
+    result += ambient;
+    
+    // finally gamma correct
+    result *= matDiffuse;
+    result.rgb = pow(result.rgb, vec3(1.0/gamma));
+
+    FragColour = result;
 }

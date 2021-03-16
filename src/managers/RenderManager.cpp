@@ -652,6 +652,11 @@ namespace Core
 				};
 				sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_skybox_vs_params, SG_RANGE_REF(vs_params));
 
+				skybox_fs_params_t fs_params{
+					.sunDir = frameScene.lights.directionalDir,
+				};
+				sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_skybox_fs_params, SG_RANGE_REF(fs_params));
+
 				Resource::TextureData const& skyboxTex = Resource::GetTexture(frameScene.skybox);
 				frameScene.skyboxBinds.fs_images[SLOT_skybox_skybox] = skyboxTex.m_texID;
 

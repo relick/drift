@@ -10,11 +10,16 @@ uniform fs_params {
 
 out vec4 FragColour;
 
-vec3 AddSun(in vec3 result, in vec3 nSunDir, in vec3 nVertexDir)
+vec3 MixInSun(in vec3 skyCol, in vec3 skyboxSample, in float starLevel, in vec3 nSunDir, in vec3 nVertexDir)
 {
 	float theta = dot(nSunDir,nVertexDir);
 	float innerCutoff = 0.998;
 	float outerCutoff = 0.95;
+	float starOuterCutoff = 0.9;
+
+	float outerMixLevel = 1.0 - (max(theta - starOuterCutoff, 0.0) / (1.0 - starOuterCutoff));
+	outerMixLevel *= outerMixLevel;
+	vec3 result = mix(skyCol, skyboxSample + skyCol, starLevel * outerMixLevel);
 
 	if(theta > innerCutoff)
 	{
@@ -51,9 +56,8 @@ void main()
 
 	float starLevel = max(skyLevel - sunLevel * 0.5, 0.0);
 
-	vec3 result = texture(skybox, TexCoords).rgb;
-	result = mix(col, result + col, starLevel);
-	result = AddSun(result, nSunDir, nVertexDir);
+	vec3 skyboxSample = texture(skybox, TexCoords).rgb;
+	vec3 result = MixInSun(col, skyboxSample, starLevel, nSunDir, nVertexDir);
 
 	FragColour = vec4(result, 1.0);
 }

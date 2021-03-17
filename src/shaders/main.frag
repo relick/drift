@@ -149,8 +149,8 @@ void main()
     {
         discard;
     }
-    float gamma = 2.2;
-    diffuseSample.rgb = pow(diffuseSample.rgb, vec3(gamma));
+    vec3 gamma = vec3(2.2);
+    diffuseSample.rgb = pow(diffuseSample.rgb, gamma);
 
     vec4 matAmbient = vec4(Material.ambientColour, 1.0);
     vec4 matDiffuse = diffuseSample * vec4(Material.diffuseColour, 1.0);
@@ -171,7 +171,7 @@ void main()
     
     // finally gamma correct
     result *= matDiffuse;
-    result.rgb = pow(result.rgb, vec3(1.0/gamma));
+    result.rgb = pow(result.rgb, 1.0/gamma);
 
     FragColour = result;
 }

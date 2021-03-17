@@ -306,14 +306,12 @@ namespace Core
 
 			// Target to screen glue
 			{
+				// in triangle-strip form
 				float rectangleWithUV[] = {
-					-1.0f, -1.0f, 0.0f,		0, 1,
 					-1.0f,  1.0f, 0.0f,		0, 0,
 					 1.0f,  1.0f, 0.0f,		1, 0,
-
-					 1.0f,  1.0f, 0.0f,		1, 0,
-					 1.0f, -1.0f, 0.0f,		1, 1,
 					-1.0f, -1.0f, 0.0f,		0, 1,
+					 1.0f, -1.0f, 0.0f,		1, 1,
 				};
 
 				sg_buffer_desc rectangleWithUVBufferDesc{
@@ -324,54 +322,28 @@ namespace Core
 				sg_bindings binds{};
 				binds.vertex_buffers[0] = sg_make_buffer(rectangleWithUVBufferDesc);
 				binds.fs_images[SLOT_render_target_to_screen_tex] = io_state.Pass(Pass_MainTarget)->GetColourImage(0);
-				io_state.PassGlue(PassGlue_MainTarget_To_Screen) = PassGlue{ binds, 6 };
+				io_state.PassGlue(PassGlue_MainTarget_To_Screen) = PassGlue{ binds, 4 };
 				io_state.PassGlue(PassGlue_MainTarget_To_Screen)->AddValidPass(Pass_RenderToScreen);
 				io_state.PassGlue(PassGlue_MainTarget_To_Screen)->AddValidRenderer(Renderer_TargetToScreen);
 			}
 
 			{
+				// in triangle-strip form
 				float skyboxCube[] = {
-					-1.0, -1.0, -1.0, // 0
-					 1.0, -1.0, -1.0, // 1
-					 1.0,  1.0, -1.0, // 2
-					-1.0, -1.0, -1.0, // 0
-					 1.0,  1.0, -1.0, // 2
-					-1.0,  1.0, -1.0, // 3
-
-					 1.0,  1.0,  1.0, // 6
-					 1.0, -1.0,  1.0, // 5
-					-1.0, -1.0,  1.0, // 4
-					-1.0,  1.0,  1.0, // 7
-					 1.0,  1.0,  1.0, // 6
-					-1.0, -1.0,  1.0, // 4
-
-					-1.0, -1.0, -1.0, // 8
-					-1.0,  1.0, -1.0, // 9
-					-1.0,  1.0,  1.0, // 10
-					-1.0, -1.0, -1.0, // 8
-					-1.0,  1.0,  1.0, // 10
-					-1.0, -1.0,  1.0, // 11
-
-					1.0,  1.0,  1.0, // 14
-					1.0,  1.0, -1.0, // 13
-					1.0, -1.0, -1.0, // 12
-					1.0, -1.0,  1.0, // 15
-					1.0,  1.0,  1.0, // 14
-					1.0, -1.0, -1.0, // 12
-
-					-1.0, -1.0, -1.0, // 16
-					-1.0, -1.0,  1.0, // 17
-					 1.0, -1.0,  1.0, // 18
-					-1.0, -1.0, -1.0, // 16
-					 1.0, -1.0,  1.0, // 18
-					 1.0, -1.0, -1.0, // 19
-
-					 1.0,  1.0,  1.0, // 22
-					-1.0,  1.0,  1.0, // 21
-					-1.0,  1.0, -1.0, // 20
-					 1.0,  1.0, -1.0, // 23
-					 1.0,  1.0,  1.0, // 22
-					-1.0,  1.0, -1.0, // 20
+					 1.0f,  1.0f, -1.0f, // front-top-right
+					-1.0f,  1.0f, -1.0f, // front-top-left
+					 1.0f,  1.0f,  1.0f, // back-top-right
+					-1.0f,  1.0f,  1.0f, // back-top-left
+					-1.0f, -1.0f,  1.0f, // back-bottom-left
+					-1.0f,  1.0f, -1.0f, // front-top-left
+					-1.0f, -1.0f, -1.0f, // front-bottom-left
+					 1.0f,  1.0f, -1.0f, // front-top-right
+					 1.0f, -1.0f, -1.0f, // front-bottom-right
+					 1.0f,  1.0f,  1.0f, // back-top-right
+					 1.0f, -1.0f,  1.0f, // back-bottom-right
+					-1.0f, -1.0f,  1.0f, // back-bottom-left
+					 1.0f, -1.0f, -1.0f, // front-bottom-right
+					-1.0f, -1.0f, -1.0f, // front-bottom-left
 				};
 
 				sg_buffer_desc skyboxCubeDesc{
@@ -453,6 +425,7 @@ namespace Core
 					},
 					.index_type = SG_INDEXTYPE_NONE,
 					.cull_mode = SG_CULLMODE_BACK,
+					.primitive_type = SG_PRIMITIVETYPE_TRIANGLE_STRIP,
 					.label = "target-to-screen-pipeline",
 				};
 
@@ -504,9 +477,9 @@ namespace Core
 						.compare = SG_COMPAREFUNC_LESS_EQUAL,
 						.write_enabled = true,
 					},
-					.cull_mode = SG_CULLMODE_NONE,
+					.cull_mode = SG_CULLMODE_BACK,
+					.primitive_type = SG_PRIMITIVETYPE_TRIANGLE_STRIP,
 					.label = "skybox-pipeline",
-					//.primitive_type = SG_PRIMITIVETYPE_TRIANGLE_STRIP,
 				};
 
 				io_state.Renderer(Renderer_Skybox) = Renderer{ sg_make_pipeline(skyboxDesc) };
@@ -660,7 +633,7 @@ namespace Core
 				Resource::TextureData const& skyboxTex = Resource::GetTexture(frameScene.skybox);
 				frameScene.skyboxBinds.fs_images[SLOT_skybox_skybox] = skyboxTex.m_texID;
 
-				state.SetBinding(frameScene.skyboxBinds, 36);
+				state.SetBinding(frameScene.skyboxBinds, 14);
 				state.Draw();
 
 				frameScene.skybox = Resource::TextureID{};

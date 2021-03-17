@@ -52,11 +52,11 @@ void main()
 	vec3 mid = mix(darkNightMid, blueSkyMid, sunLevel);
 
 	float skyLevel = abs(nVertexDir.y);
-	vec3 col = mix(mid, top, skyLevel);
-
 	float starLevel = max(skyLevel - sunLevel * 0.5, 0.0);
-
+	
+	vec3 col = mix(mid, top, skyLevel);
 	vec3 skyboxSample = texture(skybox, TexCoords).rgb;
+
 	vec3 result = MixInSun(col, skyboxSample, starLevel, nSunDir, nVertexDir);
 
 	FragColour = vec4(result, 1.0);

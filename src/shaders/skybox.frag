@@ -10,24 +10,50 @@ uniform fs_params {
 
 out vec4 FragColour;
 
-void main()
+vec3 AddSun(in vec3 result, in vec3 nSunDir, in vec3 nVertexDir)
 {
-	float theta = dot(normalize(-sunDir),normalize(TexCoords));
+	float theta = dot(nSunDir,nVertexDir);
 	float innerCutoff = 0.998;
 	float outerCutoff = 0.95;
 
 	if(theta > innerCutoff)
 	{
-		FragColour = vec4(1.0);
+		result = vec3(1.0);
 	}
 	else if (theta > outerCutoff)
 	{
 		float mixAmount = (outerCutoff - theta) / (outerCutoff - innerCutoff);
 		mixAmount *= mixAmount;
-		FragColour = mix(texture(skybox, TexCoords), vec4(1.0), mixAmount);
+		result = mix(result, vec3(1.0), mixAmount);
 	}
-	else
-	{
-		FragColour = texture(skybox, TexCoords);
-	}
+
+	return result;
+}
+
+void main()
+{
+	vec3 blueSkyTop = vec3(0.0, 0.541, 1.0);
+	vec3 blueSkyMid = vec3(0.0, 0.706, 1.0);
+	vec3 darkNightTop = vec3(0.0);
+	vec3 darkNightMid = vec3(0.0, 0.117, 0.380);
+	
+	vec3 nVertexDir = normalize(TexCoords);
+	vec3 nSunDir = normalize(-sunDir);
+	
+	float sunLevel = 1.0 - max(nSunDir.y, 0.0);
+	sunLevel *= sunLevel;
+	sunLevel = 1.0 - sunLevel;
+	vec3 top = mix(darkNightTop, blueSkyTop, sunLevel);
+	vec3 mid = mix(darkNightMid, blueSkyMid, sunLevel);
+
+	float skyLevel = abs(nVertexDir.y);
+	vec3 col = mix(mid, top, skyLevel);
+
+	float starLevel = max(skyLevel - sunLevel * 0.5, 0.0);
+
+	vec3 result = texture(skybox, TexCoords).rgb;
+	result = mix(col, result + col, starLevel);
+	result = AddSun(result, nSunDir, nVertexDir);
+
+	FragColour = vec4(result, 1.0);
 }

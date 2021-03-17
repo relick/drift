@@ -155,9 +155,9 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		bool LoadCubemapFromFolder
+		bool LoadCubemapFromFile
 		(
-			std::string const& _folder,
+			std::string const& _cubemapPath,
 			sg_image& o_imageID
 		)
 		{
@@ -170,23 +170,33 @@ namespace Core
 			imageDesc.wrap_v = SG_WRAP_CLAMP_TO_EDGE;
 			imageDesc.wrap_w = SG_WRAP_CLAMP_TO_EDGE;
 
-			std::array<char const*, 6> cubemapFilenames =
+			std::string const directory = _cubemapPath.substr(0, _cubemapPath.find_last_of('/') + 1);
+			std::array<std::string, 6> cubemapFilenames;
 			{
-				"right.jpg",
-				"left.jpg",
-				"top.jpg",
-				"bottom.jpg",
-				"front.jpg",
-				"back.jpg",
-			};
+				std::ifstream cubemapFile{ _cubemapPath };
+				if (!cubemapFile.is_open())
+				{
+					kaError("failed to open cubemap " + _cubemapPath);
+					return false;
+				}
+
+				for (usize i = 0; i < 6; ++i)
+				{
+					if (!std::getline(cubemapFile, cubemapFilenames[i]))
+					{
+						kaError("not enough lines in cubemap file");
+						return false;
+					}
+					cubemapFilenames[i] = directory + cubemapFilenames[i];
+				}
+			}
 
 			stbi_set_flip_vertically_on_load(false);
 			for (usize i = 0; i < cubemapFilenames.size(); ++i)
 			{
-				std::string const filename = _folder + cubemapFilenames[i];
 				const int dataComponentCount{ 4 };
 				int imageComponentCount{ 0 };
-				uint8* data = stbi_load(filename.c_str(), &imageDesc.width, &imageDesc.height, &imageComponentCount, dataComponentCount);
+				uint8* data = stbi_load(cubemapFilenames[i].c_str(), &imageDesc.width, &imageDesc.height, &imageComponentCount, dataComponentCount);
 				if (data != nullptr)
 				{
 					kaAssert(imageComponentCount > 0);
@@ -200,7 +210,7 @@ namespace Core
 				}
 				else
 				{
-					kaError("Texture failed to load at path: " + filename);
+					kaError("Texture failed to load at path: " + cubemapFilenames[i]);
 					for (usize j = 0; j < i; ++j)
 					{
 						stbi_image_free((void*)imageDesc.data.subimage[j][0].ptr);
@@ -592,13 +602,13 @@ namespace Core
 
 		bool LoadCubemap
 		(
-			std::string const& _folderPath,
+			std::string const& _cubemapPath,
 			TextureID& o_cubemapID
 		)
 		{
 			for (auto const& [texID, texData] : textures)
 			{
-				if (texData.m_type == TextureData::Type::Cubemap && texData.m_path == _folderPath)
+				if (texData.m_type == TextureData::Type::Cubemap && texData.m_path == _cubemapPath)
 				{
 					o_cubemapID = texID;
 					return true;
@@ -606,12 +616,12 @@ namespace Core
 			}
 
 			sg_image newImageID{};
-			if (LoadCubemapFromFolder(_folderPath, newImageID))
+			if (LoadCubemapFromFile(_cubemapPath, newImageID))
 			{
 				o_cubemapID = NewTextureID();
 				TextureData& newTexData = textures[o_cubemapID];
 				newTexData.m_type = TextureData::Type::Cubemap;
-				newTexData.m_path = _folderPath;
+				newTexData.m_path = _cubemapPath;
 				newTexData.m_texID = newImageID;
 
 				return true;

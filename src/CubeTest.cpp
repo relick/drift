@@ -205,8 +205,8 @@ void setup_cube()
 
 		Core::AddComponent(cube, rbDesc);
 	}
-	//Core::AddComponent(cube, Core::Sound::BGMDesc{ .m_filePath = "assets/bgm/rom.mp3", .m_initVolume = 1.0f, });
-	//Core::AddComponent(cube, Core::Sound::FadeChangeBGM{ .m_timeToFade = 5.0f, .m_targetVolume = 1.0f, .m_nextBGMFilePath = "assets/bgm/ztd.mp3", });
+	//Core::AddComponent(cube, Core::Sound::BGMDesc{ .m_filePath = "assets/encrypted/bgm/rom.mp3", .m_initVolume = 1.0f, });
+	//Core::AddComponent(cube, Core::Sound::FadeChangeBGM{ .m_timeToFade = 5.0f, .m_targetVolume = 1.0f, .m_nextBGMFilePath = "assets/encrypted/bgm/ztd.mp3", });
 
 	Core::EntityID cube2 = Core::CreateEntity();
 	fTrans const cube2Trans{ fQuatIdentity(), fVec3(-0.5f, 1.5f, 0.0f) };
@@ -245,7 +245,7 @@ void setup_cube()
 		lightComponent.m_type = Core::Render::Light::Type::Directional;
 		Core::AddComponent(lightCube, lightComponent);
 	}
-	Core::AddComponent(lightCube, Core::Render::SkyboxDesc{ .m_folderPath = "assets/skybox/test/" });
+	Core::AddComponent(lightCube, Core::Render::SkyboxDesc{ .m_cubemapPath = "assets/encrypted/skybox/starrysky/starrysky.cubemap" });
 	Core::EntityID lightCube2 = Core::CreateEntity();
 	Core::AddComponent(lightCube2, Core::Render::CubeTest{ true, 0.0f, 0.0f });
 
@@ -283,6 +283,16 @@ void setup_cube()
 			_cubeTest.rx -= 1.0f * _fd.dt;
 			_cubeTest.ry -= 2.0f * _fd.dt;
 			_t.T().m_basis = glm::yawPitchRoll(0.0f, _cubeTest.rx, _cubeTest.ry);
+		}
+	});
+
+	Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Render::Light& _light, Core::Transform& _t)
+	{
+		static float n = 0.0f;
+		n += _fd.dt * 0.5f;
+		if (_light.m_type == Core::Render::Light::Type::Directional)
+		{
+			_t.T().m_basis = RotationFromForward(fVec3(cos(n), sin(n), 1.0f));
 		}
 	});
 }

@@ -65,7 +65,7 @@ namespace Core
 
 		struct SkyboxDesc
 		{
-			std::string m_folderPath;
+			std::string m_cubemapPath;
 		};
 
 		struct Skybox

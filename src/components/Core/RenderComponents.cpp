@@ -24,7 +24,7 @@ namespace Core
 	{
 		Render::Skybox newComponent{};
 
-		bool const loaded = Core::Resource::LoadCubemap(_desc.m_folderPath, newComponent.m_cubemapID);
+		bool const loaded = Core::Resource::LoadCubemap(_desc.m_cubemapPath, newComponent.m_cubemapID);
 
 		kaAssert(loaded, "couldn't load cubemap for skybox, not adding component");
 		if (loaded)

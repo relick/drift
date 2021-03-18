@@ -259,6 +259,11 @@ void frame_cb()
 		fd.unscaled_dt = static_cast<float>(fd.unscaled_ddt);
 		fd.ddt = fd.m_scale * fd.unscaled_ddt;
 		fd.dt = static_cast<float>(fd.ddt);
+
+#if DEBUG_TOOLS
+		fd.m_debug_elapsedTime += fd.ddt;
+		fd.m_debug_frameCount++;
+#endif
 	}
 
 	{
@@ -300,6 +305,8 @@ void fail_cb(char const* _error)
 
 sapp_desc sokol_main(int argc, char* argv[])
 {
+	InitialiseLogging();
+
 	sapp_desc desc{
 		.init_cb = &initialise_cb,
 		.frame_cb = &frame_cb,

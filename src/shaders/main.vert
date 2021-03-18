@@ -5,9 +5,12 @@ in vec2 aTexCoord;
 in vec3 aTangent;
 
 uniform vs_params {
+    mat4 projection;
+};
+
+uniform model_params {
     mat4 viewModel;
     mat4 normal;
-    mat4 projection;
     mat4 lightSpace;
 };
 

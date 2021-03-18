@@ -225,14 +225,18 @@ _wassert(m.c_str(), _CRT_WIDE(__FILE__), (unsigned)(__LINE__)); }
 #define GET_ASSERT_MACRO(_1,_2,NAME,...) NAME
 #define kaAssert(...) GET_ASSERT_MACRO(__VA_ARGS__, ASSERT_MESSAGE, assert)(__VA_ARGS__)
 #define kaError(message) ERROR_MESSAGE(message)
+void kaLog(std::string const& _message);
 
 #else
 
 #define kaAssert(...)
 #define kaError(message)
+#define kaLog(message)
 #define SOLOUD_NO_ASSERTS
 
 #endif
+
+void InitialiseLogging();
 
 #define SOKOL_ASSERT(c) kaAssert(c)
 #define IM_ASSERT(c) kaAssert(c)

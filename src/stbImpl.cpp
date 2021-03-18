@@ -12,6 +12,7 @@
 #include <sokol_gfx.h>
 #include <sokol_glue.h>
 #include <sokol_time.h>
+#include <sokol_fetch.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>

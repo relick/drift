@@ -65,6 +65,12 @@ namespace Core
 		return ecs::get_component<T_Component>(Core::detail::AccessECSID(_entity));
 	}
 
+	template<typename T_Component>
+	T_Component& GetGlobalComponent()
+	{
+		return ecs::get_global_component<T_Component>();
+	}
+
 	// Wrap ecs::make_system
 	template<int _Group, typename T_SystemFn, typename T_SortFn = std::nullptr_t>
 	auto& MakeSystem(T_SystemFn _sysFn, T_SortFn _sortFn = nullptr)

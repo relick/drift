@@ -12,6 +12,8 @@
 
 #include <stb_image.h>
 
+#include <sokol_fetch.h>
+
 #include "shaders/main.h"
 
 Core::Resource::TextureID::ValueType nextTextureID = 0;
@@ -46,6 +48,7 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		void Init()
 		{
+			sfetch_setup(sfetch_desc_t{});
 		}
 
 		//--------------------------------------------------------------------------------
@@ -85,6 +88,7 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		void Cleanup()
 		{
+			sfetch_shutdown();
 		}
 
 		//--------------------------------------------------------------------------------
@@ -597,6 +601,7 @@ namespace Core
 
 			// All loaded data automatically gets cleared now it's in the GPU
 
+			kaLog("New model " + _path + " loaded!");
 			return true;
 		}
 
@@ -624,6 +629,7 @@ namespace Core
 				newTexData.m_path = _cubemapPath;
 				newTexData.m_texID = newImageID;
 
+				kaLog("New cubemap " + _cubemapPath + " loaded!");
 				return true;
 			}
 			return false;
@@ -728,6 +734,7 @@ namespace Core
 				return false;
 			}
 
+			kaLog("New sprite " + _path + " loaded!");
 			return true;
 		}
 
@@ -755,6 +762,8 @@ namespace Core
 			if (newSoundEffect.m_sound.load(_path.c_str()) == SoLoud::SO_NO_ERROR)
 			{
 				newSoundEffect.m_path = _path;
+
+				kaLog("New sfx " + _path + " loaded!");
 				return true;
 			}
 			return false;
@@ -781,6 +790,8 @@ namespace Core
 			if (newMusic.m_music.load(_path.c_str()) == SoLoud::SO_NO_ERROR)
 			{
 				newMusic.m_path = _path;
+
+				kaLog("New bgm " + _path + " loaded!");
 				return true;
 			}
 			return false;

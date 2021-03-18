@@ -16,5 +16,10 @@ namespace Core
 		float unscaled_dt{ 0.0f };
 		double ddt{ 0.0 };
 		float dt{ 0.0f };
+
+#if DEBUG_TOOLS
+		double m_debug_elapsedTime{ 0.0f };
+		uint64 m_debug_frameCount{ 0 };
+#endif
 	};
 }

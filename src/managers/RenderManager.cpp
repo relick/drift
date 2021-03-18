@@ -237,12 +237,24 @@ namespace Core
 			{}
 		};
 
+		struct SpriteToDraw
+		{
+			Resource::SpriteID m_sprite{};
+			fTrans m_transform{};
+
+			SpriteToDraw(Resource::SpriteID _sprite, fTrans const& _trans)
+				: m_sprite{ _sprite }
+				, m_transform{ _trans }
+			{}
+		};
+
 		struct FrameScene
 		{
 			LightsState lights{};
 			CameraState camera{};
 			std::vector<ModelToDraw> models;
 			std::vector<ModelScratchData> modelScratchData;
+			std::vector<SpriteToDraw> sprites;
 			Resource::TextureID skybox{};
 			sg_bindings skyboxBinds{};
 			std::mutex lightsMutex{};
@@ -423,9 +435,9 @@ namespace Core
 						.compare = SG_COMPAREFUNC_LESS,
 						.write_enabled = true,
 					},
+					.primitive_type = SG_PRIMITIVETYPE_TRIANGLE_STRIP,
 					.index_type = SG_INDEXTYPE_NONE,
 					.cull_mode = SG_CULLMODE_BACK,
-					.primitive_type = SG_PRIMITIVETYPE_TRIANGLE_STRIP,
 					.label = "target-to-screen-pipeline",
 				};
 
@@ -477,8 +489,8 @@ namespace Core
 						.compare = SG_COMPAREFUNC_LESS_EQUAL,
 						.write_enabled = true,
 					},
-					.cull_mode = SG_CULLMODE_BACK,
 					.primitive_type = SG_PRIMITIVETYPE_TRIANGLE_STRIP,
+					.cull_mode = SG_CULLMODE_BACK,
 					.label = "skybox-pipeline",
 				};
 
@@ -594,16 +606,20 @@ namespace Core
 			state.SetRenderer(Renderer_Main);
 			sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_main_lights, SG_RANGE_REF(frameScene.lights.shader_LightData()));
 
+			main_vs_params_t vs_params = {
+				.projection = frameScene.camera.proj,
+			};
+			sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_main_vs_params, SG_RANGE_REF(vs_params));
+
 			auto fnMainModelVisitor = [&lightSpace](fMat4 const& _modelMatrix, Resource::ModelData const& _model)
 			{
-				main_vs_params_t vs_params = {
+				main_model_params_t model_params = {
 					.viewModel = frameScene.camera.view * _modelMatrix,
-					.normal = glm::transpose(glm::inverse(vs_params.viewModel)),
-					.projection = frameScene.camera.proj,
+					.normal = glm::transpose(glm::inverse(model_params.viewModel)),
 					.lightSpace = lightSpace * _modelMatrix,
 				};
 
-				sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_main_vs_params, SG_RANGE_REF(vs_params));
+				sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_main_model_params, SG_RANGE_REF(model_params));
 			};
 
 			auto fnMainMeshVisitor = [](Resource::MeshData const& _mesh)
@@ -706,7 +722,7 @@ namespace Core
 		)
 		{
 			std::scoped_lock lock(frameScene.spritesMutex);
-			//frameScene.sprites.emplace_back(_sprite, _screenTrans);
+			frameScene.sprites.emplace_back(_sprite, _screenTrans);
 		}
 
 		//--------------------------------------------------------------------------------
@@ -726,6 +742,7 @@ namespace Core
 			Core::Resource::TextureID _skybox
 		)
 		{
+			kaAssert(!frameScene.skybox.IsValid(), "only one skybox allowed at a time!");
 			frameScene.skybox = _skybox;
 		}
 	}

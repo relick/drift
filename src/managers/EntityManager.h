@@ -43,7 +43,7 @@ namespace Core
 
 		void Update()
 		{
-			CommitComponentChanges();
+			CommitChanges();
 			ecs::run_systems();
 		}
 	}
@@ -95,5 +95,10 @@ namespace Core
 	auto& MakeSerialSystem(T_SystemFn _sysFn, T_SortFn _sortFn = nullptr)
 	{
 		return ecs::make_system<ecs::opts::group<_Group>, ecs::opts::not_parallel>(_sysFn, _sortFn);
+	}
+
+	namespace Scene
+	{
+		void AddDemoScene();
 	}
 }

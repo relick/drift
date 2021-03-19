@@ -138,7 +138,7 @@ namespace Core
 		
 		void AddCharacterControllerSystems()
 		{
-			Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Physics::CharacterController& _cc, Core::Transform& _t)
+			Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Physics::CharacterController& _cc, Core::Transform3D& _t)
 			{
 				// playerStep
 				{
@@ -149,7 +149,7 @@ namespace Core
 					btVector3 linearVelocity = _cc.m_body->getLinearVelocity();
 					float yLinVel = linearVelocity.y();
 
-					fVec3 forward = _cc.m_viewObject.IsValid() ? (Core::GetComponent<Core::Transform>(_cc.m_viewObject)->T().forward()) : _t.T().forward();
+					fVec3 forward = _cc.m_viewObject.IsValid() ? (Core::GetComponent<Core::Transform3D>(_cc.m_viewObject)->T().forward()) : _t.T().forward();
 					forward.y = 0;
 					forward = glm::normalize(forward);
 					fVec3 right = glm::normalize(glm::cross(forward, fVec3(0, 1, 0)));
@@ -229,7 +229,7 @@ namespace Core
 				}
 			});
 
-			Core::MakeSystem<Sys::PHYSICS_TRANSFORMS_IN>([](Core::FrameData const& _fd, Core::Physics::CharacterController& _cc, Core::Transform const& _t)
+			Core::MakeSystem<Sys::PHYSICS_TRANSFORMS_IN>([](Core::FrameData const& _fd, Core::Physics::CharacterController& _cc, Core::Transform3D const& _t)
 			{
 				btTransform xform;
 				_cc.m_motionState->getWorldTransform(xform);
@@ -293,7 +293,7 @@ namespace Core
 				}
 			});
 
-			Core::MakeSystem<Sys::PHYSICS_TRANSFORMS_OUT>([](Core::Physics::CharacterController const& _cc, Core::Transform& _t)
+			Core::MakeSystem<Sys::PHYSICS_TRANSFORMS_OUT>([](Core::Physics::CharacterController const& _cc, Core::Transform3D& _t)
 			{
 				btTransform trans;
 				_cc.m_body->getMotionState()->getWorldTransform(trans);
@@ -307,7 +307,7 @@ namespace Core
 
 
 			// Object transforms being pushed into physics
-			Core::MakeSystem<Sys::PHYSICS_TRANSFORMS_IN>([](Core::Physics::RigidBody& _rb, Core::Transform const& _t)
+			Core::MakeSystem<Sys::PHYSICS_TRANSFORMS_IN>([](Core::Physics::RigidBody& _rb, Core::Transform3D const& _t)
 			{
 				// Can't set transforms for non-kinematic bodies.
 				if (_rb.m_body->isKinematicObject())
@@ -363,7 +363,7 @@ namespace Core
 
 			// Physics propogating transforms
 			// Just reading and throwing into the transform components so should be parallel.
-			Core::MakeSystem<Sys::PHYSICS_TRANSFORMS_OUT>([](Core::Physics::RigidBody const& _rb, Core::Transform& _t)
+			Core::MakeSystem<Sys::PHYSICS_TRANSFORMS_OUT>([](Core::Physics::RigidBody const& _rb, Core::Transform3D& _t)
 			{
 				if (_rb.m_body->isActive())
 				{

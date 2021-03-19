@@ -41,7 +41,7 @@ namespace Core
 		if (loaded)
 		{
 			// Add to ecs
-			Core::Transform const* transform = Core::GetComponent<Core::Transform>(_entity);
+			Core::Transform3D const* transform = Core::GetComponent<Core::Transform3D>(_entity);
 			kaAssert(transform != nullptr, "missing Transform component when trying to add SoundEffect3D");
 
 			newComponent.m_handle = Sound::AddSoundEffect3D(newComponent.m_soundEffect, transform->CalculateWorldTransform().m_origin);

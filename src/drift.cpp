@@ -85,7 +85,7 @@ void initialise_cb()
 	Core::EntityID const renderEntity = Core::CreateEntity();
 	Core::EntityID const character = Core::CreateEntity();
 	fTrans const characterTrans{ fQuatIdentity(), fVec3(2.0f, 0.0f, 0.0f) };
-	Core::AddComponent(character, Core::Transform(characterTrans));
+	Core::AddComponent(character, Core::Transform3D(characterTrans));
 	{
 		Core::Physics::CharacterControllerDesc ccDesc{};
 		ccDesc.m_viewObject = renderEntity;
@@ -99,7 +99,7 @@ void initialise_cb()
 	}
 
 	Core::AddComponent(renderEntity, Core::Render::Frame_Tag());
-	Core::Transform const renderTrans(fQuatIdentity(), fVec3(0.0f, 0.8f, 0.0f), character);
+	Core::Transform3D const renderTrans(fQuatIdentity(), fVec3(0.0f, 0.8f, 0.0f), character);
 	Core::AddComponent(renderEntity, renderTrans); // camera transform
 	Core::AddComponent(renderEntity, Core::Render::Camera());
 	Core::AddComponent(renderEntity, Core::Render::DebugCameraControl());

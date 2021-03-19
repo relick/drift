@@ -14,7 +14,7 @@ namespace Core
 	{
 		void Setup()
 		{
-			Core::MakeSystem<Sys::RENDER_QUEUE>([](Core::Render::Light const& _light, Core::Transform const& _t)
+			Core::MakeSystem<Sys::RENDER_QUEUE>([](Core::Render::Light const& _light, Core::Transform3D const& _t)
 			{
 				switch (_light.m_type)
 				{
@@ -74,7 +74,7 @@ namespace Core
 				}
 			});
 
-			Core::MakeSystem<Sys::RENDER_QUEUE>([](Core::Render::Model const& _model, Core::Transform const& _t)
+			Core::MakeSystem<Sys::RENDER_QUEUE>([](Core::Render::Model const& _model, Core::Transform3D const& _t)
 			{
 				if (_model.m_drawDefaultPass)
 				{
@@ -87,13 +87,13 @@ namespace Core
 				AddSkyboxToScene(_skybox.m_cubemapID);
 			});
 
-			Core::MakeSystem<Sys::RENDER_QUEUE>([](Core::Render::Sprite const& _sprite, Core::Transform const& _t)
+			Core::MakeSystem<Sys::RENDER_QUEUE>([](Core::Render::Sprite const& _sprite, Core::Transform2D const& _t)
 			{
 				AddSpriteToScene(_sprite.m_spriteID, _t.CalculateWorldTransform());
 			});
 
 
-			Core::MakeSystem<Sys::RENDER_PASS_START>([](Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _t, MT_Only&)
+			Core::MakeSystem<Sys::RENDER_PASS_START>([](Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform3D const& _t, MT_Only&)
 			{
 				Core::Render::StartPass(_rfd, _cam, _t);
 			});
@@ -105,7 +105,7 @@ namespace Core
 
 			//////
 			// debug camera control
-			Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Render::Camera& _cam, Core::Transform& _t, Core::Render::DebugCameraControl& _debugCamera)
+			Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Render::Camera& _cam, Core::Transform3D& _t, Core::Render::DebugCameraControl& _debugCamera)
 			{
 				if (Core::Input::PressedOnce(Core::Input::Action::Debug_EnableCamera))
 				{

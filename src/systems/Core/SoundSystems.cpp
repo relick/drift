@@ -93,7 +93,7 @@ namespace Core::Sound
 		});
 
 		//--------------------------------------------------------------------------------
-		Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Sound::SoundEffect3D& _sfx, Core::Transform const& _t)
+		Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Sound::SoundEffect3D& _sfx, Core::Transform3D const& _t)
 		{
 			fTrans const worldT = _t.CalculateWorldTransform();
 			if (_sfx.m_lastPos.has_value() && _fd.dt != 0.0f)
@@ -109,7 +109,7 @@ namespace Core::Sound
 		});
 
 		//--------------------------------------------------------------------------------
-		Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Render::Camera& _cam, Core::Transform const& _t)
+		Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Render::Camera& _cam, Core::Transform3D const& _t)
 		{
 			fTrans const worldT = _t.CalculateWorldTransform();
 			if (_cam.m_lastPos.has_value() && _fd.dt != 0.0f)

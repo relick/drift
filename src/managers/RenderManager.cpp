@@ -245,9 +245,9 @@ namespace Core
 		struct SpriteToDraw
 		{
 			Resource::SpriteID m_sprite{};
-			fTrans m_transform{};
+			fTrans2D m_transform{};
 
-			SpriteToDraw(Resource::SpriteID _sprite, fTrans const& _trans)
+			SpriteToDraw(Resource::SpriteID _sprite, fTrans2D const& _trans)
 				: m_sprite{ _sprite }
 				, m_transform{ _trans }
 			{}
@@ -256,9 +256,9 @@ namespace Core
 		struct SpriteScratchData
 		{
 			std::reference_wrapper<Resource::SpriteData const> m_sprite;
-			fTrans m_transform;
+			fTrans2D m_transform;
 
-			SpriteScratchData(Resource::SpriteData const& _sprite, fTrans const& _transform)
+			SpriteScratchData(Resource::SpriteData const& _sprite, fTrans2D const& _transform)
 				: m_sprite{ _sprite }
 				, m_transform{ _transform }
 			{}
@@ -645,7 +645,7 @@ namespace Core
 		(
 			Core::Render::FrameData const& _rfd,
 			Core::Render::Camera const& _cam,
-			Core::Transform const& _t
+			Core::Transform3D const& _t
 		)
 		{
 			// DEFAULT_PASS_START
@@ -856,9 +856,9 @@ namespace Core
 
 
 					frameScene.spriteBufferData.emplace_back(
-						spriteScratch.m_transform.m_origin,
-						fVec2(1.0),
-						0.0f,
+						fVec3(spriteScratch.m_transform.m_pos, spriteScratch.m_transform.m_z),
+						spriteScratch.m_transform.m_scale,
+						spriteScratch.m_transform.m_rot.m_rads,
 						sprite.m_topLeftUV,
 						sprite.m_dimensionsUV,
 						sprite.m_dimensions
@@ -938,7 +938,7 @@ namespace Core
 		void AddSpriteToScene
 		(
 			Core::Resource::SpriteID _sprite,
-			fTrans const& _screenTrans
+			fTrans2D const& _screenTrans
 		)
 		{
 			std::scoped_lock lock(frameScene.spritesMutex);

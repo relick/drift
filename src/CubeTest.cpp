@@ -22,7 +22,7 @@ void setup_cube()
 {
 	Core::EntityID ground = Core::CreateEntity();
 	fTrans const groundTrans{ fQuatIdentity(), fVec3(0.0f, -2.0f, 0.0f) };
-	Core::AddComponent(ground, Core::Transform(groundTrans));
+	Core::AddComponent(ground, Core::Transform3D(groundTrans));
 	{
 		Core::Render::ModelDesc modelDesc{};
 		modelDesc.m_filePath = "assets/models/cube/groundcube.obj";
@@ -41,7 +41,7 @@ void setup_cube()
 
 	Core::EntityID wall = Core::CreateEntity();
 	fTrans const wallTrans{ fMat3(glm::yawPitchRoll(0.0f, glm::radians(90.0f), 0.0f)), fVec3(0.0f, 0.0f, 2.0f) };
-	Core::AddComponent(wall, Core::Transform(wallTrans));
+	Core::AddComponent(wall, Core::Transform3D(wallTrans));
 	{
 		Core::Render::ModelDesc modelDesc{};
 		modelDesc.m_filePath = "assets/models/cube/groundcube.obj";
@@ -60,7 +60,7 @@ void setup_cube()
 
 	Core::EntityID cube = Core::CreateEntity();
 	fTrans const cubeTrans{ fQuatIdentity(), fVec3(0.0f, 0.0f, 0.0f) };
-	Core::AddComponent(cube, Core::Transform(cubeTrans));
+	Core::AddComponent(cube, Core::Transform3D(cubeTrans));
 	Core::AddComponent(cube, CubeTest{false, 0.0f, 0.0f});
 	{
 		Core::Render::ModelDesc modelDesc{};
@@ -86,7 +86,7 @@ void setup_cube()
 
 	Core::EntityID cube2 = Core::CreateEntity();
 	fTrans const cube2Trans{ fQuatIdentity(), fVec3(-0.5f, 1.5f, 0.0f) };
-	Core::AddComponent(cube2, Core::Transform(cube2Trans));
+	Core::AddComponent(cube2, Core::Transform3D(cube2Trans));
 	{
 		Core::Render::ModelDesc modelDesc{};
 		modelDesc.m_filePath = "assets/models/cube/bluecube.obj";
@@ -106,7 +106,7 @@ void setup_cube()
 	if constexpr (false)
 	{
 		Core::EntityID backpack = Core::CreateEntity();
-		Core::AddComponent(backpack, Core::Transform(fQuatIdentity(), fVec3(0.0f, 1.0f, -2.0f)));
+		Core::AddComponent(backpack, Core::Transform3D(fQuatIdentity(), fVec3(0.0f, 1.0f, -2.0f)));
 		{
 			Core::Render::ModelDesc modelDesc{};
 			modelDesc.m_filePath = "assets/models/backpack/backpack.obj";
@@ -116,7 +116,7 @@ void setup_cube()
 	}
 
 	Core::EntityID lightCube = Core::CreateEntity();
-	Core::AddComponent(lightCube, Core::Transform(RotationFromForward(fVec3(-1.0f, -1.0f, 1.0f)), fVec3(1.2f, 1.0f, 2.0f)));
+	Core::AddComponent(lightCube, Core::Transform3D(RotationFromForward(fVec3(-1.0f, -1.0f, 1.0f)), fVec3(1.2f, 1.0f, 2.0f)));
 	{
 		Core::Render::Light lightComponent{};
 		lightComponent.m_colour = fVec3(1.0f, 1.0f, 1.0f);
@@ -128,7 +128,7 @@ void setup_cube()
 
 	Core::EntityID lightCube2 = Core::CreateEntity();
 	Core::AddComponent(lightCube2, CubeTest{ true, 0.0f, 0.0f });
-	Core::AddComponent(lightCube2, Core::Transform(RotationFromForward(fVec3(0.0f, 0.0f, -1.0f)), fVec3(1.2f, 1.0f, 2.0f)));
+	Core::AddComponent(lightCube2, Core::Transform3D(RotationFromForward(fVec3(0.0f, 0.0f, -1.0f)), fVec3(1.2f, 1.0f, 2.0f)));
 	{
 		Core::Render::Light lightComponent{};
 		lightComponent.m_colour = fVec3(1.0f, 1.0f, 1.0f);
@@ -139,7 +139,7 @@ void setup_cube()
 	}
 
 	Core::EntityID lightCube3 = Core::CreateEntity();
-	Core::AddComponent(lightCube3, Core::Transform(lightCube2));
+	Core::AddComponent(lightCube3, Core::Transform3D(lightCube2));
 	{
 		Core::Render::Light lightComponent{};
 		lightComponent.m_colour = fVec3(1.0f, 1.0f, 1.0f);
@@ -149,9 +149,9 @@ void setup_cube()
 	}
 
 	Core::EntityID testSprite = Core::CreateEntity();
-	Core::AddComponents(testSprite, Core::Transform(), Core::Render::SpriteDesc{ .m_filePath = "assets/sprites/loading/loading.spr", });
+	Core::AddComponents(testSprite, Core::Transform2D(), Core::Render::SpriteDesc{ .m_filePath = "assets/sprites/loading/loading.spr", });
 
-	Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, CubeTest& _cubeTest, Core::Transform& _t)
+	Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, CubeTest& _cubeTest, Core::Transform3D& _t)
 	{
 		if (_cubeTest.isLightCube)
 		{
@@ -168,7 +168,7 @@ void setup_cube()
 		}
 	});
 
-	Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Render::Light& _light, Core::Transform& _t)
+	Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Render::Light& _light, Core::Transform3D& _t)
 	{
 		static float n = 0.0f;
 		n += _fd.dt * 0.5f;

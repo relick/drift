@@ -16,7 +16,7 @@ namespace Game
 #if DEBUG_TOOLS
 			Core::EntityID::CoreType _entity,
 #endif
-			MouseLook& _p, Core::Transform& _t)
+			MouseLook& _p, Core::Transform3D& _t)
 		{
 #if DEBUG_TOOLS
 			auto const debugCameraControl = Core::GetComponent<Core::Render::DebugCameraControl>(_entity);

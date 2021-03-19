@@ -25,13 +25,13 @@ namespace Core
 
 		void Init();
 		void SetupPipeline(int _mainRenderWidth, int _mainRenderHeight);
-		void StartPass(Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform const& _t);
+		void StartPass(Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform3D const& _t);
 		void Render(Core::Render::FrameData const& _rfd);
 		void Cleanup();
 
 		CameraState const& GetCameraState();
 
-		void AddSpriteToScene(Core::Resource::SpriteID _sprite, fTrans const& _screenTrans);
+		void AddSpriteToScene(Core::Resource::SpriteID _sprite, fTrans2D const& _screenTrans);
 		void AddModelToScene(Core::Resource::ModelID _model, fTrans const& _worldTrans);
 		void AddSkyboxToScene(Core::Resource::TextureID _skybox);
 		LightSetter AddLightToScene();

@@ -155,7 +155,7 @@ struct fTrans2D
 	fTrans2D operator*(fTrans2D const& _t) const
 	{
 		return fTrans2D{ m_rot * _t.m_rot,
-			(*this)(_t.m_pos) };
+			(*this)(_t.m_pos), m_scale * _t.m_scale, gcem::min(m_z, _t.m_z) };
 	}
 
 	fVec2 operator()(fVec2 const& _v) const
@@ -167,6 +167,7 @@ struct fTrans2D
 	{
 		m_pos += m_rot * _t.m_pos;
 		m_rot *= _t.m_rot;
+		m_scale *= _t.m_scale;
 		return *this;
 	}
 
@@ -182,7 +183,10 @@ struct fTrans2D
 	fTrans2D ToLocal(fTrans2D const& _a) const
 	{
 		fRot2D const invRot = m_rot.Inverse();
-		return { _a.m_rot * invRot, (_a.m_pos - m_pos) * invRot };
+		fVec2 const invScale = 1.0f / m_scale;
+		// todo, not sure this is right
+		kaError("fTrans2D::ToLocal fix me");
+		return { _a.m_rot * invRot, (_a.m_pos - m_pos) * invRot, _a.m_scale, m_z };
 	}
 
 	fTrans2D(fRot2D const& _rot = 0.0f, fVec2 const& _pos = fVec2(0.0f), fVec2 const& _scale = fVec2(1.0f), float _z = 0.0f)

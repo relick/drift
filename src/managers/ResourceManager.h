@@ -34,6 +34,8 @@ namespace Core
 
 			sg_image m_texID;
 			Type m_type;
+			int m_width;
+			int m_height;
 			std::string m_path;
 		};
 
@@ -84,6 +86,7 @@ namespace Core
 				sg_image image;
 			} m_texture;
 			fVec2 m_dimensions;
+			fVec2 m_dimensionsUV;
 			fVec2 m_topLeftUV;
 		};
 

@@ -75,6 +75,18 @@ namespace Core
 			Resource::TextureID m_cubemapID;
 		};
 
+		struct SpriteDesc
+		{
+			std::string m_filePath;
+		};
+
+		struct Sprite
+		{
+			use_initialiser;
+
+			Resource::SpriteID m_spriteID;
+		};
+
 	}
 
 	template<>
@@ -82,5 +94,8 @@ namespace Core
 
 	template<>
 	void AddComponent(EntityID const _entity, Render::SkyboxDesc const& _desc);
+
+	template<>
+	void AddComponent(EntityID const _entity, Render::SpriteDesc const& _desc);
 
 }

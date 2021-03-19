@@ -205,8 +205,11 @@ void setup_cube()
 
 		Core::AddComponent(cube, rbDesc);
 	}
-	//Core::AddComponent(cube, Core::Sound::BGMDesc{ .m_filePath = "assets/encrypted/bgm/rom.mp3", .m_initVolume = 1.0f, });
-	//Core::AddComponent(cube, Core::Sound::FadeChangeBGM{ .m_timeToFade = 5.0f, .m_targetVolume = 1.0f, .m_nextBGMFilePath = "assets/encrypted/bgm/ztd.mp3", });
+	if constexpr (false)
+	{
+		Core::AddComponent(cube, Core::Sound::BGMDesc{ .m_filePath = "assets/encrypted/bgm/rom.mp3", .m_initVolume = 1.0f, });
+		Core::AddComponent(cube, Core::Sound::FadeChangeBGM{ .m_timeToFade = 5.0f, .m_targetVolume = 1.0f, .m_nextBGMFilePath = "assets/encrypted/bgm/ztd.mp3", });
+	}
 
 	Core::EntityID cube2 = Core::CreateEntity();
 	fTrans const cube2Trans{ fQuatIdentity(), fVec3(-0.5f, 1.5f, 0.0f) };
@@ -227,14 +230,17 @@ void setup_cube()
 		Core::AddComponent(cube2, rbDesc);
 	}
 
-	/*Core::EntityID backpack = Core::CreateEntity();
-	Core::AddComponent(backpack, Core::Transform(fQuatIdentity(), fVec3(0.0f, 1.0f, -2.0f)));
+	if constexpr (true)
 	{
-		Core::Render::ModelDesc modelDesc{};
-		modelDesc.m_filePath = "assets/models/backpack/backpack.obj";
-		Core::AddComponent(backpack, modelDesc);
-		Core::AddComponent(backpack, Core::Render::CubeTest{ true, 0.0f, 0.0f });
-	}*/
+		Core::EntityID backpack = Core::CreateEntity();
+		Core::AddComponent(backpack, Core::Transform(fQuatIdentity(), fVec3(0.0f, 1.0f, -2.0f)));
+		{
+			Core::Render::ModelDesc modelDesc{};
+			modelDesc.m_filePath = "assets/models/backpack/backpack.obj";
+			Core::AddComponent(backpack, modelDesc);
+			Core::AddComponent(backpack, Core::Render::CubeTest{ true, 0.0f, 0.0f });
+		}
+	}
 
 	Core::EntityID lightCube = Core::CreateEntity();
 	Core::AddComponent(lightCube, Core::Transform(RotationFromForward(fVec3(-1.0f, -1.0f, 1.0f)), fVec3(1.2f, 1.0f, 2.0f)));
@@ -246,19 +252,19 @@ void setup_cube()
 		Core::AddComponent(lightCube, lightComponent);
 	}
 	Core::AddComponent(lightCube, Core::Render::SkyboxDesc{ .m_cubemapPath = "assets/encrypted/skybox/starrysky/starrysky.cubemap" });
+
 	Core::EntityID lightCube2 = Core::CreateEntity();
 	Core::AddComponent(lightCube2, Core::Render::CubeTest{ true, 0.0f, 0.0f });
-
 	Core::AddComponent(lightCube2, Core::Transform(RotationFromForward(fVec3(0.0f, 0.0f, -1.0f)), fVec3(1.2f, 1.0f, 2.0f)));
 	{
 		Core::Render::Light lightComponent{};
 		lightComponent.m_colour = fVec3(1.0f, 1.0f, 1.0f);
 		lightComponent.m_intensity = 5.0f;
-		//lightComponent.m_direction = fVec3(0.0f, 0.0f, -1.0f);
 		lightComponent.m_attenuation = fVec3(1.0f, 0.07f, 0.18f);
 		lightComponent.m_type = Core::Render::Light::Type::Spotlight;
 		Core::AddComponent(lightCube2, lightComponent);
 	}
+
 	Core::EntityID lightCube3 = Core::CreateEntity();
 	Core::AddComponent(lightCube3, Core::Transform(lightCube2));
 	{
@@ -268,6 +274,9 @@ void setup_cube()
 		lightComponent.m_type = Core::Render::Light::Type::Ambient;
 		Core::AddComponent(lightCube3, lightComponent);
 	}
+
+	Core::EntityID testSprite = Core::CreateEntity();
+	Core::AddComponents(testSprite, Core::Transform(), Core::Render::SpriteDesc{ .m_filePath = "assets/sprites/loading/loading.spr", });
 
 	Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Render::CubeTest& _cubeTest, Core::Transform& _t)
 	{

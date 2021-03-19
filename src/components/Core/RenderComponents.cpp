@@ -33,4 +33,19 @@ namespace Core
 			Core::ECS::AddComponent(_entity, newComponent);
 		}
 	}
+
+	template<>
+	void AddComponent(EntityID const _entity, Render::SpriteDesc const& _desc)
+	{
+		Render::Sprite newComponent{};
+
+		bool const loaded = Core::Resource::LoadSprite(_desc.m_filePath, newComponent.m_spriteID);
+
+		kaAssert(loaded, "couldn't load model, not adding component");
+		if (loaded)
+		{
+			// Add to ecs
+			Core::ECS::AddComponent(_entity, newComponent);
+		}
+	}
 }

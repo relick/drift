@@ -48,6 +48,7 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		void Init()
 		{
+			stbi_set_flip_vertically_on_load(false);
 			sfetch_setup(sfetch_desc_t{});
 		}
 
@@ -165,14 +166,16 @@ namespace Core
 			sg_image& o_imageID
 		)
 		{
-			sg_image_desc imageDesc{};
-			imageDesc.type = SG_IMAGETYPE_CUBE;
-			imageDesc.pixel_format = SG_PIXELFORMAT_RGBA8;
-			imageDesc.min_filter = SG_FILTER_LINEAR;
-			imageDesc.mag_filter = SG_FILTER_LINEAR;
-			imageDesc.wrap_u = SG_WRAP_CLAMP_TO_EDGE;
-			imageDesc.wrap_v = SG_WRAP_CLAMP_TO_EDGE;
-			imageDesc.wrap_w = SG_WRAP_CLAMP_TO_EDGE;
+			sg_image_desc imageDesc{
+				.type = SG_IMAGETYPE_CUBE,
+				.pixel_format = SG_PIXELFORMAT_RGBA8,
+				.min_filter = SG_FILTER_LINEAR,
+				.mag_filter = SG_FILTER_LINEAR,
+				.wrap_u = SG_WRAP_CLAMP_TO_EDGE,
+				.wrap_v = SG_WRAP_CLAMP_TO_EDGE,
+				.wrap_w = SG_WRAP_CLAMP_TO_EDGE,
+				.label = _cubemapPath.c_str(),
+			};
 
 			std::string const directory = _cubemapPath.substr(0, _cubemapPath.find_last_of('/') + 1);
 			std::array<std::string, 6> cubemapFilenames;
@@ -195,7 +198,6 @@ namespace Core
 				}
 			}
 
-			stbi_set_flip_vertically_on_load(false);
 			for (usize i = 0; i < cubemapFilenames.size(); ++i)
 			{
 				const int dataComponentCount{ 4 };
@@ -238,32 +240,36 @@ namespace Core
 			std::string const& _filename,
 			sg_image& o_imageID,
 			bool& o_hasAlpha,
-			bool _gamma = false
+			int& o_width,
+			int& o_height
 		)
 		{
-			sg_image_desc imageDesc{};
+			sg_image_desc imageDesc{
+				.generate_mipmaps = true,
+				.pixel_format = SG_PIXELFORMAT_RGBA8,
+				.min_filter = SG_FILTER_LINEAR_MIPMAP_LINEAR,
+				.mag_filter = SG_FILTER_LINEAR,
+				.wrap_u = SG_WRAP_REPEAT,
+				.wrap_v = SG_WRAP_REPEAT,
+				.label = _filename.c_str(),
+			};
 
-			stbi_set_flip_vertically_on_load(true);
 			const int dataComponentCount{ 4 };
 			int imageComponentCount{ 0 };
 			uint8* data = stbi_load(_filename.c_str(), &imageDesc.width, &imageDesc.height, &imageComponentCount, dataComponentCount);
 			if (data != nullptr)
 			{
 				kaAssert(imageComponentCount > 0);
+				o_width = imageDesc.width;
+				o_height = imageDesc.height;
+
 				usize const dataSize = imageDesc.width * imageDesc.height * dataComponentCount;
 				o_hasAlpha = CheckRGBAForAlpha(data, dataSize);
 
-				imageDesc.pixel_format = SG_PIXELFORMAT_RGBA8;
 				imageDesc.data.subimage[0][0] = {
 					.ptr = data,
 					.size = dataSize,
 				};
-
-				imageDesc.generate_mipmaps = true;
-				imageDesc.min_filter = SG_FILTER_LINEAR_MIPMAP_LINEAR;
-				imageDesc.mag_filter = SG_FILTER_LINEAR;
-				imageDesc.wrap_u = SG_WRAP_REPEAT;
-				imageDesc.wrap_v = SG_WRAP_REPEAT;
 
 				o_imageID = sg_make_image(imageDesc);
 				stbi_image_free(data);
@@ -301,7 +307,9 @@ namespace Core
 					{   // if texture hasn't been loaded already, load it
 						sg_image imageID;
 						bool hasAlpha{ false };
-						bool const loaded = LoadTextureFromFile(filename, imageID, hasAlpha);
+						int width{ 0 };
+						int height{ 0 };
+						bool const loaded = LoadTextureFromFile(filename, imageID, hasAlpha, width, height);
 						if (loaded)
 						{
 							kaAssert(!hasAlpha, "non-opaque textures nyi");
@@ -501,7 +509,6 @@ namespace Core
 			aiScene const* scene = import.ReadFile(
 				_path
 				, aiProcess_Triangulate
-				| aiProcess_FlipUVs
 				| aiProcess_GenSmoothNormals
 				| aiProcess_GenUVCoords
 				| aiProcess_FlipWindingOrder
@@ -661,14 +668,20 @@ namespace Core
 				return false;
 			}
 
-			SpriteID const newID = NewSpriteID();
-			SpriteData& newSprite = sprites[newID];
+			std::string const directory = _path.substr(0, _path.find_last_of('/') + 1);
+
+			o_spriteID = NewSpriteID();
+			SpriteData& newSprite = sprites[o_spriteID];
+			newSprite.m_path = _path;
+
+			std::string line;
 
 			// line 1: texture file
-			std::string line;
+			int textureWidth{ 0 };
+			int textureHeight{ 0 };
 			if (std::getline(spriteFile, line))
 			{
-				std::string const& texturePath = line;
+				std::string const texturePath = directory + line;
 				TextureID const textureID = FindExistingTexture(texturePath);
 				if (textureID.IsValid())
 				{
@@ -676,12 +689,14 @@ namespace Core
 
 					newSprite.m_texture.id = textureID;
 					newSprite.m_texture.image = textureData.m_texID;
+					textureWidth = textureData.m_width;
+					textureHeight = textureData.m_height;
 				}
 				else
 				{
 					sg_image imageID;
 					bool hasAlpha{ false };
-					bool const loaded = LoadTextureFromFile(texturePath, imageID, hasAlpha);
+					bool const loaded = LoadTextureFromFile(texturePath, imageID, hasAlpha, textureWidth, textureHeight);
 					if (loaded)
 					{
 						TextureID const newTextureID = NewTextureID();
@@ -689,6 +704,8 @@ namespace Core
 						newTextureData.m_texID = imageID;
 						newTextureData.m_path = texturePath;
 						newTextureData.m_type = TextureData::Type::Diffuse;
+						newTextureData.m_width = textureWidth;
+						newTextureData.m_height = textureHeight;
 
 						newSprite.m_texture.id = newTextureID;
 						newSprite.m_texture.image = imageID;
@@ -726,13 +743,19 @@ namespace Core
 				usize const mid = line.find_first_of(' ');
 				float const x = static_cast<float>(std::atof(line.substr(0, mid).c_str()));
 				float const y = static_cast<float>(std::atof(line.substr(mid + 1).c_str()));
-				newSprite.m_dimensions = { x, y };
+				newSprite.m_topLeftUV = { x, y };
 			}
 			else
 			{
 				kaError("sprite file missing top-left UV");
 				return false;
 			}
+
+			newSprite.m_dimensionsUV = newSprite.m_dimensions;
+			newSprite.m_dimensionsUV.x /= textureWidth;
+			newSprite.m_dimensionsUV.y /= textureHeight;
+			newSprite.m_topLeftUV.x /= textureWidth;
+			newSprite.m_topLeftUV.y /= textureHeight;
 
 			kaLog("New sprite " + _path + " loaded!");
 			return true;

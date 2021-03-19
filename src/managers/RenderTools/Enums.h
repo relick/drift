@@ -23,6 +23,7 @@ namespace Core::Render
 		Renderer_TargetToScreen,
 		Renderer_DepthOnly,
 		Renderer_Skybox,
+		Renderer_Sprites,
 
 		e_Renderer_Count,
 	};

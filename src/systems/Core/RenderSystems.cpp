@@ -75,14 +75,18 @@ namespace Core
 			{
 				if (_model.m_drawDefaultPass)
 				{
-					fTrans const worldTransform = _t.CalculateWorldTransform();
-					AddModelToScene(_model.m_modelID, worldTransform);
+					AddModelToScene(_model.m_modelID, _t.CalculateWorldTransform());
 				}
 			});
 
 			Core::MakeSystem<Sys::RENDER_QUEUE>([](Core::Render::Skybox const& _skybox)
 			{
 				AddSkyboxToScene(_skybox.m_cubemapID);
+			});
+
+			Core::MakeSystem<Sys::RENDER_QUEUE>([](Core::Render::Sprite const& _sprite, Core::Transform const& _t)
+			{
+				AddSpriteToScene(_sprite.m_spriteID, _t.CalculateWorldTransform());
 			});
 
 

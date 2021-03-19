@@ -255,3 +255,6 @@ constexpr void SafeDelete(T*& _obj)
 	delete _obj;
 	_obj = nullptr;
 }
+
+// Sokol extras
+#define SG_RANGE_VEC(x) sg_range{ x.data(), sizeof(decltype(x)::value_type) * x.size() }

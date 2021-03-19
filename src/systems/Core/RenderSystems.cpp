@@ -4,6 +4,9 @@
 #include "components.h"
 
 #include "managers/RenderManager.h"
+#include "managers/InputManager.h"
+
+#include <sokol_app.h>
 
 namespace Core
 {
@@ -98,6 +101,139 @@ namespace Core
 			Core::MakeSystem<Sys::RENDER>([](Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, MT_Only&)
 			{
 				Core::Render::Render(_rfd);
+			});
+
+			//////
+			// debug camera control
+			Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Render::Camera& _cam, Core::Transform& _t, Core::Render::DebugCameraControl& _debugCamera)
+			{
+				if (Core::Input::PressedOnce(Core::Input::Action::Debug_EnableCamera))
+				{
+					if (_debugCamera.m_debugCameraEnabled)
+					{
+						_t.m_parent = _debugCamera.m_storedParent;
+						_t.T() = _debugCamera.m_storedTransform;
+						_debugCamera.m_debugCameraEnabled = false;
+						sapp_lock_mouse(true);
+					}
+					else
+					{
+						_debugCamera.m_storedParent = _t.m_parent;
+						_debugCamera.m_storedTransform = _t.T();
+						_t.DetachFromParent();
+						fVec3 const forward = _t.T().forward();
+						_debugCamera.m_angle.x = asin(forward.y); // pitch
+						float const cosPitch = cos(_debugCamera.m_angle.x);
+						if (cosPitch == 0.0f)
+						{
+							_debugCamera.m_angle.y = 0.0f; // if looking directly up or down then yaw can't be calc'd.. but also doesn't matter
+						}
+						else
+						{
+							// yaw1 and yaw2 should just be pi offset.
+							float const yaw1 = acos(forward.x / cosPitch);
+							//float const yaw2 = asin(forward.z / cosPitch);
+							_debugCamera.m_angle.y = yaw1;
+						}
+						_debugCamera.m_debugCameraEnabled = true;
+					}
+				}
+
+				if (_debugCamera.m_debugCameraEnabled)
+				{
+					if (Core::Input::Pressed(Core::Input::Action::Debug_AimCamera))
+					{
+						sapp_lock_mouse(true);
+						fVec2 const mouseDelta = Core::Input::GetMouseDelta();
+						float const scale = 0.0005f;
+						_debugCamera.m_angle.x -= mouseDelta.y * scale;
+						_debugCamera.m_angle.y += mouseDelta.x * scale;
+					}
+					else
+					{
+						sapp_lock_mouse(false);
+					}
+
+					constexpr bool d_checkAxes = false;
+					if constexpr (d_checkAxes)
+					{
+						_t.T().m_origin = fVec3(0, 0, 0);
+						if (Core::Input::Pressed(Core::Input::Action::Forward))
+						{
+							_t.T().m_origin += fVec3(0, 0, 1);
+						}
+						if (Core::Input::Pressed(Core::Input::Action::Backward))
+						{
+							_t.T().m_origin += fVec3(0, 0, -1);
+						}
+						if (Core::Input::Pressed(Core::Input::Action::Left))
+						{
+							_t.T().m_origin += fVec3(-1, 0, 0);
+						}
+						if (Core::Input::Pressed(Core::Input::Action::Right))
+						{
+							_t.T().m_origin += fVec3(1, 0, 0);
+						}
+						if (Core::Input::Pressed(Core::Input::Action::Debug_RaiseCamera))
+						{
+							_t.T().m_origin += fVec3(0, 1, 0);
+						}
+						if (Core::Input::Pressed(Core::Input::Action::Debug_LowerCamera))
+						{
+							_t.T().m_origin += fVec3(0, -1, 0);
+						}
+
+						if (Core::Input::PressedOnce(Core::Input::Action::Select))
+						{
+							fVec3 const col0 = _t.T().m_basis[0];
+							_t.T().m_basis[0] = _t.T().m_basis[1];
+							_t.T().m_basis[1] = _t.T().m_basis[2];
+							_t.T().m_basis[2] = col0;
+						}
+					}
+					else
+					{
+						// when at identity, forward == z
+						float const yaw = _debugCamera.m_angle.y;
+						float const pitch = _debugCamera.m_angle.x;
+
+
+						fVec3 const forward = glm::normalize(fVec3{ cosf(yaw) * cosf(pitch), sinf(pitch), sinf(yaw) * cosf(pitch) });
+
+						_t.T().m_basis = RotationFromForward(forward);
+
+						// also re-calculate the Right and Up vector
+						fVec3 const right = glm::normalize(glm::cross(forward, fVec3(0.0f, 1.0f, 0.0f)));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+						fVec3 const up = glm::normalize(glm::cross(right, forward));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+
+						float const velocity = 0.8f * _fd.unscaled_dt;
+						if (Core::Input::Pressed(Core::Input::Action::Forward))
+						{
+							_t.T().m_origin += forward * velocity;
+						}
+						if (Core::Input::Pressed(Core::Input::Action::Backward))
+						{
+							_t.T().m_origin -= forward * velocity;
+						}
+						if (Core::Input::Pressed(Core::Input::Action::Left))
+						{
+							_t.T().m_origin -= right * velocity;
+						}
+						if (Core::Input::Pressed(Core::Input::Action::Right))
+						{
+							_t.T().m_origin += right * velocity;
+						}
+						// should this up really be used? or world up?
+						if (Core::Input::Pressed(Core::Input::Action::Debug_RaiseCamera))
+						{
+							_t.T().m_origin += up * velocity;
+						}
+						if (Core::Input::Pressed(Core::Input::Action::Debug_LowerCamera))
+						{
+							_t.T().m_origin -= up * velocity;
+						}
+					}
+				}
 			});
 		}
 	}

@@ -18,6 +18,8 @@ namespace Core
 
 		struct DebugCameraControl
 		{
+			bool m_debugCameraEnabled{ false };
+
 			fVec2 m_angle{ 0.0f, 0.0f };
 			Core::EntityID m_storedParent;
 			fTrans m_storedTransform;

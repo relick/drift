@@ -12,16 +12,15 @@ namespace Game
 {
 	namespace Player
 	{
-		void MouseLookSystem(MouseLook& _p, Core::Transform& _t)
+		void MouseLookSystem(
+#if DEBUG_TOOLS
+			Core::EntityID::CoreType _entity,
+#endif
+			MouseLook& _p, Core::Transform& _t)
 		{
 #if DEBUG_TOOLS
-			if (Core::Input::PressedOnce(Core::Input::Action::Debug_EnableCamera))
-			{
-				_p.m_debugCameraEnabled = !_p.m_debugCameraEnabled;
-				sapp_lock_mouse(!_p.m_debugCameraEnabled);
-			}
-
-			if (_p.m_debugCameraEnabled)
+			auto const debugCameraControl = Core::GetComponent<Core::Render::DebugCameraControl>(_entity);
+			if (debugCameraControl != nullptr && debugCameraControl->m_debugCameraEnabled)
 			{
 				return;
 			}

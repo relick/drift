@@ -24,10 +24,6 @@ namespace Core
 			Target contextWindow{};
 			Target renderArea{};
 		};
-		struct Frame_Tag
-		{
-			ecs_flags(ecs::flag::tag);
-		};
 
 		// Render objects
 		struct Light

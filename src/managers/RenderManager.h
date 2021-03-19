@@ -25,7 +25,7 @@ namespace Core
 
 		void Init();
 		void SetupPipeline(int _mainRenderWidth, int _mainRenderHeight);
-		void StartPass(Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform3D const& _t);
+		void SetMainCameraParams(Core::Render::FrameData const& _rfd, Core::Render::MainCamera3D const& _cam, Core::Transform3D const& _t);
 		void Render(Core::Render::FrameData const& _rfd);
 		void Cleanup();
 

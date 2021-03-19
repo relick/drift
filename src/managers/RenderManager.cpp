@@ -74,9 +74,16 @@ namespace Core
 
 			sg_pass_action m_defaultPassAction{};
 
+			bool m_mainCameraIsSet{ false }; // only draw 3D when true.
+
 		public:
 			void NextPass(e_Pass _pass)
 			{
+				if (m_currentPass == _pass)
+				{
+					return;
+				}
+
 				if (m_currentPass < e_Pass_Count)
 				{
 					sg_end_pass();
@@ -177,6 +184,9 @@ namespace Core
 				}
 			}
 
+			void MainCameraSet() { m_mainCameraIsSet = true; }
+			bool IsMainCameraSet() const { return m_mainCameraIsSet; }
+
 			void Commit()
 			{
 				if (m_currentPass < e_Pass_Count)
@@ -187,6 +197,7 @@ namespace Core
 				m_currentPass = e_Pass_Count;
 				m_currentPassGlue = e_PassGlue_Count;
 				m_currentRenderer = e_Renderer_Count;
+				m_mainCameraIsSet = false;
 			}
 
 			void Cleanup()
@@ -641,23 +652,21 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		void StartPass
+		void SetMainCameraParams
 		(
 			Core::Render::FrameData const& _rfd,
-			Core::Render::Camera const& _cam,
+			Core::Render::MainCamera3D const& _cam,
 			Core::Transform3D const& _t
 		)
 		{
-			// DEFAULT_PASS_START
+			kaAssert(!state.IsMainCameraSet(), "only one MainCamera3D allowed!");
 			frameScene.camera.proj = glm::perspective(glm::radians(_cam.m_povY), _rfd.renderArea.fW / _rfd.renderArea.fH, 0.01f, 1000.0f);
 
 			fTrans const cameraTrans = _t.CalculateWorldTransform();
 			frameScene.camera.pos = cameraTrans.m_origin;
-			fMat4 const cameraMat = glm::lookAt(cameraTrans.m_origin, cameraTrans.m_origin + cameraTrans.forward(), fVec3(0.0f, 1.0f, 0.0f));
-			frameScene.camera.view = cameraMat;
+			frameScene.camera.view = glm::lookAt(cameraTrans.m_origin, cameraTrans.m_origin + cameraTrans.forward(), fVec3(0.0f, 1.0f, 0.0f));
 
-			// DEFAULT_PASS_START
-			state.NextPass(Pass_MainTarget);
+			state.MainCameraSet();
 		}
 
 		//--------------------------------------------------------------------------------
@@ -713,10 +722,10 @@ namespace Core
 		constexpr bool g_enableSkybox = true;
 		constexpr bool g_enableSprites = true;
 
+
 		//--------------------------------------------------------------------------------
-		void Render
+		void Render3D
 		(
-			Core::Render::FrameData const& _rfd
 		)
 		{
 			frameScene.modelScratchData.clear();
@@ -815,63 +824,102 @@ namespace Core
 					state.Draw();
 				}
 			}
+		}
+
+		//--------------------------------------------------------------------------------
+		void RenderSprites
+		(
+			Core::Render::FrameData const& _rfd
+		)
+		{
+			state.NextPass(Pass_MainTarget);
+			state.SetRenderer(Renderer_Sprites);
+			sprites_vs_params_t vs_params{
+				.projection = GetSpriteOrthoMat(_rfd),
+			};
+			sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_sprites_vs_params, SG_RANGE_REF(vs_params));
+
+			frameScene.spriteScratchData.clear();
+			frameScene.spriteScratchData.reserve(frameScene.sprites.size());
+			for (SpriteToDraw const& std : frameScene.sprites)
+			{
+				frameScene.spriteScratchData.emplace_back(Resource::GetSprite(std.m_sprite), std.m_transform);
+			}
+
+			// Order by texture
+			std::sort(frameScene.spriteScratchData.begin(), frameScene.spriteScratchData.end(), [](auto const& _a, auto const& _b) -> bool
+			{
+				return _a.m_sprite.get().m_texture.image.id < _b.m_sprite.get().m_texture.image.id;
+			});
+
+			// For each texture, set up buffer and binding and draw sprites
+			sg_image currentTextureImage;
+			for (usize spriteI{ 0 }; spriteI < frameScene.spriteScratchData.size(); ++spriteI)
+			{
+				SpriteScratchData const& spriteScratch = frameScene.spriteScratchData[spriteI];
+				Resource::SpriteData const& sprite = spriteScratch.m_sprite.get();
+				if (currentTextureImage.id != sprite.m_texture.image.id)
+				{
+					if (spriteI != 0)
+					{
+						RenderSprites(currentTextureImage);
+					}
+
+					currentTextureImage = sprite.m_texture.image;
+				}
+
+
+				frameScene.spriteBufferData.emplace_back(
+					fVec3(spriteScratch.m_transform.m_pos, spriteScratch.m_transform.m_z),
+					spriteScratch.m_transform.m_scale,
+					spriteScratch.m_transform.m_rot.m_rads,
+					sprite.m_topLeftUV,
+					sprite.m_dimensionsUV,
+					sprite.m_dimensions
+				);
+			}
+
+			// final draw
+			if (!frameScene.spriteBufferData.empty())
+			{
+				RenderSprites(currentTextureImage);
+			}
+		}
+
+		//--------------------------------------------------------------------------------
+		void RenderMainToScreen
+		(
+			Core::Render::FrameData const& _rfd
+		)
+		{
+			state.NextPass(Pass_RenderToScreen);
+			state.SetRenderer(Renderer_TargetToScreen);
+			state.SetPassGlue(PassGlue_MainTarget_To_Screen);
+
+			render_target_to_screen_vs_params_t aspectData{
+				.aspectMult = (4.0f / 3.0f) * (_rfd.contextWindow.fH / _rfd.contextWindow.fW),
+			};
+			sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_render_target_to_screen_vs_params, SG_RANGE_REF(aspectData));
+			state.Draw();
+		}
+
+		//--------------------------------------------------------------------------------
+		void Render
+		(
+			Core::Render::FrameData const& _rfd
+		)
+		{
+			// Only do 3D stuff if main camera set.
+			if (state.IsMainCameraSet())
+			{
+				Render3D();
+			}
 
 			// render sprites
 			if constexpr (g_enableSprites)
 			{
-				state.SetRenderer(Renderer_Sprites);
-				sprites_vs_params_t vs_params{
-					.projection = GetSpriteOrthoMat(_rfd),
-				};
-				sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_sprites_vs_params, SG_RANGE_REF(vs_params));
-
-				frameScene.spriteScratchData.clear();
-				frameScene.spriteScratchData.reserve(frameScene.sprites.size());
-				for (SpriteToDraw const& std : frameScene.sprites)
-				{
-					frameScene.spriteScratchData.emplace_back(Resource::GetSprite(std.m_sprite), std.m_transform);
-				}
-
-				// Order by texture
-				std::sort(frameScene.spriteScratchData.begin(), frameScene.spriteScratchData.end(), [](auto const& _a, auto const& _b) -> bool
-				{
-					return _a.m_sprite.get().m_texture.image.id < _b.m_sprite.get().m_texture.image.id;
-				});
-
-				// For each texture, set up buffer and binding and draw sprites
-				sg_image currentTextureImage;
-				for (usize spriteI{ 0 }; spriteI < frameScene.spriteScratchData.size(); ++spriteI)
-				{
-					SpriteScratchData const& spriteScratch = frameScene.spriteScratchData[spriteI];
-					Resource::SpriteData const& sprite = spriteScratch.m_sprite.get();
-					if (currentTextureImage.id != sprite.m_texture.image.id)
-					{
-						if (spriteI != 0)
-						{
-							RenderSprites(currentTextureImage);
-						}
-
-						currentTextureImage = sprite.m_texture.image;
-					}
-
-
-					frameScene.spriteBufferData.emplace_back(
-						fVec3(spriteScratch.m_transform.m_pos, spriteScratch.m_transform.m_z),
-						spriteScratch.m_transform.m_scale,
-						spriteScratch.m_transform.m_rot.m_rads,
-						sprite.m_topLeftUV,
-						sprite.m_dimensionsUV,
-						sprite.m_dimensions
-					);
-				}
-
-				// final draw
-				if(!frameScene.spriteBufferData.empty())
-				{
-					RenderSprites(currentTextureImage);
-				}
+				RenderSprites(_rfd);
 			}
-
 
 			// frameScene cleanup
 			frameScene.skybox = Resource::TextureID{};
@@ -884,15 +932,7 @@ namespace Core
 
 			// end of the main drawing pass
 			// begin of the screen drawing pass
-			state.NextPass(Pass_RenderToScreen);
-			state.SetRenderer(Renderer_TargetToScreen);
-			state.SetPassGlue(PassGlue_MainTarget_To_Screen);
-
-			render_target_to_screen_vs_params_t aspectData{
-				.aspectMult = (4.0f / 3.0f) * (_rfd.contextWindow.fH / _rfd.contextWindow.fW),
-			};
-			sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_render_target_to_screen_vs_params, SG_RANGE_REF(aspectData));
-			state.Draw();
+			RenderMainToScreen(_rfd);
 
 			Core::Render::DImGui::Render(); // imgui last, always a debug.
 

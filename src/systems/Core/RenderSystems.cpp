@@ -93,19 +93,19 @@ namespace Core
 			});
 
 
-			Core::MakeSystem<Sys::RENDER_PASS_START>([](Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform3D const& _t, MT_Only&)
+			Core::MakeSystem<Sys::RENDER_PASS_START>([](Core::Render::FrameData const& _rfd, Core::Render::MainCamera3D const& _cam, Core::Transform3D const& _t, MT_Only&)
 			{
-				Core::Render::StartPass(_rfd, _cam, _t);
+				Core::Render::SetMainCameraParams(_rfd, _cam, _t);
 			});
 
-			Core::MakeSystem<Sys::RENDER>([](Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, MT_Only&)
+			Core::MakeSystem<Sys::RENDER>([](Core::Render::FrameData const& _rfd, MT_Only&)
 			{
 				Core::Render::Render(_rfd);
 			});
 
 			//////
 			// debug camera control
-			Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Render::Camera& _cam, Core::Transform3D& _t, Core::Render::DebugCameraControl& _debugCamera)
+			Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Render::MainCamera3D& _cam, Core::Transform3D& _t, Core::Render::DebugCameraControl& _debugCamera)
 			{
 				if (Core::Input::PressedOnce(Core::Input::Action::Debug_EnableCamera))
 				{

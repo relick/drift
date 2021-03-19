@@ -91,7 +91,7 @@ namespace Core
 			void Setup()
 			{
 				// Prepare GL matrices.
-				Core::MakeSystem<Sys::GL_START>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::Camera const& _cam, Core::Transform3D const& _camT)
+				Core::MakeSystem<Sys::GL_START>([](Core::MT_Only&, Core::Render::FrameData const& _rfd, Core::Render::MainCamera3D const& _cam, Core::Transform3D const& _camT)
 				{
 					sgl_defaults();
 					sgl_matrix_mode_projection();

@@ -11,9 +11,10 @@ namespace Core
 
 	namespace detail
 	{
-#define use_initialiser struct _initialiser_only {}
 		template<typename T>
-		concept DoesNotNeedInitialiser = !requires{ typename std::remove_cvref_t<T>::_initialiser_only; };
+		concept ValidComponent = !requires{ typename std::remove_cvref_t<T>::_not_a_component; };
+		template<typename T>
+		concept DoesNotNeedInitialiser = ValidComponent<T> && !requires{ typename std::remove_cvref_t<T>::_initialiser_only; };
 	}
 
 	// functions used by elements of the ECS itself and not by game code
@@ -21,17 +22,29 @@ namespace Core
 	namespace ECS
 	{
 		// Wraps ecs::add_component, shouldn't be used directly except by specialisations of AddComponent
-		template <typename T_Component>
+		template <detail::ValidComponent T_Component>
 		void AddComponent(EntityID const _entity, T_Component const& _component)
 		{
 			ecs::add_component(Core::detail::AccessECSID(_entity), static_cast<std::remove_const_t<T_Component>>(_component));
 		}
 
 		// Wraps ecs::remove_component, shouldn't be used directly except by specialisations of RemoveComponent
-		template<typename T_Component>
+		template<detail::ValidComponent T_Component>
 		void RemoveComponent(EntityID const _entity)
 		{
 			ecs::remove_component<T_Component>(Core::detail::AccessECSID(_entity));
+		}
+
+		// Wrap ecs::commit_changes
+		void CommitChanges()
+		{
+			ecs::commit_changes();
+		}
+
+		void Update()
+		{
+			CommitComponentChanges();
+			ecs::run_systems();
 		}
 	}
 

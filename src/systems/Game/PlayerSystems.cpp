@@ -25,6 +25,7 @@ namespace Game
 				return;
 			}
 #endif
+			sapp_lock_mouse(true);
 
 			fVec2 const mouseDelta = Core::Input::GetMouseDelta();
 			_p.m_pitch -= mouseDelta.y * 0.05f;

@@ -33,7 +33,6 @@ void initialise_cb()
 		Core::Sound::Init();
 		Core::Physics::Init();
 		stm_setup();
-		sapp_lock_mouse(true);
 	}
 
 	// system and data setup
@@ -58,7 +57,7 @@ void initialise_cb()
 		Core::EntityID const primaryPhysicsWorld = Core::CreateEntity();
 		Core::AddComponent(primaryPhysicsWorld, Core::Physics::World{});
 
-		ecs::commit_changes();
+		Core::ECS::CommitChanges();
 	}
 
 	// Basic system controls
@@ -82,35 +81,40 @@ void initialise_cb()
 	});
 
 	// Setup entity manager
-	Core::EntityID const renderEntity = Core::CreateEntity();
-	Core::EntityID const character = Core::CreateEntity();
-	fTrans const characterTrans{ fQuatIdentity(), fVec3(2.0f, 0.0f, 0.0f) };
-	Core::AddComponent(character, Core::Transform3D(characterTrans));
-	{
-		Core::Physics::CharacterControllerDesc ccDesc{};
-		ccDesc.m_viewObject = renderEntity;
-		ccDesc.m_halfHeight = 0.9f;
-		ccDesc.m_radius = 0.5f;
-		ccDesc.m_mass = 80.0f;
-		ccDesc.m_startTransform = characterTrans;
-		ccDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
+	// todo
 
-		Core::AddComponent(character, ccDesc);
+	// Preload assets
+
+
+	// Add demo scene
+	if constexpr (true)
+	{
+		Core::EntityID const camera = Core::CreateEntity();
+		Core::EntityID const character = Core::CreateEntity();
+		fTrans const characterTrans{ fQuatIdentity(), fVec3(2.0f, 0.0f, 0.0f) };
+		Core::AddComponent(character, Core::Transform3D(characterTrans));
+		{
+			Core::Physics::CharacterControllerDesc ccDesc{};
+			ccDesc.m_viewObject = camera;
+			ccDesc.m_halfHeight = 0.9f;
+			ccDesc.m_radius = 0.5f;
+			ccDesc.m_mass = 80.0f;
+			ccDesc.m_startTransform = characterTrans;
+			ccDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
+
+			Core::AddComponent(character, ccDesc);
+		}
+
+		Core::AddComponent(camera, Core::Transform3D(fQuatIdentity(), fVec3(0.0f, 0.8f, 0.0f), character));
+		Core::AddComponent(camera, Core::Render::MainCamera3D());
+		Core::AddComponent(camera, Core::Render::DebugCameraControl());
+		Core::AddComponent(camera, Game::Player::MouseLook());
+
+		setup_cube();
 	}
 
-	Core::AddComponent(renderEntity, Core::Render::Frame_Tag());
-	Core::Transform3D const renderTrans(fQuatIdentity(), fVec3(0.0f, 0.8f, 0.0f), character);
-	Core::AddComponent(renderEntity, renderTrans); // camera transform
-	Core::AddComponent(renderEntity, Core::Render::Camera());
-	Core::AddComponent(renderEntity, Core::Render::DebugCameraControl());
-	Core::AddComponent(renderEntity, Game::Player::MouseLook());
-
-	// Setup entity initialisers
-	setup_cube();
-
-	// Finalise initial components
-	ecs::commit_changes();
-
+	// Finalise initial entities
+	Core::ECS::CommitChanges();
 }
 
 void frame_cb()
@@ -143,7 +147,8 @@ void frame_cb()
 	}
 
 	Core::Input::Update();
-	ecs::update();
+
+	Core::ECS::Update();
 }
 
 void cleanup_cb()

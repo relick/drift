@@ -20,3 +20,7 @@ constexpr void SafeDelete(T*& _obj)
 }
 
 #define SG_RANGE_VEC(x) sg_range{ x.data(), sizeof(decltype(x)::value_type) * x.size() }
+
+// component helpers
+#define use_initialiser struct _initialiser_only {}
+#define not_a_component struct _not_a_component {}

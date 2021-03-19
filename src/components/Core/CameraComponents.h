@@ -2,17 +2,20 @@
 
 #include "common.h"
 
-#include <ecs/flags.h>
-
 namespace Core
 {
 	namespace Render
 	{
-		// Attach to the entity with the pass tag you want
-		struct Camera
+		namespace detail
 		{
-			float m_povY{ 60.0f }; // degrees
+			struct Camera
+			{
+				float m_povY{ 60.0f }; // degrees
+			};
+		}
 
+		struct MainCamera3D : detail::Camera
+		{
 			std::optional<fVec3> m_lastPos; // used to calculate sound velocity
 		};
 

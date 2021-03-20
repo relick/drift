@@ -92,10 +92,6 @@ void initialise_cb()
 	Core::AddComponent(preloadEntity, Core::Resource::Preload());
 	Core::AddComponent(preloadEntity, Game::UI::LoadingScreen());
 
-	// temporary until loadingscreen set up properly
-	Core::AddComponents(preloadEntity, Core::Transform2D(), Core::Render::SpriteDesc{ .m_filePath = "assets/sprites/loading/loading.spr", });
-
-
 	// Finalise initial entities
 	Core::ECS::CommitChanges();
 }

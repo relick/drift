@@ -5,6 +5,7 @@
 #include "SystemOrdering.h"
 
 #include "managers/EntityManager.h"
+#include "managers/TextManager.h"
 
 #include <absl/strings/str_format.h>
 

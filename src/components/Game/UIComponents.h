@@ -8,7 +8,7 @@ namespace Game::UI
 {
 	struct LoadingScreen
 	{
-		std::string m_nextLoadedFilename;
+		std::string m_nextLoadedFilename{ "assets/preload.res" };
 	};
 
 }

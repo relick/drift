@@ -2,6 +2,7 @@
 
 #include "common.h"
 
+#include "managers/ResourceIDs.h"
 #include <sokol_gfx.h>
 
 #include "Enums.h"
@@ -28,8 +29,8 @@ namespace Core::Render
 		sg_pass m_pass{};
 		sg_pass_action m_defaultAction{};
 		bool m_valid{ false };
-		std::optional<sg_image> m_depthTarget{};
-		std::array<std::optional<sg_image>, 4> m_colTargets{};
+		std::optional<Resource::TextureSampleID> m_depthTarget{};
+		std::array<std::optional<Resource::TextureSampleID>, 4> m_colTargets{};
 
 		void Destroy()
 		{
@@ -85,7 +86,7 @@ namespace Core::Render
 #endif
 				m_depthTarget = sg_make_image(depthTargetDesc);
 
-				passDesc.depth_stencil_attachment = { .image = *m_depthTarget, .mip_level = 0 };
+				passDesc.depth_stencil_attachment = { .image = m_depthTarget->GetValue(), .mip_level = 0 };
 			}
 
 			for (int i = 0; i < _numCol && i < 4; ++i)
@@ -102,7 +103,7 @@ namespace Core::Render
 #endif
 				m_colTargets[i] = sg_make_image(colTargetDesc);
 
-				passDesc.color_attachments[i] = { .image = *m_colTargets[i], .mip_level = 0 };
+				passDesc.color_attachments[i] = { .image = m_colTargets[i]->GetValue(), .mip_level = 0 };
 			}
 
 			m_valid = _depthDetail.use_depth || _numCol > 0;
@@ -130,8 +131,8 @@ namespace Core::Render
 			_o.m_pass = sg_pass{};
 			_o.m_defaultAction = sg_pass_action{};
 			_o.m_valid = false;
-			_o.m_depthTarget = sg_image{};
-			_o.m_colTargets = { sg_image{} };
+			_o.m_depthTarget = Resource::TextureSampleID{};
+			_o.m_colTargets = { Resource::TextureSampleID{} };
 		}
 
 		Pass& operator=(Pass&& _o) noexcept
@@ -147,8 +148,8 @@ namespace Core::Render
 			_o.m_pass = sg_pass{};
 			_o.m_defaultAction = sg_pass_action{};
 			_o.m_valid = false;
-			_o.m_depthTarget = sg_image{};
-			_o.m_colTargets = { sg_image{} };
+			_o.m_depthTarget = Resource::TextureSampleID{};
+			_o.m_colTargets = { Resource::TextureSampleID{} };
 			return *this;
 		}
 
@@ -172,14 +173,14 @@ namespace Core::Render
 			return false;
 		}
 
-		sg_image GetColourImage(uint8 _i) const
+		Resource::TextureSampleID GetColourImage(uint8 _i) const
 		{
 			kaAssert(_i < 4);
 			kaAssert(m_colTargets[_i].has_value());
 			return *m_colTargets[_i];
 		}
 
-		sg_image GetDepthImage() const
+		Resource::TextureSampleID GetDepthImage() const
 		{
 			kaAssert(m_depthTarget.has_value());
 			return *m_depthTarget;

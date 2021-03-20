@@ -16,11 +16,10 @@
 
 #include "shaders/main.h"
 
-Core::Resource::TextureID::ValueType nextTextureID = 0;
 Core::Resource::ModelID::ValueType nextModelID = 0;
 
-sg_image defaultTextureID{}; // used for missing textures
-sg_image defaultNormalTextureID{}; // used for missing normal textures
+Core::Resource::TextureSampleID defaultTextureID{}; // used for missing textures
+Core::Resource::TextureSampleID defaultNormalTextureID{}; // used for missing normal textures
 absl::flat_hash_map<Core::Resource::TextureID, Core::Resource::TextureData> textures;
 absl::flat_hash_map<Core::Resource::ModelID, Core::Resource::ModelData> models;
 
@@ -95,7 +94,6 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		TextureID NewTextureID() { return nextTextureID++; }
 		ModelID NewModelID() { return nextModelID++; }
 		SpriteID NewSpriteID() { return nextSpriteID++; }
 		SoundEffectID NewSoundEffectID() { kaAssert(nextSoundEffectID < g_maxSoundEffects, "ran out of sound effects"); return nextSoundEffectID++; }
@@ -310,9 +308,8 @@ namespace Core
 				return false;
 			}
 
-			o_textureID = NewTextureID();
+			o_textureID = imageID;
 			TextureData& newTextureData = textures[o_textureID];
-			newTextureData.m_texID = imageID;
 			newTextureData.m_path = _path;
 			newTextureData.m_type = _type;
 			newTextureData.m_width = width;
@@ -481,9 +478,9 @@ namespace Core
 			}
 
 			// now finalise by making texture bindings
-			o_newMesh.m_bindings.fs_images[SLOT_main_mat_diffuseTex] = defaultTextureID;
-			o_newMesh.m_bindings.fs_images[SLOT_main_mat_specularTex] = defaultTextureID;
-			o_newMesh.m_bindings.fs_images[SLOT_main_mat_normalTex] = defaultNormalTextureID;
+			o_newMesh.m_bindings.fs_images[SLOT_main_mat_diffuseTex] = defaultTextureID.GetValue();
+			o_newMesh.m_bindings.fs_images[SLOT_main_mat_specularTex] = defaultTextureID.GetValue();
+			o_newMesh.m_bindings.fs_images[SLOT_main_mat_normalTex] = defaultNormalTextureID.GetValue();
 			for (TextureID const& texID : o_newMesh.m_textures)
 			{
 				TextureData const& tex = GetTexture(texID);
@@ -491,17 +488,17 @@ namespace Core
 				{
 				case TextureData::Type::Diffuse:
 				{
-					o_newMesh.m_bindings.fs_images[SLOT_main_mat_diffuseTex] = tex.m_texID;
+					o_newMesh.m_bindings.fs_images[SLOT_main_mat_diffuseTex] = texID.GetValue();
 					break;
 				}
 				case TextureData::Type::Specular:
 				{
-					o_newMesh.m_bindings.fs_images[SLOT_main_mat_specularTex] = tex.m_texID;
+					o_newMesh.m_bindings.fs_images[SLOT_main_mat_specularTex] = texID.GetValue();
 					break;
 				}
 				case TextureData::Type::Normal:
 				{
-					o_newMesh.m_bindings.fs_images[SLOT_main_mat_normalTex] = tex.m_texID;
+					o_newMesh.m_bindings.fs_images[SLOT_main_mat_normalTex] = texID.GetValue();
 					break;
 				}
 				case TextureData::Type::General2D:
@@ -678,11 +675,10 @@ namespace Core
 			sg_image newImageID{};
 			if (LoadCubemapFromFile(_cubemapPath, newImageID))
 			{
-				o_cubemapID = NewTextureID();
+				o_cubemapID = newImageID;
 				TextureData& newTexData = textures[o_cubemapID];
 				newTexData.m_type = TextureData::Type::Cubemap;
 				newTexData.m_path = _cubemapPath;
-				newTexData.m_texID = newImageID;
 
 				kaLog("New cubemap " + _cubemapPath + " loaded!");
 				return true;
@@ -737,8 +733,7 @@ namespace Core
 
 					TextureData const& textureData = GetTexture(textureID);
 
-					newSprite.m_texture.id = textureID;
-					newSprite.m_texture.image = textureData.m_texID;
+					newSprite.m_texture = textureID;
 					textureWidth = textureData.m_width;
 					textureHeight = textureData.m_height;
 				}

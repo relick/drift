@@ -3,46 +3,18 @@
 #include "components.h"
 #include "SystemOrdering.h"
 #include "systems/Core/ImGuiSystems.h"
+#include "managers/EntityManager.h"
+#include "managers/TextManager.h"
 
 #include <sokol_app.h>
 #include <sokol_gfx.h>
-#include <sokol_glue.h>
-
-// sokol gl+text
-#include <stdio.h>
-#include <string.h>
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 #include <util/sokol_gl.h>
-#include <fontstash.h>
-#include <util/sokol_fontstash.h>
 
 #include <imgui.h>
-#include <ecs/ecs.h>
 
 #include <vector>
 #include <mutex>
 #include <absl/container/flat_hash_map.h>
-
-FONScontext* fonsContext{ nullptr };
-uint32 fonsFontCount = 0;
-
-#define TEXT_TEST DEBUG_TOOLS
-
-#if TEXT_TEST
-struct FontTest
-{
-	int fontNormal;
-	fVec2 pos{ 10, 100 };
-	fVec2 sizes{ 124.0f, 24.0f };
-	unsigned int brown = sfons_rgba(192, 128, 0, 128);
-	bool showImguiWin = false;
-	bool showText = false;
-	bool showDebug = false;
-} fsTest;
-#endif
 
 namespace Core
 {
@@ -85,7 +57,7 @@ namespace Core
 				glDesc.sample_count = sapp_sample_count();
 				sgl_setup(&glDesc);
 
-				fonsContext = sfons_create(512, 512, FONS_ZERO_TOPLEFT);
+				Core::Render::Text::Init();
 			}
 
 			void Setup()
@@ -121,56 +93,19 @@ namespace Core
 					sgl_load_identity();
 				});
 
-#if TEXT_TEST
-				// Add font to stash.
-				fsTest.fontNormal = fonsAddFont(fonsContext, "roboto", "assets/fonts/Roboto-Light.ttf");
-				fonsFontCount++;
-
-				Core::Render::DImGui::AddMenuItem("GL", "Text Debug", &fsTest.showImguiWin);
-
-				Core::MakeSystem<Sys::IMGUI>([](Core::MT_Only&)
-				{
-					if (fsTest.showImguiWin)
-					{
-						if (ImGui::Begin("Text Debug", &fsTest.showImguiWin, 0))
-						{
-							ImGui::Checkbox("Show Text", &fsTest.showText);
-							ImGui::DragFloat2("Text sizes", &fsTest.sizes[0], 10.0f, 0.0f, 124.0f);
-							ImGui::Checkbox("Show Debug", &fsTest.showDebug);
-							ImGui::DragFloat2("Positions", &fsTest.pos[0], 0.1f, 0.0f, 640.0f);
-						}
-						ImGui::End();
-					}
-				});
-
-				Core::MakeSystem<Sys::TEXT>([](Core::MT_Only&)
-				{
-					fonsClearState(fonsContext);
-
-					if (fsTest.showText)
-					{
-						Text::Write(fsTest.fontNormal, fsTest.pos, "The big ", fsTest.sizes[0]);
-						Text::Write(fsTest.fontNormal, fsTest.pos, "brown fox", fsTest.sizes[1], fsTest.brown);
-					}
-					if (fsTest.showDebug)
-					{
-						fonsDrawDebug(fonsContext, fsTest.pos.x, fsTest.pos.y);
-					}
-				});
-#endif
+				Core::Render::Text::Setup();
 			}
 
 			void Render()
 			{
 				// Flush the text before drawing
-				sfons_flush(fonsContext);
+				Core::Render::Text::Render();
 				sgl_draw();
 			}
 
 			void Cleanup()
 			{
-				sfons_destroy(fonsContext);
-				fonsContext = nullptr;
+				Core::Render::Text::Cleanup();
 				sgl_shutdown();
 			}
 		}
@@ -198,56 +133,6 @@ namespace Core
 				std::scoped_lock lock(linesToDrawLock);
 				uint32 const col = Colour::ConvertRGB(_col);
 				linesToDraw[col].emplace_back(_start, _end);
-			}
-		}
-
-		namespace Text
-		{
-			bool Write
-			(
-				uint32 _fontI,
-				fVec2 _tlPos,
-				char const* _text,
-				float _size,
-				uint32 _col
-			)
-			{
-				if (!fonsContext)
-				{
-					return false;
-				}
-				if (_fontI >= fonsFontCount)
-				{
-					return false;
-				}
-
-				fonsSetFont(fonsContext, _fontI);
-				fonsSetSize(fonsContext, _size);
-				fonsSetColor(fonsContext, _col);
-				fonsDrawText(fonsContext, _tlPos.x, _tlPos.y, _text, NULL);
-
-				return true;
-			}
-
-			bool Write
-			(
-				fVec2 _tlPos,
-				char const* _text,
-				float _size,
-				uint32 _col
-			)
-			{
-				if (!fonsContext)
-				{
-					return false;
-				}
-
-				fonsSetFont(fonsContext, fsTest.fontNormal);
-				fonsSetSize(fonsContext, _size);
-				fonsSetColor(fonsContext, _col);
-				fonsDrawText(fonsContext, _tlPos.x, _tlPos.y, _text, NULL);
-
-				return true;
 			}
 		}
 	}

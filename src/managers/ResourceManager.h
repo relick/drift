@@ -33,7 +33,6 @@ namespace Core
 				General2D, // essentially, unclassified, but definitely 2D
 			};
 
-			sg_image m_texID;
 			Type m_type;
 			int m_width;
 			int m_height;
@@ -81,11 +80,7 @@ namespace Core
 		struct SpriteData
 		{
 			std::string m_path;
-			struct
-			{
-				TextureID id;
-				sg_image image;
-			} m_texture;
+			TextureID m_texture;
 			fVec2 m_dimensions;
 			fVec2 m_dimensionsUV;
 			fVec2 m_topLeftUV;

@@ -299,6 +299,7 @@ namespace Core
 		struct FrameScene
 		{
 			LightsState lights{};
+			Resource::TextureSampleID directionalShadowMap{};
 			CameraState camera{};
 			std::vector<ModelToDraw> models;
 			std::vector<ModelScratchData> modelScratchData;
@@ -307,7 +308,7 @@ namespace Core
 			std::vector<SpriteBufferData> spriteBufferData;
 			sg_bindings spriteBinds{};
 			sg_buffer spriteBuffer{};
-			Resource::TextureID skybox{};
+			Resource::TextureSampleID skybox{};
 			sg_bindings skyboxBinds{};
 			std::mutex lightsMutex{};
 			std::mutex modelsMutex{};
@@ -331,8 +332,6 @@ namespace Core
 			gfxDesc.buffer_pool_size = 512; // buff it up? // could go muuuuuch higher
 			sg_setup(&gfxDesc);
 		}
-
-		sg_image shadowMap{};
 
 		//--------------------------------------------------------------------------------
 		void InitBuffers
@@ -365,7 +364,7 @@ namespace Core
 					},
 				};
 				io_state.Pass(Pass_DirectionalLight)->SetPassAction(passAction);
-				shadowMap = io_state.Pass(Pass_DirectionalLight)->GetDepthImage();
+				frameScene.directionalShadowMap = io_state.Pass(Pass_DirectionalLight)->GetDepthImage();
 			}
 
 			// Target to screen glue
@@ -385,7 +384,7 @@ namespace Core
 				};
 				sg_bindings binds{};
 				binds.vertex_buffers[0] = sg_make_buffer(rectangleWithUVBufferDesc);
-				binds.fs_images[SLOT_render_target_to_screen_tex] = io_state.Pass(Pass_MainTarget)->GetColourImage(0);
+				binds.fs_images[SLOT_render_target_to_screen_tex] = io_state.Pass(Pass_MainTarget)->GetColourImage(0).GetValue();
 				io_state.PassGlue(PassGlue_MainTarget_To_Screen) = PassGlue{ binds, 4 };
 				io_state.PassGlue(PassGlue_MainTarget_To_Screen)->AddValidPass(Pass_RenderToScreen);
 				io_state.PassGlue(PassGlue_MainTarget_To_Screen)->AddValidRenderer(Renderer_TargetToScreen);
@@ -688,11 +687,11 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		void RenderSprites(sg_image const& _image)
+		void RenderSpriteBuffer(Resource::TextureID _texture)
 		{
 			// fill and draw buffer
 			frameScene.spriteBinds.vertex_buffer_offsets[1] = sg_append_buffer(frameScene.spriteBuffer, SG_RANGE_VEC(frameScene.spriteBufferData));
-			frameScene.spriteBinds.fs_images[SLOT_sprites_textureAtlas] = _image;
+			frameScene.spriteBinds.fs_images[SLOT_sprites_textureAtlas] = _texture.GetValue();
 
 			state.SetBinding(frameScene.spriteBinds, 4);
 			state.Draw(frameScene.spriteBufferData.size());
@@ -793,7 +792,7 @@ namespace Core
 				auto fnMainMeshVisitor = [](Resource::MeshData const& _mesh)
 				{
 					sg_bindings addShadowBinds = _mesh.m_bindings;
-					addShadowBinds.fs_images[SLOT_main_directionalShadowMap] = shadowMap;
+					addShadowBinds.fs_images[SLOT_main_directionalShadowMap] = frameScene.directionalShadowMap.GetValue();
 					state.SetBinding(addShadowBinds, _mesh.NumToDraw());
 					sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_main_material, SG_RANGE_REF(_mesh.m_material));
 				};
@@ -817,8 +816,7 @@ namespace Core
 					};
 					sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_skybox_fs_params, SG_RANGE_REF(fs_params));
 
-					Resource::TextureData const& skyboxTex = Resource::GetTexture(frameScene.skybox);
-					frameScene.skyboxBinds.fs_images[SLOT_skybox_skybox] = skyboxTex.m_texID;
+					frameScene.skyboxBinds.fs_images[SLOT_skybox_skybox] = frameScene.skybox.GetValue();
 
 					state.SetBinding(frameScene.skyboxBinds, 14);
 					state.Draw();
@@ -849,23 +847,23 @@ namespace Core
 			// Order by texture
 			std::sort(frameScene.spriteScratchData.begin(), frameScene.spriteScratchData.end(), [](auto const& _a, auto const& _b) -> bool
 			{
-				return _a.m_sprite.get().m_texture.image.id < _b.m_sprite.get().m_texture.image.id;
+				return _a.m_sprite.get().m_texture < _b.m_sprite.get().m_texture;
 			});
 
 			// For each texture, set up buffer and binding and draw sprites
-			sg_image currentTextureImage;
+			Resource::TextureID currentTexture;
 			for (usize spriteI{ 0 }; spriteI < frameScene.spriteScratchData.size(); ++spriteI)
 			{
 				SpriteScratchData const& spriteScratch = frameScene.spriteScratchData[spriteI];
 				Resource::SpriteData const& sprite = spriteScratch.m_sprite.get();
-				if (currentTextureImage.id != sprite.m_texture.image.id)
+				if (currentTexture != sprite.m_texture)
 				{
 					if (spriteI != 0)
 					{
-						RenderSprites(currentTextureImage);
+						RenderSpriteBuffer(currentTexture);
 					}
 
-					currentTextureImage = sprite.m_texture.image;
+					currentTexture = sprite.m_texture;
 				}
 
 
@@ -882,7 +880,7 @@ namespace Core
 			// final draw
 			if (!frameScene.spriteBufferData.empty())
 			{
-				RenderSprites(currentTextureImage);
+				RenderSpriteBuffer(currentTexture);
 			}
 		}
 
@@ -922,7 +920,7 @@ namespace Core
 			}
 
 			// frameScene cleanup
-			frameScene.skybox = Resource::TextureID{};
+			frameScene.skybox = Resource::TextureSampleID{};
 			frameScene.lights.Reset();
 			frameScene.models.clear();
 			frameScene.sprites.clear();
@@ -1000,7 +998,7 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		void AddSkyboxToScene
 		(
-			Core::Resource::TextureID _skybox
+			Core::Resource::TextureSampleID _skybox
 		)
 		{
 			kaAssert(!frameScene.skybox.IsValid(), "only one skybox allowed at a time!");

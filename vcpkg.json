@@ -1,0 +1,9 @@
+{
+	"name": "drift",
+	"version-string": "0.0.1",
+	"dependencies": [
+	  "assimp",
+	  "bullet3",
+	  "freetype"
+	]
+  }

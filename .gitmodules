@@ -25,3 +25,6 @@
 [submodule "fontstash"]
 	path = fontstash
 	url = https://github.com/relick/fontstash.git
+[submodule "vcpkg"]
+	path = vcpkg
+	url = https://github.com/microsoft/vcpkg.git

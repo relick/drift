@@ -28,6 +28,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
 
     # Install latest CMake.
     - uses: lukka/get-cmake@latest

@@ -13,6 +13,14 @@ namespace Core
 		return EntityID(nextID++);
 	}
 
+	void DestroyEntity
+	(
+		EntityID _entity
+	)
+	{
+		kaError("DestroyEntity nyi");
+	}
+
 	namespace Scene
 	{
 		void AddDemoScene()
@@ -38,7 +46,7 @@ namespace Core
 			Core::AddComponent(camera, Core::Render::DebugCameraControl());
 			Core::AddComponent(camera, Game::Player::MouseLook());
 
-			setup_cube();
+			CubeTestEntities();
 		}
 	}
 }

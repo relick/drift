@@ -25,6 +25,7 @@ namespace Core
 		namespace Text
 		{
 			bool Write(uint32 _fontI, fVec2 _tlPos, char const* _text, float _size = 16.0f, uint32 _col = Colour::green);
+			bool Write(fVec2 _tlPos, char const* _text, float _size = 16.0f, uint32 _col = Colour::white);
 		}
 	}
 }

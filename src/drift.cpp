@@ -15,6 +15,8 @@
 #include <sokol_app.h>
 #include <sokol_time.h>
 
+#include "CubeTest.h"
+
 constexpr int const g_renderAreaWidth = 320;
 constexpr int const g_renderAreaHeight = (g_renderAreaWidth / 4) * 3;
 constexpr int const g_windowStartWidth = 960;
@@ -48,6 +50,8 @@ void initialise_cb()
 
 	// game setup
 	{
+		CubeTestSystems();
+
 		Game::Player::Setup();
 		Game::UI::Setup();
 	}
@@ -88,6 +92,10 @@ void initialise_cb()
 	Core::AddComponent(preloadEntity, Core::Resource::Preload());
 	Core::AddComponent(preloadEntity, Game::UI::LoadingScreen());
 
+	// temporary until loadingscreen set up properly
+	Core::AddComponents(preloadEntity, Core::Transform2D(), Core::Render::SpriteDesc{ .m_filePath = "assets/sprites/loading/loading.spr", });
+
+
 	// Finalise initial entities
 	Core::ECS::CommitChanges();
 }
@@ -104,7 +112,7 @@ void frame_cb()
 		fd.dt = static_cast<float>(fd.ddt);
 
 #if DEBUG_TOOLS
-		fd.m_debug_elapsedTime += fd.ddt;
+		fd.m_debug_elapsedTime += fd.unscaled_ddt;
 		fd.m_debug_frameCount++;
 #endif
 	}

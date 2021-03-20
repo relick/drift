@@ -8,6 +8,7 @@ namespace Core
 	extern EntityID::CoreType nextID;
 
 	EntityID CreateEntity();
+	void DestroyEntity(EntityID _entity);
 
 	namespace detail
 	{

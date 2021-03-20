@@ -30,6 +30,7 @@ namespace Core
 				Specular,
 				Normal,
 				Cubemap,
+				General2D, // essentially, unclassified, but definitely 2D
 			};
 
 			sg_image m_texID;
@@ -118,6 +119,7 @@ namespace Core::Resource
 	SoundEffectData& GetSoundEffect(SoundEffectID _soundEffect);
 	MusicData& GetMusic(MusicID _music);
 
+	bool Load2DTexture(std::string const& _path, TextureID& o_textureID, TextureData::Type _type, bool* o_semitransparent = nullptr);
 	bool LoadModel(std::string const& _path, ModelID& o_modelID);
 	bool LoadCubemap(std::string const& _folderPath, TextureID& o_cubemapID);
 	bool LoadSprite(std::string const& _path, SpriteID& o_spriteID);

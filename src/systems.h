@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common.h"
-#include "systems/Core/SystemOrdering.h"
+#include "SystemOrdering.h"
 
 // Core
 #include "systems/Core/ImGuiSystems.h"

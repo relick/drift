@@ -18,7 +18,7 @@ struct CubeTest
 	float ry{ 0.0f };
 };
 
-void setup_cube()
+void CubeTestEntities()
 {
 	Core::EntityID ground = Core::CreateEntity();
 	fTrans const groundTrans{ fQuatIdentity(), fVec3(0.0f, -2.0f, 0.0f) };
@@ -61,7 +61,7 @@ void setup_cube()
 	Core::EntityID cube = Core::CreateEntity();
 	fTrans const cubeTrans{ fQuatIdentity(), fVec3(0.0f, 0.0f, 0.0f) };
 	Core::AddComponent(cube, Core::Transform3D(cubeTrans));
-	Core::AddComponent(cube, CubeTest{false, 0.0f, 0.0f});
+	Core::AddComponent(cube, CubeTest{ false, 0.0f, 0.0f });
 	{
 		Core::Render::ModelDesc modelDesc{};
 		modelDesc.m_filePath = "assets/models/cube/bluecube.obj";
@@ -148,9 +148,9 @@ void setup_cube()
 		Core::AddComponent(lightCube3, lightComponent);
 	}
 
-	Core::EntityID testSprite = Core::CreateEntity();
-	Core::AddComponents(testSprite, Core::Transform2D(), Core::Render::SpriteDesc{ .m_filePath = "assets/sprites/loading/loading.spr", });
-
+}
+void CubeTestSystems()
+{
 	Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, CubeTest& _cubeTest, Core::Transform3D& _t)
 	{
 		if (_cubeTest.isLightCube)

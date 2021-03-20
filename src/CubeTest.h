@@ -1,3 +1,4 @@
 #pragma once
 
-void setup_cube();
+void CubeTestEntities();
+void CubeTestSystems();

@@ -183,7 +183,7 @@ struct fTrans2D
 	fTrans2D ToLocal(fTrans2D const& _a) const
 	{
 		fRot2D const invRot = m_rot.Inverse();
-		fVec2 const invScale = 1.0f / m_scale;
+		[[maybe_unused]] fVec2 const invScale = 1.0f / m_scale;
 		// todo, not sure this is right
 		kaError("fTrans2D::ToLocal fix me");
 		return { _a.m_rot * invRot, (_a.m_pos - m_pos) * invRot, _a.m_scale, m_z };

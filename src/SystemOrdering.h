@@ -5,6 +5,9 @@ namespace Sys
 	enum SystemOrdering
 	{
 	FRAME_START,
+
+		FILE_LOADING, // main thread only
+
 		GL_START, // GL drawing can happen anywhere between here and GL_END
 		// Render section - can NOT be parallel. Use MT_Only global component as non-const ref to force serial
 		// This section is for lining up the scene ready to be drawn when the frame decides to
@@ -14,6 +17,7 @@ namespace Sys
 			TEXT_START, // sets up ortho matrices
 			TEXT,
 			RENDER_QUEUE, // now's a good time to submit stuff to draw that captures a certain state.
+
 		// Game section - can be parallel
 		GAME_START,
 			GAME,
@@ -24,6 +28,7 @@ namespace Sys
 			PHYSICS_STEP,
 			PHYSICS_TRANSFORMS_OUT,
 		GAME_END,
+
 	FRAME_END,
 	};
 }

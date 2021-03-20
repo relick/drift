@@ -228,6 +228,27 @@ namespace Core
 
 				return true;
 			}
+
+			bool Write
+			(
+				fVec2 _tlPos,
+				char const* _text,
+				float _size,
+				uint32 _col
+			)
+			{
+				if (!fonsContext)
+				{
+					return false;
+				}
+
+				fonsSetFont(fonsContext, fsTest.fontNormal);
+				fonsSetSize(fonsContext, _size);
+				fonsSetColor(fonsContext, _col);
+				fonsDrawText(fonsContext, _tlPos.x, _tlPos.y, _text, NULL);
+
+				return true;
+			}
 		}
 	}
 }

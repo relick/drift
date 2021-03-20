@@ -1,7 +1,7 @@
 #include "PlayerSystems.h"
 
 #include "components.h"
-#include "systems/Core/SystemOrdering.h"
+#include "SystemOrdering.h"
 #include <ecs/ecs.h>
 
 #include "managers/InputManager.h"

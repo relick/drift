@@ -110,7 +110,7 @@ namespace Core
 
 
 		//--------------------------------------------------------------------------------
-		/// model
+		/// texture
 		//--------------------------------------------------------------------------------
 		TextureID FindExistingTexture
 		(
@@ -128,23 +128,6 @@ namespace Core
 			return TextureID{};
 		}
 
-		//--------------------------------------------------------------------------------
-		ModelID FindExistingModel
-		(
-			std::string const& _modelPath
-		)
-		{
-			for (auto const& [modelID, model] : models)
-			{
-				if (model.m_path == _modelPath)
-				{
-					return modelID;
-				}
-			}
-
-			return ModelID{};
-		}
-		
 		bool CheckRGBAForAlpha
 		(
 			uint8 const* _data,
@@ -154,6 +137,22 @@ namespace Core
 			for (usize i = 3; i < _dataSize; i += 4)
 			{
 				if (_data[i] < Colour::componentMax)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		bool CheckRGBAForSemiTransparency
+		(
+			uint8 const* _data,
+			usize _dataSize
+		)
+		{
+			for (usize i = 3; i < _dataSize; i += 4)
+			{
+				if (_data[i] > 0 && _data[i] < Colour::componentMax)
 				{
 					return true;
 				}
@@ -241,7 +240,7 @@ namespace Core
 		(
 			std::string const& _filename,
 			sg_image& o_imageID,
-			bool& o_hasAlpha,
+			bool& o_semitransparent,
 			int& o_width,
 			int& o_height
 		)
@@ -266,7 +265,7 @@ namespace Core
 				o_height = imageDesc.height;
 
 				usize const dataSize = imageDesc.width * imageDesc.height * dataComponentCount;
-				o_hasAlpha = CheckRGBAForAlpha(data, dataSize);
+				o_semitransparent = CheckRGBAForSemiTransparency(data, dataSize);
 
 				imageDesc.data.subimage[0][0] = {
 					.ptr = data,
@@ -278,11 +277,71 @@ namespace Core
 				return true;
 			}
 
-			kaError("Texture failed to load at path: " + _filename);
 			stbi_image_free(data);
 			return false;
 		}
 
+		//--------------------------------------------------------------------------------
+		bool Load2DTexture
+		(
+			std::string const& _path,
+			TextureID& o_textureID,
+			TextureData::Type _type,
+			bool* o_semitransparent // = nullptr
+		)
+		{
+			TextureID existingTexture = FindExistingTexture(_path);
+			if (existingTexture.IsValid())
+			{
+				o_textureID = existingTexture;
+				return true;
+			}
+
+			// if texture hasn't been loaded already, load it
+			sg_image imageID;
+			bool semitransparent{ false };
+			int width{ 0 };
+			int height{ 0 };
+
+			bool const loaded = LoadTextureFromFile(_path, imageID, o_semitransparent != nullptr ? *o_semitransparent : semitransparent, width, height);
+			if (!loaded)
+			{
+				kaError("Failed to load 2D texture " + _path);
+				return false;
+			}
+
+			o_textureID = NewTextureID();
+			TextureData& newTextureData = textures[o_textureID];
+			newTextureData.m_texID = imageID;
+			newTextureData.m_path = _path;
+			newTextureData.m_type = _type;
+			newTextureData.m_width = width;
+			newTextureData.m_height = height;
+
+			kaLog("New 2D texture " + _path + " loaded!");
+
+			return true;
+		}
+
+		//--------------------------------------------------------------------------------
+		/// model
+		//--------------------------------------------------------------------------------
+		ModelID FindExistingModel
+		(
+			std::string const& _modelPath
+		)
+		{
+			for (auto const& [modelID, model] : models)
+			{
+				if (model.m_path == _modelPath)
+				{
+					return modelID;
+				}
+			}
+
+			return ModelID{};
+		}
+		
 		//--------------------------------------------------------------------------------
 		void LoadMaterialTextures
 		(
@@ -300,53 +359,39 @@ namespace Core
 
 					std::string const filename = _directory + '/' + str.C_Str();
 
-					TextureID existingTexture = FindExistingTexture(filename);
-					if (existingTexture.IsValid())
+					TextureData::Type textureType = TextureData::Type::General2D;
+					switch (_type)
 					{
-						o_textures.emplace_back(existingTexture);
+					case aiTextureType_DIFFUSE:
+					{
+						textureType = TextureData::Type::Diffuse;
+						break;
 					}
-					else
-					{   // if texture hasn't been loaded already, load it
-						sg_image imageID;
-						bool hasAlpha{ false };
-						int width{ 0 };
-						int height{ 0 };
-						bool const loaded = LoadTextureFromFile(filename, imageID, hasAlpha, width, height);
-						if (loaded)
-						{
-							kaAssert(!hasAlpha, "non-opaque textures nyi");
-
-							TextureID const newTextureID = NewTextureID();
-							TextureData& newTexture = textures[newTextureID];
-							newTexture.m_texID = imageID;
-							switch (_type)
-							{
-							case aiTextureType_DIFFUSE:
-							{
-								newTexture.m_type = TextureData::Type::Diffuse;
-								break;
-							}
-							case aiTextureType_SPECULAR:
-							{
-								newTexture.m_type = TextureData::Type::Specular;
-								break;
-							}
-							case aiTextureType_NORMALS:
-							{
-								newTexture.m_type = TextureData::Type::Normal;
-								break;
-							}
-							default:
-							{
-								kaError("tried to load unsupported texture type");
-								break;
-							}
-							}
-							newTexture.m_path = filename;
-							o_textures.emplace_back(newTextureID);
-						}
+					case aiTextureType_SPECULAR:
+					{
+						textureType = TextureData::Type::Specular;
+						break;
+					}
+					case aiTextureType_NORMALS:
+					{
+						textureType = TextureData::Type::Normal;
+						break;
+					}
+					default:
+					{
+						kaError("tried to load unsupported texture type");
+						break;
+					}
 					}
 
+					TextureID textureID;
+					bool semitransparent{ false };
+					if (Load2DTexture(filename, textureID, textureType, &semitransparent))
+					{
+						kaAssert(textureID.IsValid());
+						kaAssert(!semitransparent, "semi-transparent textures nyi");
+						o_textures.emplace_back(textureID);
+					}
 
 					// TODO support more than 1 texture?
 					break;
@@ -459,9 +504,10 @@ namespace Core
 					o_newMesh.m_bindings.fs_images[SLOT_main_mat_normalTex] = tex.m_texID;
 					break;
 				}
+				case TextureData::Type::General2D:
 				case TextureData::Type::Cubemap:
 				{
-					kaError("shouldn't have gotten a cubemap in a material texture load!");
+					kaError("shouldn't have gotten this texture type in a material texture load!");
 					break;
 				}
 				}
@@ -684,38 +730,17 @@ namespace Core
 			if (std::getline(spriteFile, line))
 			{
 				std::string const texturePath = directory + line;
-				TextureID const textureID = FindExistingTexture(texturePath);
-				if (textureID.IsValid())
+				TextureID textureID;
+				if (Load2DTexture(texturePath, textureID, TextureData::Type::General2D))
 				{
+					kaAssert(textureID.IsValid());
+
 					TextureData const& textureData = GetTexture(textureID);
 
 					newSprite.m_texture.id = textureID;
 					newSprite.m_texture.image = textureData.m_texID;
 					textureWidth = textureData.m_width;
 					textureHeight = textureData.m_height;
-				}
-				else
-				{
-					sg_image imageID;
-					bool hasAlpha{ false };
-					bool const loaded = LoadTextureFromFile(texturePath, imageID, hasAlpha, textureWidth, textureHeight);
-					if (loaded)
-					{
-						TextureID const newTextureID = NewTextureID();
-						TextureData& newTextureData = textures[newTextureID];
-						newTextureData.m_texID = imageID;
-						newTextureData.m_path = texturePath;
-						newTextureData.m_type = TextureData::Type::Diffuse;
-						newTextureData.m_width = textureWidth;
-						newTextureData.m_height = textureHeight;
-
-						newSprite.m_texture.id = newTextureID;
-						newSprite.m_texture.image = imageID;
-					}
-					else
-					{
-						kaError("failed to load texture for sprite");
-					}
 				}
 			}
 			else
@@ -822,5 +847,5 @@ namespace Core
 			return false;
 		}
 
-	}
+}
 }

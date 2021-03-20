@@ -7,6 +7,7 @@ namespace Sys
 	FRAME_START,
 
 		FILE_LOADING, // main thread only
+		UI_UPDATE, // usually doesn't want to act the same time as GAME, but does want to be before sending off text and render requests and after a game update.
 
 		GL_START, // GL drawing can happen anywhere between here and GL_END
 		// Render section - can NOT be parallel. Use MT_Only global component as non-const ref to force serial

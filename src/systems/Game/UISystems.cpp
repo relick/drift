@@ -6,11 +6,13 @@
 
 #include "managers/EntityManager.h"
 
+#include <absl/strings/str_format.h>
+
 namespace Game::UI
 {
 	void Setup()
 	{
-		Core::MakeSystem<Sys::GAME>([](Core::EntityID::CoreType _entity, Game::UI::LoadingScreen& _loadingScreen)
+		Core::MakeSystem<Sys::UI_UPDATE>([](Core::EntityID::CoreType _entity, Game::UI::LoadingScreen& _loadingScreen)
 		{
 			auto const preload = Core::GetComponent<Core::Resource::Preload>(_entity);
 			if (preload == nullptr)
@@ -31,7 +33,7 @@ namespace Game::UI
 
 		Core::MakeSystem<Sys::TEXT>([](Game::UI::LoadingScreen const& _loadingScreen)
 		{
-			Core::Render::Text::Write(fVec2{ 10, 200 }, _loadingScreen.m_nextLoadedFilename.c_str());
+			Core::Render::Text::Write(fVec2{ 10, 200 }, absl::StrFormat("Loading %s", _loadingScreen.m_nextLoadedFilename).c_str());
 		});
 	}
 }

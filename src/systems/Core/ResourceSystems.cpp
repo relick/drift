@@ -115,7 +115,8 @@ namespace Core::Resource
 			{
 				FillFilesToLoad(_preload.m_filesToLoad);
 				_preload.m_preloadState = Preload::State::Loading;
-				break;
+				// skip another frame
+				return;
 			}
 			case Preload::State::Loading:
 			{

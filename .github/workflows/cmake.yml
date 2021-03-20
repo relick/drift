@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [windows-latest]
         include:
           - os: windows-latest
             triplet: x64-windows
@@ -31,13 +31,6 @@ jobs:
 
     # Install latest CMake.
     - uses: lukka/get-cmake@latest
-    
-    - name: checkvcpkg
-      run: echo "::set-output name=vcpkg-ls::$(ls ${{ github.workspace }}/vcpkg)"
-      id: checkvcpkg
-      
-    - name: checkvcpkg2
-      run: echo "ls='${{ steps.checkvcpkg.vcpkg-ls }}'"
     
     # Restore from cache the previously built ports. If a "cache miss" occurs, then vcpkg is bootstrapped. Since a the vcpkg.json is being used later on to install the packages when run-cmake runs, no packages are installed at this time and the input 'setupOnly:true' is mandatory.
     - name: Restore artifacts, or setup vcpkg (do not install any package)
@@ -54,9 +47,6 @@ jobs:
         # Ensure the vcpkg artifacts are cached, they are generated in the 'CMAKE_BINARY_DIR/vcpkg_installed' directory.
         additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
 
-    - name: Prints output of run-vcpkg's action
-      run: echo "root='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}', triplet='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_TRIPLET_OUT }}'"
-      
     - name: Run CMake to install the dependencies specified in the vcpkg.json manifest, generate project file and build the project
       uses: lukka/run-cmake@main
       with:

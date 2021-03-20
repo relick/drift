@@ -27,7 +27,7 @@ jobs:
             triplet: x64-linux
 
     steps:
-    # - uses: actions/checkout@v2
+    - uses: actions/checkout@v2
 
     # Install latest CMake.
     - uses: lukka/get-cmake@latest

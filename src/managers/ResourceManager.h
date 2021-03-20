@@ -109,7 +109,7 @@ namespace Core
 namespace Core::Resource
 {
 	void Init();
-	void Setup();
+	void SetupData();
 	void Cleanup();
 
 	TextureData const& GetTexture(TextureID _texture);

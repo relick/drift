@@ -53,7 +53,7 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		void Setup()
+		void SetupData()
 		{
 			{
 				sg_image_data emptyTexData{};
@@ -66,6 +66,7 @@ namespace Core
 					.wrap_u = SG_WRAP_REPEAT,
 					.wrap_v = SG_WRAP_REPEAT,
 					.data = emptyTexData,
+					.label = "default-colour-texture",
 				};
 				defaultTextureID = sg_make_image(emptyTexDesc);
 			}
@@ -81,6 +82,7 @@ namespace Core
 					.wrap_u = SG_WRAP_REPEAT,
 					.wrap_v = SG_WRAP_REPEAT,
 					.data = emptyTexData,
+					.label = "default-normal-texture",
 				};
 				defaultNormalTextureID = sg_make_image(emptyTexDesc);
 			}

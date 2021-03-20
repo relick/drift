@@ -2,8 +2,6 @@
 
 #include "common.h"
 
-#include <ecs/flags.h>
-
 namespace Game
 {
 	namespace Player

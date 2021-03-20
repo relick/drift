@@ -15,8 +15,6 @@
 #include <sokol_app.h>
 #include <sokol_time.h>
 
-#include "CubeTest.h"
-
 constexpr int const g_renderAreaWidth = 320;
 constexpr int const g_renderAreaHeight = (g_renderAreaWidth / 4) * 3;
 constexpr int const g_windowStartWidth = 960;
@@ -37,11 +35,12 @@ void initialise_cb()
 
 	// system and data setup
 	{
-		Core::Resource::Setup();
+		Core::Resource::SetupData();
 		Core::Render::SetupPipeline(g_renderAreaWidth, g_renderAreaHeight);
 		Core::Render::Setup();
 		Core::Render::TextAndGLDebug::Setup();
 		Core::Render::DImGui::Setup();
+		Core::Resource::Setup();
 		Core::Sound::Setup();
 		Core::Physics::Setup();
 		Core::Input::Setup();
@@ -50,9 +49,10 @@ void initialise_cb()
 	// game setup
 	{
 		Game::Player::Setup();
+		Game::UI::Setup();
 	}
 
-	// initial entity setup
+	// pre-scene required entity setup
 	{
 		Core::EntityID const primaryPhysicsWorld = Core::CreateEntity();
 		Core::AddComponent(primaryPhysicsWorld, Core::Physics::World{});
@@ -84,34 +84,9 @@ void initialise_cb()
 	// todo
 
 	// Preload assets
-
-
-	// Add demo scene
-	if constexpr (true)
-	{
-		Core::EntityID const camera = Core::CreateEntity();
-		Core::EntityID const character = Core::CreateEntity();
-		fTrans const characterTrans{ fQuatIdentity(), fVec3(2.0f, 0.0f, 0.0f) };
-		Core::AddComponent(character, Core::Transform3D(characterTrans));
-		{
-			Core::Physics::CharacterControllerDesc ccDesc{};
-			ccDesc.m_viewObject = camera;
-			ccDesc.m_halfHeight = 0.9f;
-			ccDesc.m_radius = 0.5f;
-			ccDesc.m_mass = 80.0f;
-			ccDesc.m_startTransform = characterTrans;
-			ccDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
-
-			Core::AddComponent(character, ccDesc);
-		}
-
-		Core::AddComponent(camera, Core::Transform3D(fQuatIdentity(), fVec3(0.0f, 0.8f, 0.0f), character));
-		Core::AddComponent(camera, Core::Render::MainCamera3D());
-		Core::AddComponent(camera, Core::Render::DebugCameraControl());
-		Core::AddComponent(camera, Game::Player::MouseLook());
-
-		setup_cube();
-	}
+	Core::EntityID const preloadEntity = Core::CreateEntity();
+	Core::AddComponent(preloadEntity, Core::Resource::Preload());
+	Core::AddComponent(preloadEntity, Game::UI::LoadingScreen());
 
 	// Finalise initial entities
 	Core::ECS::CommitChanges();

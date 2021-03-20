@@ -36,12 +36,12 @@ namespace Core
 		}
 
 		// Wrap ecs::commit_changes
-		void CommitChanges()
+		inline void CommitChanges()
 		{
 			ecs::commit_changes();
 		}
 
-		void Update()
+		inline void Update()
 		{
 			CommitChanges();
 			ecs::run_systems();

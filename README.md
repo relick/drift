@@ -1,10 +1,9 @@
 # drift
  
 To build:
-- install to your toolchain assimp, Bullet, and FreeType.
+- bootstrap the vcpkg submodule.
 - make a symlink in `assets/` called `encrypted/` that points to encrypted assets folder.
-
-Everything else should build automatically if the git submodules are correctly cloned.
+- build in cmake with the vcpkg toolchain file.
 
 RelWithDebInfo is treated as a debug mode with optimisations.
 

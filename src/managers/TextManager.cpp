@@ -27,6 +27,7 @@ namespace Core::Render::Text
 		bool showImguiWin = false;
 		bool showText = false;
 		bool showDebug = false;
+		Core::Render::FrameData rfd;
 	} fsTest;
 #endif
 
@@ -36,13 +37,18 @@ namespace Core::Render::Text
 
 #if TEXT_TEST
 		// Add font to stash.
-		fsTest.fontNormal = fonsAddFont(fonsContext, "roboto", "assets/fonts/Roboto-Light.ttf");
+		fsTest.fontNormal = fonsAddFont(fonsContext, "roboto", "assets/encrypted/fonts/MS Gothic.ttf");
 		fonsFontCount++;
 #endif
 	}
 
 	void Setup()
 	{
+		Core::MakeSystem<Sys::TEXT_START>([](Core::MT_Only&, Core::Render::FrameData const& _rfd)
+		{
+			fsTest.rfd = _rfd;
+		});
+
 #if TEXT_TEST
 		Core::Render::DImGui::AddMenuItem("GL", "Text Debug", &fsTest.showImguiWin);
 
@@ -114,8 +120,12 @@ namespace Core::Render::Text
 			return false;
 		}
 
+		fVec2 const renderAreaToContextWindow = fsTest.rfd.contextWindow.f / fsTest.rfd.renderArea.f;
+
+		_tlPos *= renderAreaToContextWindow;
+
 		fonsSetFont(fonsContext, _font.GetValue());
-		fonsSetSize(fonsContext, _size);
+		fonsSetSize(fonsContext, _size * renderAreaToContextWindow.y);
 		fonsSetColor(fonsContext, _col);
 		fonsDrawText(fonsContext, _tlPos.x, _tlPos.y, _text, NULL);
 
@@ -130,16 +140,6 @@ namespace Core::Render::Text
 		uint32 _col
 	)
 	{
-		if (!fonsContext)
-		{
-			return false;
-		}
-
-		fonsSetFont(fonsContext, fsTest.fontNormal.GetValue());
-		fonsSetSize(fonsContext, _size);
-		fonsSetColor(fonsContext, _col);
-		fonsDrawText(fonsContext, _tlPos.x, _tlPos.y, _text, NULL);
-
-		return true;
+		return Write(fsTest.fontNormal, _tlPos, _text, _size, _col);
 	}
 }

@@ -35,6 +35,8 @@ using fMat3 = glm::mat3;
 using fMat4 = glm::mat4;
 using fQuat = glm::quat;
 
+using iVec2 = glm::ivec2;
+
 constexpr fQuat fQuatIdentity()
 {
 	return glm::identity<fQuat>();

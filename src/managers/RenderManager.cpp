@@ -659,7 +659,7 @@ namespace Core
 		)
 		{
 			kaAssert(!state.IsMainCameraSet(), "only one MainCamera3D allowed!");
-			frameScene.camera.proj = glm::perspective(glm::radians(_cam.m_povY), _rfd.renderArea.fW / _rfd.renderArea.fH, 0.01f, 1000.0f);
+			frameScene.camera.proj = glm::perspective(glm::radians(_cam.m_povY), _rfd.renderArea.f.x / _rfd.renderArea.f.y, 0.01f, 1000.0f);
 
 			fTrans const cameraTrans = _t.CalculateWorldTransform();
 			frameScene.camera.pos = cameraTrans.m_origin;
@@ -713,7 +713,7 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		fMat4 GetSpriteOrthoMat(Core::Render::FrameData const& _rfd)
 		{
-			return glm::ortho(0.0f, _rfd.renderArea.fW, _rfd.renderArea.fH, 0.0f, -1.0f, 1.0f);
+			return glm::ortho(0.0f, _rfd.renderArea.f.x, _rfd.renderArea.f.y, 0.0f, -1.0f, 1.0f);
 		}
 
 		constexpr bool g_enableDirectionalShadow = true;
@@ -895,7 +895,7 @@ namespace Core
 			state.SetPassGlue(PassGlue_MainTarget_To_Screen);
 
 			render_target_to_screen_vs_params_t aspectData{
-				.aspectMult = (4.0f / 3.0f) * (_rfd.contextWindow.fH / _rfd.contextWindow.fW),
+				.aspectMult = (4.0f / 3.0f) * (_rfd.contextWindow.f.y / _rfd.contextWindow.f.x),
 			};
 			sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_render_target_to_screen_vs_params, SG_RANGE_REF(aspectData));
 			state.Draw();
@@ -925,12 +925,12 @@ namespace Core
 			frameScene.models.clear();
 			frameScene.sprites.clear();
 
-			// DEFAULT_PASS_END
-			Core::Render::TextAndGLDebug::Render();
-
 			// end of the main drawing pass
 			// begin of the screen drawing pass
 			RenderMainToScreen(_rfd);
+
+			// DEFAULT_PASS_END
+			Core::Render::TextAndGLDebug::Render();
 
 			Core::Render::DImGui::Render(); // imgui last, always a debug.
 

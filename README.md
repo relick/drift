@@ -1,12 +1,8 @@
 # drift
  
 To build:
-- install to your toolchain Bullet and assimp
-- run this in abseil-cpp:
-```
-mkdir build && cd build
-cmake .. -DABSL_RUN_TESTS=ON -DABSL_USE_GOOGLETEST_HEAD=ON -DCMAKE_CXX_STANDARD=20
-```
+- install to your toolchain assimp, Bullet, and FreeType.
+- make a symlink in `assets/` called `encrypted/` that points to encrypted assets folder.
 
 Everything else should build automatically if the git submodules are correctly cloned.
 

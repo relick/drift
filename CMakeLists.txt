@@ -51,6 +51,7 @@ add_compile_options ("$<$<CXX_COMPILER_ID:MSVC>:/Zc:__cplusplus>")
 ## Setup external libraries
 find_package (Bullet CONFIG REQUIRED)
 find_package (Assimp CONFIG REQUIRED)
+find_package (freetype CONFIG REQUIRED)
 add_subdirectory (abseil-cpp)
 add_subdirectory (external-cmake)
 
@@ -61,7 +62,7 @@ set (SOURCE_CPP "src/drift.cpp" "src/managers/EntityManager.cpp" "src/systems/Co
 add_executable (drift ${SOURCE_H} ${SOURCE_CPP} ${SHADERS_COMPILED})
 
 target_include_directories (drift PUBLIC "src" "ecs/include" "ecs/tls/include" "sokol" "fontstash/src" "stb" "glm" "gcem/include" ${BULLET_INCLUDE_DIR})
-target_link_libraries (drift PRIVATE ${BULLET_LIBRARIES} assimp::assimp absl::flat_hash_map absl::flat_hash_set absl::inlined_vector absl::str_format SoLoud ImGui)
+target_link_libraries (drift PRIVATE ${BULLET_LIBRARIES} assimp::assimp absl::flat_hash_map absl::flat_hash_set absl::inlined_vector absl::str_format SoLoud ImGui freetype)
 
 
 ## Compiler options

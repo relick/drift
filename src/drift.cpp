@@ -19,7 +19,7 @@
 
 constexpr int const g_renderAreaWidth = 320;
 constexpr int const g_renderAreaHeight = (g_renderAreaWidth / 4) * 3;
-constexpr int const g_windowStartWidth = 960;
+constexpr int const g_windowStartWidth = g_renderAreaWidth * 3;
 constexpr int const g_windowStartHeight = (g_windowStartWidth / 4) * 3;
 
 void initialise_cb()
@@ -119,14 +119,12 @@ void frame_cb()
 
 	{
 		Core::Render::FrameData& rfd = ecs::get_global_component<Core::Render::FrameData>();
-		rfd.contextWindow.w = sapp_width();
-		rfd.contextWindow.fW = static_cast<float>(rfd.contextWindow.w);
-		rfd.contextWindow.h = sapp_height();
-		rfd.contextWindow.fH = static_cast<float>(rfd.contextWindow.h);
-		rfd.renderArea.w = g_renderAreaWidth;
-		rfd.renderArea.fW = static_cast<float>(rfd.renderArea.w);
-		rfd.renderArea.h = g_renderAreaHeight;
-		rfd.renderArea.fH = static_cast<float>(rfd.renderArea.h);
+		rfd.contextWindow.i.x = sapp_width();
+		rfd.contextWindow.i.y = sapp_height();
+		rfd.contextWindow.f = rfd.contextWindow.i;
+		rfd.renderArea.i.x = g_renderAreaWidth;
+		rfd.renderArea.i.y = g_renderAreaHeight;
+		rfd.renderArea.f = rfd.renderArea.i;
 	}
 
 	Core::Input::Update();

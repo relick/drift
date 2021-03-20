@@ -68,7 +68,7 @@ namespace Core
 					sgl_defaults();
 					sgl_matrix_mode_projection();
 					sgl_load_identity();
-					sgl_perspective(glm::radians(_cam.m_povY), _rfd.renderArea.fW / _rfd.renderArea.fH, 0.01f, 1000.0f);
+					sgl_perspective(glm::radians(_cam.m_povY), _rfd.renderArea.f.x / _rfd.renderArea.f.y, 0.01f, 1000.0f);
 
 					sgl_matrix_mode_modelview();
 					sgl_load_identity();
@@ -87,7 +87,7 @@ namespace Core
 
 					sgl_matrix_mode_projection();
 					sgl_load_identity();
-					sgl_ortho(0, _rfd.renderArea.fW, _rfd.renderArea.fH, 0, -1, 1);
+					sgl_ortho(0, _rfd.contextWindow.f.x, _rfd.contextWindow.f.y, 0, -1, 1);
 
 					sgl_matrix_mode_modelview();
 					sgl_load_identity();

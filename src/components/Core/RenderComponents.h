@@ -16,10 +16,8 @@ namespace Core
 
 			struct Target
 			{
-				int w{ 0 };
-				int h{ 0 };
-				float fW{ 0 };
-				float fH{ 0 };
+				iVec2 i{ 0 };
+				fVec2 f{ i };
 			};
 			Target contextWindow{};
 			Target renderArea{};

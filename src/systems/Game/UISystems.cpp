@@ -1,4 +1,4 @@
-#include "UISystems.h"
+﻿#include "UISystems.h"
 
 #include "components.h"
 #include "systems.h"
@@ -34,7 +34,7 @@ namespace Game::UI
 
 		Core::MakeSystem<Sys::TEXT>([](Game::UI::LoadingScreen const& _loadingScreen)
 		{
-			Core::Render::Text::Write(fVec2{ 10, 200 }, absl::StrFormat("Loading %s", _loadingScreen.m_nextLoadedFilename).c_str());
+			Core::Render::Text::Write(fVec2{ 10, 200 }, absl::StrFormat("Loading %s", _loadingScreen.m_nextLoadedFilename).c_str(), 13.0f);
 		});
 	}
 }

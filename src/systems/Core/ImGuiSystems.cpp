@@ -44,7 +44,7 @@ namespace Core
 				// use ms gothic
 				{
 					ImGuiIO& io = ImGui::GetIO();
-					io.Fonts->AddFontFromFileTTF("assets/fonts/msgothic.ttc", 13.0f, 0, io.Fonts->GetGlyphRangesJapanese());
+					io.Fonts->AddFontFromFileTTF("assets/encrypted/fonts/msgothic.ttc", 13.0f, 0, io.Fonts->GetGlyphRangesJapanese());
 
 					sg_image_desc imgDesc{
 						.pixel_format = SG_PIXELFORMAT_RGBA8,
@@ -71,7 +71,7 @@ namespace Core
 
 				Core::MakeSystem<Sys::FRAME_START>([](Core::FrameData const& _fd, Core::Render::FrameData const& _rfd)
 				{
-					simgui_new_frame(_rfd.contextWindow.w, _rfd.contextWindow.h, _fd.unscaled_ddt > 0.0 ? _fd.unscaled_ddt : DBL_EPSILON);
+					simgui_new_frame(_rfd.contextWindow.i.x, _rfd.contextWindow.i.y, _fd.unscaled_ddt > 0.0 ? _fd.unscaled_ddt : DBL_EPSILON);
 				});
 
 				Core::MakeSystem<Sys::IMGUI>([](Core::MT_Only&, Core::FrameData const& _fd, Core::Render::FrameData const& _rfd)
@@ -135,7 +135,7 @@ namespace Core
 							fps = 0;
 						}
 
-						ImGui::Text("%iw/%ih", _rfd.contextWindow.w, _rfd.contextWindow.h);
+						ImGui::Text("%iw/%ih", _rfd.contextWindow.i.x, _rfd.contextWindow.i.y);
 						ImGui::Separator();
 
 						ImGui::Text("%i FPS", lastFPS);

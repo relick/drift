@@ -31,7 +31,7 @@ void kaLog(std::string const& _message);
 #include <thread>
 extern std::thread::id mainThreadID;
 
-#define kaSameThreadAssert(...) kaAssert(mainThreadID == std::this_thread::get_id(), "Assert ran on non-main thread"); kaAssert(__VA_ARGS__)
+#define kaMainThreadAssert(...) kaAssert(mainThreadID == std::this_thread::get_id(), "Assert ran on non-main thread"); kaAssert(__VA_ARGS__)
 
 #else
 
@@ -45,8 +45,9 @@ extern std::thread::id mainThreadID;
 
 void InitialiseLogging();
 
-#define SOKOL_ASSERT(c) kaSameThreadAssert(c)
-#define IM_ASSERT(c) kaSameThreadAssert(c)
+#define SOKOL_GENERAL_ASSERT(c) kaMainThreadAssert(c)
+#define SOKOL_FETCH_ASSERT(c) kaAssert(c)
+#define IM_ASSERT(c) kaMainThreadAssert(c)
 #define STB_ASSERT(c) kaAssert(c)
 #define STBDS_ASSERT(c) STB_ASSERT(c)
 #define STB_HBWANG_ASSERT(c) STB_ASSERT(c)

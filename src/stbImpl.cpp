@@ -3,6 +3,7 @@
 // All stb-style implementations should be defined in this file
 
 #define SOKOL_IMPL
+#define SOKOL_ASSERT(c) SOKOL_GENERAL_ASSERT(c)
 #if DEBUG_TOOLS
 	#define SOKOL_TRACE_HOOKS
 #else
@@ -12,10 +13,12 @@
 #include <sokol_gfx.h>
 #include <sokol_glue.h>
 #include <sokol_time.h>
-// sokol fetch doesn't need same thread
-#define SOKOL_ASSERT(c) kaAssert(c)
+// sokol fetch doesn't need to be on main thread.
+#undef SOKOL_ASSERT
+#define SOKOL_ASSERT(c) SOKOL_FETCH_ASSERT(c)
 #include <sokol_fetch.h>
-#define SOKOL_ASSERT(c) kaSameThreadAssert(c)
+#undef SOKOL_ASSERT
+#define SOKOL_ASSERT(c) SOKOL_GENERAL_ASSERT(c)
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>

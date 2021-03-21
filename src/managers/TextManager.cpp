@@ -7,6 +7,7 @@
 
 #include <imgui.h>
 
+#include <sokol_app.h>
 #include <sokol_gfx.h>
 
 #include <fontstash.h>
@@ -27,9 +28,13 @@ namespace Core::Render::Text
 		bool showImguiWin = false;
 		bool showText = false;
 		bool showDebug = false;
-		Core::Render::FrameData rfd;
 	} fsTest;
 #endif
+
+	struct
+	{
+		Core::Render::FrameData rfd;
+	} fontState;
 
 	void Init()
 	{
@@ -46,7 +51,7 @@ namespace Core::Render::Text
 	{
 		Core::MakeSystem<Sys::TEXT_START>([](Core::MT_Only&, Core::Render::FrameData const& _rfd)
 		{
-			fsTest.rfd = _rfd;
+			fontState.rfd = _rfd;
 		});
 
 #if TEXT_TEST
@@ -85,6 +90,14 @@ namespace Core::Render::Text
 		fonsContext = nullptr;
 	}
 
+	void Event(sapp_event const* _event)
+	{
+		if (_event->type == SAPP_EVENTTYPE_RESIZED)
+		{
+			fonsResetAtlas(fonsContext, 512, 512);
+		}
+	}
+
 #if TEXT_TEST
 	void ShowDebugText()
 	{
@@ -120,7 +133,7 @@ namespace Core::Render::Text
 			return false;
 		}
 
-		fVec2 const renderAreaToContextWindow = fsTest.rfd.contextWindow.f / fsTest.rfd.renderArea.f;
+		fVec2 const renderAreaToContextWindow = fontState.rfd.contextWindow.f / fontState.rfd.renderArea.f;
 
 		_tlPos *= renderAreaToContextWindow;
 

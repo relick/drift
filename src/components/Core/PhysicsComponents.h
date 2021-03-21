@@ -93,18 +93,18 @@ namespace Core
 	void AddComponent(EntityID const _entity, Physics::World const& _component);
 
 	template<>
-	void RemoveComponent<Physics::World>(EntityID const _entity);
+	void CleanupComponent<Physics::World>(EntityID const _entity);
 
 	template<>
 	void AddComponent(EntityID const _entity, Physics::RigidBodyDesc const& _desc);
 
 	template<>
-	void RemoveComponent<Physics::RigidBody>(EntityID const _entity);
+	void CleanupComponent<Physics::RigidBody>(EntityID const _entity);
 
 	template<>
 	void AddComponent(EntityID const _entity, Physics::CharacterControllerDesc const& _desc);
 
 	template<>
-	void RemoveComponent<Physics::CharacterController>(EntityID const _entity);
+	void CleanupComponent<Physics::CharacterController>(EntityID const _entity);
 
 }

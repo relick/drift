@@ -60,23 +60,21 @@ namespace Core
 	}
 
 	template<>
-	void RemoveComponent<Physics::World>(EntityID const _entity)
+	void CleanupComponent<Physics::World>(EntityID const _entity)
 	{
 		Physics::World* const oldComponent = Core::GetComponent<Physics::World>(_entity);
 		kaAssert(oldComponent);
-		SafeDelete(oldComponent->m_collisionConfiguration);
-		SafeDelete(oldComponent->m_dispatcher);
-		SafeDelete(oldComponent->m_overlappingPairCache);
-		SafeDelete(oldComponent->m_solver);
 		SafeDelete(oldComponent->m_dynamicsWorld);
+		SafeDelete(oldComponent->m_solver);
+		SafeDelete(oldComponent->m_overlappingPairCache);
+		SafeDelete(oldComponent->m_dispatcher);
+		SafeDelete(oldComponent->m_collisionConfiguration);
 
 #if PHYSICS_DEBUG
 		Physics::Debug::RemovePhysicsWorld(_entity);
 #endif
 		kaAssert(physicsWorlds.at(_entity).numBodies == 0u);
 		physicsWorlds.erase(_entity);
-
-		Core::ECS::RemoveComponent<Physics::World>(_entity);
 	}
 
 	template<>
@@ -134,7 +132,7 @@ namespace Core
 	}
 
 	template<>
-	void RemoveComponent<Physics::RigidBody>(EntityID const _entity)
+	void CleanupComponent<Physics::RigidBody>(EntityID const _entity)
 	{
 		Physics::RigidBody* const oldComponent = Core::GetComponent<Physics::RigidBody>(_entity);
 		kaAssert(oldComponent);
@@ -144,11 +142,9 @@ namespace Core
 
 		physicsWorlds.at(oldComponent->m_physicsWorld).numBodies--;
 
-		SafeDelete(oldComponent->m_motionState);
 		SafeDelete(oldComponent->m_body);
+		SafeDelete(oldComponent->m_motionState);
 		SafeDelete(oldComponent->m_shape);
-
-		Core::ECS::RemoveComponent<Physics::RigidBody>(_entity);
 	}
 
 	template<>
@@ -188,7 +184,7 @@ namespace Core
 	}
 
 	template<>
-	void RemoveComponent<Physics::CharacterController>(EntityID const _entity)
+	void CleanupComponent<Physics::CharacterController>(EntityID const _entity)
 	{
 		Physics::CharacterController* const oldComponent = Core::GetComponent<Physics::CharacterController>(_entity);
 		kaAssert(oldComponent);
@@ -198,10 +194,8 @@ namespace Core
 
 		physicsWorlds.at(oldComponent->m_physicsWorld).numBodies--;
 
-		SafeDelete(oldComponent->m_motionState);
 		SafeDelete(oldComponent->m_body);
+		SafeDelete(oldComponent->m_motionState);
 		SafeDelete(oldComponent->m_shape);
-
-		Core::ECS::RemoveComponent<Physics::CharacterController>(_entity);
 	}
 }

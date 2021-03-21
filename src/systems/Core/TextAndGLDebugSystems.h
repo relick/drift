@@ -2,6 +2,8 @@
 
 #include "common.h"
 
+struct sapp_event;
+
 namespace Core
 {
 	namespace Render
@@ -12,6 +14,7 @@ namespace Core
 			void Setup();
 			void Render();
 			void Cleanup();
+			void Event(sapp_event const* _event);
 		}
 
 		namespace Debug

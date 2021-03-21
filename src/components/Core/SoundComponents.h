@@ -76,7 +76,7 @@ namespace Core
 	void AddComponent(EntityID const _entity, Sound::BGMDesc const& _desc);
 
 	template<>
-	void RemoveComponent<Sound::BGM>(EntityID const _entity);
+	void CleanupComponent<Sound::BGM>(EntityID const _entity);
 
 	template<>
 	void AddComponent(EntityID const _entity, Sound::SoundEffect3DDesc const& _desc);

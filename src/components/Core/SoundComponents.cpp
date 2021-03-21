@@ -24,10 +24,9 @@ namespace Core
 	}
 
 	template<>
-	void RemoveComponent<Sound::BGM>(EntityID const _entity)
+	void CleanupComponent<Sound::BGM>(EntityID const _entity)
 	{
 		Sound::EndBGM();
-		Core::ECS::RemoveComponent<Sound::BGM>(_entity);
 	}
 
 	template<>

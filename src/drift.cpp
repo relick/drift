@@ -130,6 +130,8 @@ void frame_cb()
 
 void cleanup_cb()
 {
+	Core::DestroyAllEntities();
+
 	Core::Physics::Cleanup();
 	Core::Sound::Cleanup();
 	Core::Render::DImGui::Cleanup();
@@ -140,6 +142,7 @@ void cleanup_cb()
 
 void event_cb(sapp_event const* _event)
 {
+	Core::Render::TextAndGLDebug::Event(_event);
 	Core::Render::DImGui::Event(_event);
 	Core::Input::Event(_event);
 }

@@ -4,7 +4,11 @@
 
 #include "ResourceIDs.h"
 
-#define TEXT_TEST DEBUG_TOOLS
+#if DEBUG_TOOLS
+	#define TEXT_TEST 1
+#endif
+
+struct sapp_event;
 
 namespace Core::Render::Text
 {
@@ -12,6 +16,7 @@ namespace Core::Render::Text
 	void Setup();
 	void Render();
 	void Cleanup();
+	void Event(sapp_event const* _event);
 	
 #if TEXT_TEST
 	void ShowDebugText();

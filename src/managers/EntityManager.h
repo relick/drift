@@ -1,21 +1,96 @@
 #pragma once
 
+#include "common.h"
+
 #include <ecs/ecs.h>
 #include "Entity.h"
 
+#include <absl/container/flat_hash_map.h>
+#include <absl/strings/str_format.h>
+#include <memory>
+
 namespace Core
 {
-	extern EntityID::CoreType nextID;
-
-	EntityID CreateEntity();
-	void DestroyEntity(EntityID _entity);
-
 	namespace detail
 	{
 		template<typename T>
 		concept ValidComponent = !requires{ typename std::remove_cvref_t<T>::_not_a_component; };
 		template<typename T>
 		concept DoesNotNeedInitialiser = ValidComponent<T> && !requires{ typename std::remove_cvref_t<T>::_initialiser_only; };
+	}
+
+	EntityID CreateEntity();
+	void DestroyEntity(EntityID _entity);
+	void DestroyAllEntities();
+
+	template<typename T_Component>
+	void CleanupComponent(EntityID const _entity);
+
+	template<typename T_Component>
+	void RemoveComponent(EntityID const _entity);
+	
+	// Helpers for destroying components based on type hash when destroying entities
+	struct ComponentDestroyerBase
+	{
+		virtual ~ComponentDestroyerBase() = default;
+		virtual void CleanupComponent(EntityID _entity) const = 0;
+		virtual void RemoveComponent(EntityID _entity) const = 0;
+	};
+
+	template<typename T_Component>
+	struct ComponentDestroyer : ComponentDestroyerBase
+	{
+		virtual ~ComponentDestroyer() = default;
+		void CleanupComponent(EntityID _entity) const override
+		{
+			Core::CleanupComponent<T_Component>(_entity);
+		}
+		void RemoveComponent(EntityID _entity) const override
+		{
+			Core::RemoveComponent<T_Component>(_entity);
+		}
+	};
+
+	namespace EntityManagement
+	{
+		// part of ecs::detail so not explicitly part of the API... but there's no point rewriting good code if we can just reuse it
+		using ComponentHash = ecs::detail::type_hash;
+		template<typename T_Component>
+		constexpr ComponentHash GetComponentHash() { return ecs::detail::get_type_hash<T_Component>(); }
+
+		extern absl::flat_hash_map<ComponentHash, std::unique_ptr<ComponentDestroyerBase>> destroyers;
+
+		template<typename T_Component>
+		void EnsureDestroyer(ComponentHash _hash)
+		{
+			auto it = destroyers.find(_hash);
+			if (it == destroyers.end())
+			{
+				destroyers[_hash] = std::unique_ptr<ComponentDestroyerBase>(new ComponentDestroyer<T_Component>());
+			}
+		}
+		
+		void AddComponentHash(EntityID _entity, ComponentHash _hash);
+		void RemoveComponentHash(EntityID _entity, ComponentHash _hash);
+
+		template<typename T_Component>
+		void ComponentAdded(EntityID _entity)
+		{
+			ComponentHash const hash = GetComponentHash<T_Component>();
+			EnsureDestroyer<T_Component>(hash);
+			AddComponentHash(_entity, hash);
+
+			kaLog(absl::StrFormat("Entity %d requested component %s to be added", _entity.GetDebugValue(), typeid(T_Component).name()));
+		}
+		template<typename T_Component>
+		void ComponentRemoved(EntityID _entity)
+		{
+			ComponentHash const hash = GetComponentHash<T_Component>();
+			RemoveComponentHash(_entity, hash);
+
+			kaLog(absl::StrFormat("Entity %d requested component %s to be removed", _entity.GetDebugValue(), typeid(T_Component).name()));
+		}
+		void CommitChanges();
 	}
 
 	// functions used by elements of the ECS itself and not by game code
@@ -26,6 +101,7 @@ namespace Core
 		template <detail::ValidComponent T_Component>
 		void AddComponent(EntityID const _entity, T_Component const& _component)
 		{
+			EntityManagement::ComponentAdded<T_Component>(_entity);
 			ecs::add_component(Core::detail::AccessECSID(_entity), static_cast<std::remove_const_t<T_Component>>(_component));
 		}
 
@@ -33,12 +109,14 @@ namespace Core
 		template<detail::ValidComponent T_Component>
 		void RemoveComponent(EntityID const _entity)
 		{
+			EntityManagement::ComponentRemoved<T_Component>(_entity);
 			ecs::remove_component<T_Component>(Core::detail::AccessECSID(_entity));
 		}
 
 		// Wrap ecs::commit_changes
 		inline void CommitChanges()
 		{
+			EntityManagement::CommitChanges();
 			ecs::commit_changes();
 		}
 
@@ -64,7 +142,14 @@ namespace Core
 		(AddComponent(_entity, _components), ...);
 	}
 
-	// Basic RemoveComponent. This allows for specialisation for components that want to destroy things
+	// Basic CleanupComponent. This allows for specialisation for components that want to destroy things
+	// pre-condition: entity has the component.
+	template<typename T_Component>
+	void CleanupComponent(EntityID const _entity)
+	{
+	}
+
+	// Basic RemoveComponent. Do not specialise
 	// pre-condition: entity has the component.
 	template<typename T_Component>
 	void RemoveComponent(EntityID const _entity)

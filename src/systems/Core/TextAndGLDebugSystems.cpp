@@ -108,6 +108,11 @@ namespace Core
 				Core::Render::Text::Cleanup();
 				sgl_shutdown();
 			}
+
+			void Event(sapp_event const* _event)
+			{
+				Core::Render::Text::Event(_event);
+			}
 		}
 
 		namespace Debug

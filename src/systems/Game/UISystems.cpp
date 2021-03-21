@@ -20,10 +20,7 @@ namespace Game::UI
 			auto const preload = Core::GetComponent<Core::Resource::Preload>(_entity);
 			if (preload == nullptr)
 			{
-				Core::RemoveComponent<Game::UI::LoadingScreen>(_entity);
-				// fixme
-				// Core::DestroyEntity(_entity);
-				// temp
+				Core::DestroyEntity(_entity);
 				Core::Scene::AddDemoScene();
 				return;
 			}

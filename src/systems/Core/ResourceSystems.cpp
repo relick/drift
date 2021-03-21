@@ -101,7 +101,7 @@ namespace Core::Resource
 
 	void Setup()
 	{
-		Core::MakeSystem<Sys::FILE_LOADING>([](Core::EntityID::CoreType _entity, Core::MT_Only&, Core::Resource::Preload& _preload)
+		Core::MakeSerialSystem<Sys::FILE_LOADING>([](Core::EntityID::CoreType _entity, Core::MT_Only&, Core::Resource::Preload& _preload)
 		{
 			switch (_preload.m_preloadState)
 			{

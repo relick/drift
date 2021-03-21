@@ -12,7 +12,10 @@
 #include <sokol_gfx.h>
 #include <sokol_glue.h>
 #include <sokol_time.h>
+// sokol fetch doesn't need same thread
+#define SOKOL_ASSERT(c) kaAssert(c)
 #include <sokol_fetch.h>
+#define SOKOL_ASSERT(c) kaSameThreadAssert(c)
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>

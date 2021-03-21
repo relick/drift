@@ -6,6 +6,8 @@
 
 #include <absl/strings/str_format.h>
 
+std::thread::id mainThreadID = std::this_thread::get_id();
+
 #if _MSC_VER && DEBUG_TOOLS
 #include <Windows.h>
 class VSCoutFix

@@ -28,19 +28,25 @@ _wassert(m.c_str(), _CRT_WIDE(__FILE__), (unsigned)(__LINE__)); }
 #define kaError(message) ERROR_MESSAGE(message)
 void kaLog(std::string const& _message);
 
+#include <thread>
+extern std::thread::id mainThreadID;
+
+#define kaSameThreadAssert(...) kaAssert(mainThreadID == std::this_thread::get_id(), "Assert ran on non-main thread"); kaAssert(__VA_ARGS__)
+
 #else
 
 #define kaAssert(...)
 #define kaError(message)
 #define kaLog(message)
+#define kaSameThreadAssert(...)
 #define SOLOUD_NO_ASSERTS
 
 #endif
 
 void InitialiseLogging();
 
-#define SOKOL_ASSERT(c) kaAssert(c)
-#define IM_ASSERT(c) kaAssert(c)
+#define SOKOL_ASSERT(c) kaSameThreadAssert(c)
+#define IM_ASSERT(c) kaSameThreadAssert(c)
 #define STB_ASSERT(c) kaAssert(c)
 #define STBDS_ASSERT(c) STB_ASSERT(c)
 #define STB_HBWANG_ASSERT(c) STB_ASSERT(c)

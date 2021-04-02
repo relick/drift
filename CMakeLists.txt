@@ -84,9 +84,8 @@ target_compile_options (drift PRIVATE
 		-Wno-unused-parameter
 		-Wno-undef
 
-		# These are broken or don't make any sense.
+		# This one just seems to be broken.
 		-Wno-gnu-zero-variadic-macro-arguments
-		-Wno-ctad-maybe-unsupported
 
 		# These just tell me I shouldn't be using globals. Well I will anyway.
 		-Wno-exit-time-destructors

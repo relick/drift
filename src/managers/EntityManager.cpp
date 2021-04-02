@@ -55,7 +55,7 @@ namespace Core
 			EntityID _entity
 		)
 		{
-			std::shared_lock lock(g_entityMutex);
+			std::shared_lock<std::shared_mutex> lock{ g_entityMutex };
 			return IsActiveEntity_Unsafe(_entity);
 		}
 
@@ -84,7 +84,7 @@ namespace Core
 		)
 		{
 			kaAssert(IsActiveEntity(_entity), "tried to add components to dead entity!");
-			std::scoped_lock lock(g_componentChangeMutex);
+			std::scoped_lock<std::recursive_mutex> lock{ g_componentChangeMutex };
 			// slow assert
 			kaAssert(FindComponentChange(g_uncommittedComponentChanges[_entity], _hash) == g_uncommittedComponentChanges[_entity].end(), "do not try to add/remove the same component to an entity more than once a frame");
 			g_uncommittedComponentChanges[_entity].emplace_back(_hash, true);
@@ -96,7 +96,7 @@ namespace Core
 			ComponentHash _hash
 		)
 		{
-			std::scoped_lock lock(g_componentChangeMutex);
+			std::scoped_lock<std::recursive_mutex> lock{ g_componentChangeMutex };
 
 			// slow assert
 			kaAssert(FindComponentChange(g_uncommittedComponentChanges[_entity], _hash) == g_uncommittedComponentChanges[_entity].end(), "do not try to add/remove the same component to an entity more than once a frame");
@@ -105,7 +105,7 @@ namespace Core
 
 		void CommitChanges()
 		{
-			std::scoped_lock lock(g_componentChangeMutex);
+			std::scoped_lock<std::recursive_mutex> lock{ g_componentChangeMutex };
 
 			for (auto const& [entity, compChangeList] : g_uncommittedComponentChanges)
 			{
@@ -159,7 +159,7 @@ namespace Core
 			bool _persistent
 		)
 		{
-			std::unique_lock lock(g_entityMutex);
+			std::unique_lock<std::shared_mutex> lock{ g_entityMutex };
 			AddActiveEntity_Unsafe(_entity, _persistent);
 		}
 
@@ -179,7 +179,7 @@ namespace Core
 			EntityID _entity
 		)
 		{
-			std::unique_lock lock(g_entityMutex);
+			std::unique_lock<std::shared_mutex> lock{ g_entityMutex };
 			RemoveActiveEntity_Unsafe(_entity);
 		}
 
@@ -193,7 +193,7 @@ namespace Core
 
 		static void RemoveAllActiveEntities()
 		{
-			std::unique_lock lock(g_entityMutex);
+			std::unique_lock<std::shared_mutex> lock{ g_entityMutex };
 			RemoveAllActiveEntities_Unsafe();
 		}
 
@@ -204,7 +204,7 @@ namespace Core
 			bool _keepBetweenScenes
 		)
 		{
-			std::unique_lock lock(g_entityMutex);
+			std::unique_lock<std::shared_mutex> lock{ g_entityMutex };
 			kaAssert(IsActiveEntity_Unsafe(_entity), "Tried to change persistence of inactive entity!");
 
 			if (_keepBetweenScenes)
@@ -223,7 +223,7 @@ namespace Core
 		)
 		{
 			// this function is what all this effort is for.
-			std::scoped_lock lock(g_componentChangeMutex);
+			std::scoped_lock<std::recursive_mutex> lock{ g_componentChangeMutex };
 
 			absl::InlinedVector<EntityID, 32> entitiesToDestroy;
 			entitiesToDestroy.emplace_back(_entity);
@@ -262,7 +262,7 @@ namespace Core
 
 		static void DestroyAllEntities()
 		{
-			std::unique_lock lock(g_entityMutex);
+			std::unique_lock<std::shared_mutex> lock{ g_entityMutex };
 
 			while (!g_activeEntities.empty())
 			{
@@ -276,7 +276,7 @@ namespace Core
 
 		static void DestroyAllSceneEntities()
 		{
-			std::unique_lock lock(g_entityMutex);
+			std::unique_lock<std::shared_mutex> lock{ g_entityMutex };
 
 			while (!g_sceneActiveEntities.empty())
 			{
@@ -294,8 +294,11 @@ namespace Core
 			DestroyAllSceneEntities();
 			g_currentScene.reset();
 
-			g_currentScene = std::move(_nextScene);
-			g_currentScene->Setup();
+			if (_nextScene)
+			{
+				g_currentScene = std::move(_nextScene);
+				g_currentScene->Setup();
+			}
 		}
 	}
 

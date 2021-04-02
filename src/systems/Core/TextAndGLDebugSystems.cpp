@@ -124,7 +124,7 @@ namespace Core
 				uint32 _col
 			)
 			{
-				std::scoped_lock lock(g_linesToDrawMutex);
+				std::scoped_lock<std::mutex> lock{ g_linesToDrawMutex };
 				g_linesToDraw[_col].emplace_back(_start, _end);
 			}
 
@@ -135,7 +135,7 @@ namespace Core
 				fVec3 const& _col
 			)
 			{
-				std::scoped_lock lock(g_linesToDrawMutex);
+				std::scoped_lock<std::mutex> lock{ g_linesToDrawMutex };
 				uint32 const col = Colour::ConvertRGB(_col);
 				g_linesToDraw[col].emplace_back(_start, _end);
 			}

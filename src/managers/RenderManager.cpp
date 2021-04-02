@@ -957,21 +957,21 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		LightSetter AddLightToScene()
 		{
-			std::scoped_lock lock(g_frameScene.lightsMutex);
+			std::scoped_lock<std::mutex> lock{ g_frameScene.lightsMutex };
 			return g_frameScene.lights.AddLight();
 		}
 
 		//--------------------------------------------------------------------------------
 		void AddAmbientLightToScene(fVec3 const& _col)
 		{
-			std::scoped_lock lock(g_frameScene.lightsMutex);
+			std::scoped_lock<std::mutex> lock{ g_frameScene.lightsMutex };
 			g_frameScene.lights.ambientLight += _col;
 		}
 
 		//--------------------------------------------------------------------------------
 		void SetDirectionalLightDir(fVec3 const& _dir)
 		{
-			std::scoped_lock lock(g_frameScene.lightsMutex);
+			std::scoped_lock<std::mutex> lock{ g_frameScene.lightsMutex };
 			g_frameScene.lights.directionalDir = _dir;
 		}
 
@@ -982,7 +982,7 @@ namespace Core
 			fTrans2D const& _screenTrans
 		)
 		{
-			std::scoped_lock lock(g_frameScene.spritesMutex);
+			std::scoped_lock<std::mutex> lock{ g_frameScene.spritesMutex };
 			g_frameScene.sprites.emplace_back(_sprite, _screenTrans);
 			kaAssert(g_frameScene.sprites.size() < g_maxSpritesPerFrame);
 		}
@@ -994,7 +994,7 @@ namespace Core
 			fTrans const& _worldTrans
 		)
 		{
-			std::scoped_lock lock(g_frameScene.modelsMutex);
+			std::scoped_lock<std::mutex> lock{ g_frameScene.modelsMutex };
 			g_frameScene.models.emplace_back(_model, _worldTrans);
 		}
 

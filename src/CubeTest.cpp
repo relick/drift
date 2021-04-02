@@ -78,7 +78,8 @@ void CubeTestEntities()
 
 		Core::AddComponent(cube, rbDesc);
 	}
-	if constexpr (false)
+	constexpr bool enableBGM = false;
+	if constexpr (enableBGM)
 	{
 		Core::AddComponent(cube, Core::Sound::BGMDesc{ .m_filePath = "assets/encrypted/bgm/rom.mp3", .m_initVolume = 1.0f, });
 		Core::AddComponent(cube, Core::Sound::FadeChangeBGM{ .m_timeToFade = 5.0f, .m_targetVolume = 1.0f, .m_nextBGMFilePath = "assets/encrypted/bgm/ztd.mp3", });
@@ -103,7 +104,8 @@ void CubeTestEntities()
 		Core::AddComponent(cube2, rbDesc);
 	}
 
-	if constexpr (false)
+	constexpr bool enableBackpack = false;
+	if constexpr (enableBackpack)
 	{
 		Core::EntityID backpack = Core::CreateEntity();
 		Core::AddComponent(backpack, Core::Transform3D(fQuatIdentity(), fVec3(0.0f, 1.0f, -2.0f)));

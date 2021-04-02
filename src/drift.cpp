@@ -17,12 +17,39 @@
 
 #include "CubeTest.h"
 
-constexpr int const g_renderAreaWidth = 320;
-constexpr int const g_renderAreaHeight = (g_renderAreaWidth / 4) * 3;
-constexpr int const g_windowStartWidth = g_renderAreaWidth * 3;
-constexpr int const g_windowStartHeight = (g_windowStartWidth / 4) * 3;
+constexpr int g_renderAreaWidth = 320;
+constexpr int g_renderAreaHeight = (g_renderAreaWidth / 4) * 3;
+constexpr int g_windowStartWidth = g_renderAreaWidth * 3;
+constexpr int g_windowStartHeight = (g_windowStartWidth / 4) * 3;
 
-void initialise_cb()
+void Initialise();
+void Frame();
+void Cleanup();
+void Event(sapp_event const* _event);
+void Fail(char const* _error);
+
+sapp_desc sokol_main(int argc, char* argv[])
+{
+	InitialiseLogging();
+
+	sapp_desc desc{
+		.init_cb = &Initialise,
+		.frame_cb = &Frame,
+		.cleanup_cb = &Cleanup,
+		.event_cb = &Event,
+		.fail_cb = &Fail,
+
+		.width = g_windowStartWidth,
+		.height = g_windowStartHeight,
+		.sample_count = 1,
+		.swap_interval = 0,
+		.window_title = "drift",
+	};
+
+	return desc;
+}
+
+void Initialise()
 {
 	// initialisation
 	{
@@ -96,7 +123,7 @@ void initialise_cb()
 	Core::ECS::CommitChanges();
 }
 
-void frame_cb()
+void Frame()
 {
 	{
 		Core::FrameData& fd = ecs::get_global_component<Core::FrameData>();
@@ -128,7 +155,7 @@ void frame_cb()
 	Core::ECS::Update();
 }
 
-void cleanup_cb()
+void Cleanup()
 {
 	Core::DestroyAllEntities();
 
@@ -140,35 +167,14 @@ void cleanup_cb()
 	Core::Resource::Cleanup();
 }
 
-void event_cb(sapp_event const* _event)
+void Event(sapp_event const* _event)
 {
 	Core::Render::TextAndGLDebug::Event(_event);
 	Core::Render::DImGui::Event(_event);
 	Core::Input::Event(_event);
 }
 
-void fail_cb(char const* _error)
+void Fail(char const* _error)
 {
-
-}
-
-sapp_desc sokol_main(int argc, char* argv[])
-{
-	InitialiseLogging();
-
-	sapp_desc desc{
-		.init_cb = &initialise_cb,
-		.frame_cb = &frame_cb,
-		.cleanup_cb = &cleanup_cb,
-		.event_cb = &event_cb,
-		.fail_cb = &fail_cb,
-
-		.width = g_windowStartWidth,
-		.height = g_windowStartHeight,
-		.sample_count = 1,
-		.swap_interval = 0,
-		.window_title = "drift",
-	};
-
-	return desc;
+	kaError(_error);
 }

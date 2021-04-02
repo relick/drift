@@ -15,8 +15,9 @@
 
 namespace Core::Render::Text
 {
-	FONScontext* fonsContext{ nullptr };
-	uint32 fonsFontCount = 0;
+	static FONScontext* g_fonsContext{ nullptr };
+	static int g_fonsFontCount{ 0 };
+	static Resource::FontID g_defaultFont{ 0 };
 
 #if TEXT_TEST
 	struct FontTest
@@ -28,7 +29,8 @@ namespace Core::Render::Text
 		bool showImguiWin = false;
 		bool showText = false;
 		bool showDebug = false;
-	} fsTest;
+	};
+	static FontTest g_fsTest;
 #endif
 
 	struct
@@ -38,12 +40,13 @@ namespace Core::Render::Text
 
 	void Init()
 	{
-		fonsContext = sfons_create(512, 512, FONS_ZERO_TOPLEFT);
+		g_fonsContext = sfons_create(512, 512, FONS_ZERO_TOPLEFT);
 
 #if TEXT_TEST
 		// Add font to stash.
-		fsTest.fontNormal = fonsAddFont(fonsContext, "roboto", "assets/encrypted/fonts/MS Gothic.ttf");
-		fonsFontCount++;
+		g_fsTest.fontNormal = fonsAddFont(g_fonsContext, "roboto", "assets/encrypted/fonts/MS Gothic.ttf");
+		g_fonsFontCount++;
+		g_defaultFont = g_fsTest.fontNormal;
 #endif
 	}
 
@@ -55,18 +58,18 @@ namespace Core::Render::Text
 		});
 
 #if TEXT_TEST
-		Core::Render::DImGui::AddMenuItem("GL", "Text Debug", &fsTest.showImguiWin);
+		Core::Render::DImGui::AddMenuItem("GL", "Text Debug", &g_fsTest.showImguiWin);
 
 		Core::MakeSystem<Sys::IMGUI>([](Core::MT_Only&)
 		{
-			if (fsTest.showImguiWin)
+			if (g_fsTest.showImguiWin)
 			{
-				if (ImGui::Begin("Text Debug", &fsTest.showImguiWin, 0))
+				if (ImGui::Begin("Text Debug", &g_fsTest.showImguiWin, 0))
 				{
-					ImGui::Checkbox("Show Text", &fsTest.showText);
-					ImGui::DragFloat2("Text sizes", &fsTest.sizes[0], 10.0f, 0.0f, 124.0f);
-					ImGui::Checkbox("Show Debug", &fsTest.showDebug);
-					ImGui::DragFloat2("Positions", &fsTest.pos[0], 0.1f, 0.0f, 640.0f);
+					ImGui::Checkbox("Show Text", &g_fsTest.showText);
+					ImGui::DragFloat2("Text sizes", &g_fsTest.sizes[0], 10.0f, 0.0f, 124.0f);
+					ImGui::Checkbox("Show Debug", &g_fsTest.showDebug);
+					ImGui::DragFloat2("Positions", &g_fsTest.pos[0], 0.1f, 0.0f, 640.0f);
 				}
 				ImGui::End();
 			}
@@ -81,36 +84,36 @@ namespace Core::Render::Text
 
 	void Render()
 	{
-		sfons_flush(fonsContext);
+		sfons_flush(g_fonsContext);
 	}
 
 	void Cleanup()
 	{
-		sfons_destroy(fonsContext);
-		fonsContext = nullptr;
+		sfons_destroy(g_fonsContext);
+		g_fonsContext = nullptr;
 	}
 
 	void Event(sapp_event const* _event)
 	{
 		if (_event->type == SAPP_EVENTTYPE_RESIZED)
 		{
-			fonsResetAtlas(fonsContext, 512, 512);
+			fonsResetAtlas(g_fonsContext, 512, 512);
 		}
 	}
 
 #if TEXT_TEST
 	void ShowDebugText()
 	{
-		fonsClearState(fonsContext);
+		fonsClearState(g_fonsContext);
 
-		if (fsTest.showText)
+		if (g_fsTest.showText)
 		{
-			Text::Write(fsTest.fontNormal, fsTest.pos, "The big ", fsTest.sizes[0]);
-			Text::Write(fsTest.fontNormal, fsTest.pos, "brown fox", fsTest.sizes[1], fsTest.brown);
+			Text::Write(g_fsTest.fontNormal, g_fsTest.pos, "The big ", g_fsTest.sizes[0]);
+			Text::Write(g_fsTest.fontNormal, g_fsTest.pos, "brown fox", g_fsTest.sizes[1], g_fsTest.brown);
 		}
-		if (fsTest.showDebug)
+		if (g_fsTest.showDebug)
 		{
-			fonsDrawDebug(fonsContext, fsTest.pos.x, fsTest.pos.y);
+			fonsDrawDebug(g_fonsContext, g_fsTest.pos.x, g_fsTest.pos.y);
 		}
 	}
 #endif
@@ -124,11 +127,11 @@ namespace Core::Render::Text
 		uint32 _col
 	)
 	{
-		if (!fonsContext)
+		if (!g_fonsContext)
 		{
 			return false;
 		}
-		if (_font.GetValue() >= fonsFontCount)
+		if (_font.GetValue() >= g_fonsFontCount)
 		{
 			return false;
 		}
@@ -137,10 +140,10 @@ namespace Core::Render::Text
 
 		_tlPos *= renderAreaToContextWindow;
 
-		fonsSetFont(fonsContext, _font.GetValue());
-		fonsSetSize(fonsContext, _size * renderAreaToContextWindow.y);
-		fonsSetColor(fonsContext, _col);
-		fonsDrawText(fonsContext, _tlPos.x, _tlPos.y, _text, NULL);
+		fonsSetFont(g_fonsContext, _font.GetValue());
+		fonsSetSize(g_fonsContext, _size * renderAreaToContextWindow.y);
+		fonsSetColor(g_fonsContext, _col);
+		fonsDrawText(g_fonsContext, _tlPos.x, _tlPos.y, _text, nullptr);
 
 		return true;
 	}
@@ -153,6 +156,6 @@ namespace Core::Render::Text
 		uint32 _col
 	)
 	{
-		return Write(fsTest.fontNormal, _tlPos, _text, _size, _col);
+		return Write(g_defaultFont, _tlPos, _text, _size, _col);
 	}
 }

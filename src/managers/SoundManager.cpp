@@ -9,26 +9,30 @@
 
 namespace Core::Sound
 {
-	struct
+	struct CurrentlyPlayingBGM
+	{
+		Resource::MusicID music;
+		SoLoud::handle handle;
+	};
+
+	struct SoundState
 	{
 		SoLoud::Soloud soloud;
-		struct
-		{
-			Resource::MusicID music;
-			SoLoud::handle handle;
-		} currentPlayingBGM;
-	} soundState;
+		CurrentlyPlayingBGM currentPlayingBGM;
+	};
+
+	static SoundState g_soundState;
 
 	//--------------------------------------------------------------------------------
 	void Init()
 	{
-		soundState.soloud.init();
+		g_soundState.soloud.init();
 	}
 
 	//--------------------------------------------------------------------------------
 	void Cleanup()
 	{
-		soundState.soloud.deinit();
+		g_soundState.soloud.deinit();
 	}
 
 	//--------------------------------------------------------------------------------
@@ -39,7 +43,7 @@ namespace Core::Sound
 	)
 	{
 		Resource::SoundEffectData& sfxData = Resource::GetSoundEffect(_soundEffect);
-		soundState.soloud.play(sfxData.m_sound, _volume);
+		g_soundState.soloud.play(sfxData.m_sound, _volume);
 	}
 
 	//--------------------------------------------------------------------------------
@@ -51,7 +55,7 @@ namespace Core::Sound
 	)
 	{
 		Resource::SoundEffectData& sfxData = Resource::GetSoundEffect(_soundEffect);
-		return soundState.soloud.play3d(sfxData.m_sound,
+		return g_soundState.soloud.play3d(sfxData.m_sound,
 			_pos.x, _pos.y, _pos.z,
 			0.0f, 0.0f, 0.0f,
 			_volume);
@@ -65,7 +69,7 @@ namespace Core::Sound
 		fVec3 const& _vel
 	)
 	{
-		soundState.soloud.set3dSourceParameters(_handle,
+		g_soundState.soloud.set3dSourceParameters(_handle,
 			_pos.x, _pos.y, _pos.z,
 			_vel.x, _vel.y, _vel.z
 		);
@@ -78,7 +82,7 @@ namespace Core::Sound
 		fVec3 const& _pos
 	)
 	{
-		soundState.soloud.set3dSourcePosition(_handle,
+		g_soundState.soloud.set3dSourcePosition(_handle,
 			_pos.x, _pos.y, _pos.z
 		);
 	}
@@ -89,7 +93,7 @@ namespace Core::Sound
 		SoLoud::handle _handle
 	)
 	{
-		return soundState.soloud.isValidVoiceHandle(_handle);
+		return g_soundState.soloud.isValidVoiceHandle(_handle);
 	}
 
 	//--------------------------------------------------------------------------------
@@ -99,40 +103,40 @@ namespace Core::Sound
 		float _initVolume // = -1.0f
 	)
 	{
-		if (soundState.currentPlayingBGM.music.IsValid())
+		if (g_soundState.currentPlayingBGM.music.IsValid())
 		{
-			if (soundState.currentPlayingBGM.music != _music)
+			if (g_soundState.currentPlayingBGM.music != _music)
 			{
-				soundState.soloud.stop(soundState.currentPlayingBGM.handle);
+				g_soundState.soloud.stop(g_soundState.currentPlayingBGM.handle);
 			}
 			else
 			{
-				soundState.soloud.setPause(soundState.currentPlayingBGM.handle, false);
+				g_soundState.soloud.setPause(g_soundState.currentPlayingBGM.handle, false);
 				return;
 			}
 		}
 		Resource::MusicData& musicData = Resource::GetMusic(_music);
-		soundState.currentPlayingBGM.handle = soundState.soloud.playBackground(musicData.m_music, _initVolume);
-		soundState.currentPlayingBGM.music = _music;
+		g_soundState.currentPlayingBGM.handle = g_soundState.soloud.playBackground(musicData.m_music, _initVolume);
+		g_soundState.currentPlayingBGM.music = _music;
 	}
 
 	//--------------------------------------------------------------------------------
 	void PauseBGM()
 	{
-		if (soundState.currentPlayingBGM.music.IsValid())
+		if (g_soundState.currentPlayingBGM.music.IsValid())
 		{
-			soundState.soloud.setPause(soundState.currentPlayingBGM.handle, true);
+			g_soundState.soloud.setPause(g_soundState.currentPlayingBGM.handle, true);
 		}
 	}
 
 	//--------------------------------------------------------------------------------
 	void EndBGM()
 	{
-		if (soundState.currentPlayingBGM.music.IsValid())
+		if (g_soundState.currentPlayingBGM.music.IsValid())
 		{
-			soundState.soloud.stop(soundState.currentPlayingBGM.handle);
-			soundState.currentPlayingBGM.handle = 0;
-			soundState.currentPlayingBGM.music = Resource::MusicID();
+			g_soundState.soloud.stop(g_soundState.currentPlayingBGM.handle);
+			g_soundState.currentPlayingBGM.handle = 0;
+			g_soundState.currentPlayingBGM.music = Resource::MusicID();
 		}
 	}
 
@@ -142,18 +146,18 @@ namespace Core::Sound
 		float _volume
 	)
 	{
-		if (soundState.currentPlayingBGM.music.IsValid())
+		if (g_soundState.currentPlayingBGM.music.IsValid())
 		{
-			soundState.soloud.setVolume(soundState.currentPlayingBGM.handle, _volume);
+			g_soundState.soloud.setVolume(g_soundState.currentPlayingBGM.handle, _volume);
 		}
 	}
 
 	//--------------------------------------------------------------------------------
 	float GetBGMVolume()
 	{
-		if (soundState.currentPlayingBGM.music.IsValid())
+		if (g_soundState.currentPlayingBGM.music.IsValid())
 		{
-			return soundState.soloud.getVolume(soundState.currentPlayingBGM.handle);
+			return g_soundState.soloud.getVolume(g_soundState.currentPlayingBGM.handle);
 		}
 		return 0.0f;
 	}
@@ -165,7 +169,7 @@ namespace Core::Sound
 		fVec3 const& _vel
 	)
 	{
-		soundState.soloud.set3dListenerParameters(
+		g_soundState.soloud.set3dListenerParameters(
 			_t.m_origin.x, _t.m_origin.y, _t.m_origin.z,
 			_t.forward().x, _t.forward().y, _t.forward().z,
 			_t.up().x, _t.up().y, _t.up().z,
@@ -179,13 +183,13 @@ namespace Core::Sound
 		fTrans const& _t
 	)
 	{
-		soundState.soloud.set3dListenerPosition(
+		g_soundState.soloud.set3dListenerPosition(
 			_t.m_origin.x, _t.m_origin.y, _t.m_origin.z
 		);
-		soundState.soloud.set3dListenerAt(
+		g_soundState.soloud.set3dListenerAt(
 			_t.forward().x, _t.forward().y, _t.forward().z
 		);
-		soundState.soloud.set3dListenerUp(
+		g_soundState.soloud.set3dListenerUp(
 			_t.up().x, _t.up().y, _t.up().z
 		);
 	}

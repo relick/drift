@@ -19,7 +19,7 @@ namespace Core
 		float dt{ 0.0f };
 
 #if DEBUG_TOOLS
-		double m_debug_elapsedTime{ 0.0f };
+		double m_debug_elapsedTime{ 0.0 };
 		uint64 m_debug_frameCount{ 0 };
 #endif
 	};

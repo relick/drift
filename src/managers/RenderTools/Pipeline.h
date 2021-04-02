@@ -52,7 +52,7 @@ namespace Core::Render
 			int _w,
 			int _h,
 			DepthDetail _depthDetail,
-			int _numCol,
+			uint8 _numCol,
 			std::string const& _debugName
 		)
 		{
@@ -89,7 +89,8 @@ namespace Core::Render
 				passDesc.depth_stencil_attachment = { .image = m_depthTarget->GetValue(), .mip_level = 0 };
 			}
 
-			for (int i = 0; i < _numCol && i < 4; ++i)
+			kaAssert(_numCol <= 4, "More than 4 colour buffers requested, instantiating only 4.");
+			for (uint8 i = 0; i < _numCol && i < 4; ++i)
 			{
 				sg_image_desc colTargetDesc{
 					.type = SG_IMAGETYPE_2D,
@@ -191,14 +192,14 @@ namespace Core::Render
 	{
 		sg_bindings m_bindings{};
 		bool m_valid{ false };
-		uint32 m_numToDraw{ 0 };
+		int m_numToDraw{ 0 };
 
 #if DEBUG_TOOLS
 		std::array<bool, e_Pass_Count + 1> m_validPasses{ false };
 		std::array<bool, e_Renderer_Count + 1> m_validRenderers{ false };
 #endif
 	public:
-		PassGlue(sg_bindings const& _binds, uint32 _numToDraw)
+		PassGlue(sg_bindings const& _binds, int _numToDraw)
 			: m_bindings{ _binds }
 			, m_valid{ true }
 			, m_numToDraw{ _numToDraw }
@@ -222,7 +223,7 @@ namespace Core::Render
 			return false;
 		}
 
-		uint32 NumToDraw() const { return m_numToDraw; }
+		int NumToDraw() const { return m_numToDraw; }
 
 		void AddValidPass(e_Pass _pass)
 		{

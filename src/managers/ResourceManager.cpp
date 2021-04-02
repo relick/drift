@@ -16,23 +16,23 @@
 
 #include "shaders/main.h"
 
-Core::Resource::ModelID::ValueType nextModelID = 0;
+static Core::Resource::ModelID::ValueType g_nextModelID = 0;
 
-Core::Resource::TextureSampleID defaultTextureID{}; // used for missing textures
-Core::Resource::TextureSampleID defaultNormalTextureID{}; // used for missing normal textures
-absl::flat_hash_map<Core::Resource::TextureID, Core::Resource::TextureData> textures;
-absl::flat_hash_map<Core::Resource::ModelID, Core::Resource::ModelData> models;
+static Core::Resource::TextureSampleID g_defaultTextureID{}; // used for missing textures
+static Core::Resource::TextureSampleID g_defaultNormalTextureID{}; // used for missing normal textures
+static absl::flat_hash_map<Core::Resource::TextureID, Core::Resource::TextureData> g_textures;
+static absl::flat_hash_map<Core::Resource::ModelID, Core::Resource::ModelData> g_models;
 
-Core::Resource::SpriteID::ValueType nextSpriteID = 0;
-absl::flat_hash_map<Core::Resource::SpriteID, Core::Resource::SpriteData> sprites;
+static Core::Resource::SpriteID::ValueType g_nextSpriteID = 0;
+static absl::flat_hash_map<Core::Resource::SpriteID, Core::Resource::SpriteData> g_sprites;
 
-constexpr usize const g_maxSoundEffects = 128;
-constexpr usize const g_maxMusic = 32;
+constexpr usize g_maxSoundEffects = 128;
+constexpr usize g_maxMusic = 32;
 
-Core::Resource::SoundEffectID::ValueType nextSoundEffectID = 0;
-Core::Resource::MusicID::ValueType nextMusicID = 0;
-std::array<Core::Resource::SoundEffectData, g_maxSoundEffects> soundEffects;
-std::array<Core::Resource::MusicData, g_maxMusic> music;
+static Core::Resource::SoundEffectID::ValueType g_nextSoundEffectID = 0;
+static Core::Resource::MusicID::ValueType g_nextMusicID = 0;
+static std::array<Core::Resource::SoundEffectData, g_maxSoundEffects> g_soundEffects;
+static std::array<Core::Resource::MusicData, g_maxMusic> g_music;
 
 namespace
 {
@@ -67,7 +67,7 @@ namespace Core
 					.data = emptyTexData,
 					.label = "default-colour-texture",
 				};
-				defaultTextureID = sg_make_image(emptyTexDesc);
+				g_defaultTextureID = sg_make_image(emptyTexDesc);
 			}
 			{
 				uint8 const emptyTex[] = { g_textureNormalZero, g_textureNormalZero, g_textureNormalOne, 0, };
@@ -83,7 +83,7 @@ namespace Core
 					.data = emptyTexData,
 					.label = "default-normal-texture",
 				};
-				defaultNormalTextureID = sg_make_image(emptyTexDesc);
+				g_defaultNormalTextureID = sg_make_image(emptyTexDesc);
 			}
 		}
 
@@ -94,28 +94,28 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		ModelID NewModelID() { return nextModelID++; }
-		SpriteID NewSpriteID() { return nextSpriteID++; }
-		SoundEffectID NewSoundEffectID() { kaAssert(nextSoundEffectID < g_maxSoundEffects, "ran out of sound effects"); return nextSoundEffectID++; }
-		MusicID NewMusicID() { kaAssert(nextMusicID < g_maxMusic, "ran out of music"); return nextMusicID++; }
+		static ModelID NewModelID() { return g_nextModelID++; }
+		static SpriteID NewSpriteID() { return g_nextSpriteID++; }
+		static SoundEffectID NewSoundEffectID() { kaAssert(g_nextSoundEffectID < g_maxSoundEffects, "ran out of sound effects"); return g_nextSoundEffectID++; }
+		static MusicID NewMusicID() { kaAssert(g_nextMusicID < g_maxMusic, "ran out of music"); return g_nextMusicID++; }
 
 		//--------------------------------------------------------------------------------
-		TextureData const& GetTexture(TextureID _texture) { return textures.at(_texture); }
-		ModelData const& GetModel(ModelID _model) { return models.at(_model); }
-		SpriteData const& GetSprite(SpriteID _sprite) { return sprites.at(_sprite); }
-		SoundEffectData& GetSoundEffect(SoundEffectID _soundEffect) { return soundEffects[_soundEffect.GetValue()]; }
-		MusicData& GetMusic(MusicID _music) { return music[_music.GetValue()]; }
+		TextureData const& GetTexture(TextureID _texture) { return g_textures.at(_texture); }
+		ModelData const& GetModel(ModelID _model) { return g_models.at(_model); }
+		SpriteData const& GetSprite(SpriteID _sprite) { return g_sprites.at(_sprite); }
+		SoundEffectData& GetSoundEffect(SoundEffectID _soundEffect) { return g_soundEffects[_soundEffect.GetValue()]; }
+		MusicData& GetMusic(MusicID _music) { return g_music[_music.GetValue()]; }
 
 
 		//--------------------------------------------------------------------------------
 		/// texture
 		//--------------------------------------------------------------------------------
-		TextureID FindExistingTexture
+		static TextureID FindExistingTexture
 		(
 			std::string const& _texPath
 		)
 		{
-			for (auto const& [textureID, texture] : textures)
+			for (auto const& [textureID, texture] : g_textures)
 			{
 				if (texture.m_path == _texPath)
 				{
@@ -126,7 +126,7 @@ namespace Core
 			return TextureID{};
 		}
 
-		bool CheckRGBAForAlpha
+		static bool CheckRGBAForAlpha
 		(
 			uint8 const* _data,
 			usize _dataSize
@@ -142,7 +142,7 @@ namespace Core
 			return false;
 		}
 
-		bool CheckRGBAForSemiTransparency
+		static bool CheckRGBAForSemiTransparency
 		(
 			uint8 const* _data,
 			usize _dataSize
@@ -159,7 +159,7 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		bool LoadCubemapFromFile
+		static bool LoadCubemapFromFile
 		(
 			std::string const& _cubemapPath,
 			sg_image& o_imageID
@@ -205,7 +205,7 @@ namespace Core
 				if (data != nullptr)
 				{
 					kaAssert(imageComponentCount > 0);
-					usize const dataSize = imageDesc.width * imageDesc.height * dataComponentCount;
+					usize const dataSize = static_cast<usize>(imageDesc.width) * static_cast<usize>(imageDesc.height) * static_cast<usize>(dataComponentCount);
 					kaAssert(imageComponentCount <= 3 || !CheckRGBAForAlpha(data, dataSize), "cubemap cannot use alpha");
 
 					imageDesc.data.subimage[i][0] = {
@@ -218,7 +218,7 @@ namespace Core
 					kaError("Texture failed to load at path: " + cubemapFilenames[i]);
 					for (usize j = 0; j < i; ++j)
 					{
-						stbi_image_free((void*)imageDesc.data.subimage[j][0].ptr);
+						stbi_image_free(const_cast<void*>(imageDesc.data.subimage[j][0].ptr));
 					}
 					stbi_image_free(data);
 					return false;
@@ -228,13 +228,13 @@ namespace Core
 			o_imageID = sg_make_image(imageDesc);
 			for (usize i = 0; i < cubemapFilenames.size(); ++i)
 			{
-				stbi_image_free((void*)imageDesc.data.subimage[i][0].ptr);
+				stbi_image_free(const_cast<void*>(imageDesc.data.subimage[i][0].ptr));
 			}
 			return true;
 		}
 
 		//--------------------------------------------------------------------------------
-		bool LoadTextureFromFile
+		static bool LoadTextureFromFile
 		(
 			std::string const& _filename,
 			sg_image& o_imageID,
@@ -262,7 +262,7 @@ namespace Core
 				o_width = imageDesc.width;
 				o_height = imageDesc.height;
 
-				usize const dataSize = imageDesc.width * imageDesc.height * dataComponentCount;
+				usize const dataSize = static_cast<usize>(imageDesc.width) * static_cast<usize>(imageDesc.height) * static_cast<usize>(dataComponentCount);
 				o_semitransparent = CheckRGBAForSemiTransparency(data, dataSize);
 
 				imageDesc.data.subimage[0][0] = {
@@ -280,7 +280,7 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		bool Load2DTexture
+		ResourceLoadResult Load2DTexture
 		(
 			std::string const& _path,
 			TextureID& o_textureID,
@@ -309,7 +309,7 @@ namespace Core
 			}
 
 			o_textureID = imageID;
-			TextureData& newTextureData = textures[o_textureID];
+			TextureData& newTextureData = g_textures[o_textureID];
 			newTextureData.m_path = _path;
 			newTextureData.m_type = _type;
 			newTextureData.m_width = width;
@@ -323,12 +323,12 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		/// model
 		//--------------------------------------------------------------------------------
-		ModelID FindExistingModel
+		static ModelID FindExistingModel
 		(
 			std::string const& _modelPath
 		)
 		{
-			for (auto const& [modelID, model] : models)
+			for (auto const& [modelID, model] : g_models)
 			{
 				if (model.m_path == _modelPath)
 				{
@@ -340,7 +340,7 @@ namespace Core
 		}
 		
 		//--------------------------------------------------------------------------------
-		void LoadMaterialTextures
+		static void LoadMaterialTextures
 		(
 			std::string const& _directory,
 			aiMaterial* _mat,
@@ -349,7 +349,9 @@ namespace Core
 		{
 			auto fn_loadTextureType = [&_directory, &_mat, &o_textures](aiTextureType _type)
 			{
-				for (unsigned int i = 0; i < _mat->GetTextureCount(_type); i++)
+				// TODO support more than 1 texture?
+				//for (unsigned int i = 0; i < _mat->GetTextureCount(_type); i++)
+				if (unsigned int i = 0; i < _mat->GetTextureCount(_type))
 				{
 					aiString str;
 					_mat->GetTexture(_type, i, &str);
@@ -389,9 +391,6 @@ namespace Core
 						kaAssert(!semitransparent, "semi-transparent textures nyi");
 						o_textures.emplace_back(textureID);
 					}
-
-					// TODO support more than 1 texture?
-					break;
 				}
 			};
 
@@ -416,7 +415,7 @@ namespace Core
 		};
 
 		//--------------------------------------------------------------------------------
-		void ProcessMesh
+		static void ProcessMesh
 		(
 			std::string const& _directory,
 			aiMesh* _mesh,
@@ -454,7 +453,6 @@ namespace Core
 			}
 
 			// process material
-			if (_mesh->mMaterialIndex >= 0)
 			{
 				aiMaterial* material = _scene->mMaterials[_mesh->mMaterialIndex];
 
@@ -478,9 +476,9 @@ namespace Core
 			}
 
 			// now finalise by making texture bindings
-			o_newMesh.m_bindings.fs_images[SLOT_main_mat_diffuseTex] = defaultTextureID.GetValue();
-			o_newMesh.m_bindings.fs_images[SLOT_main_mat_specularTex] = defaultTextureID.GetValue();
-			o_newMesh.m_bindings.fs_images[SLOT_main_mat_normalTex] = defaultNormalTextureID.GetValue();
+			o_newMesh.m_bindings.fs_images[SLOT_main_mat_diffuseTex] = g_defaultTextureID.GetValue();
+			o_newMesh.m_bindings.fs_images[SLOT_main_mat_specularTex] = g_defaultTextureID.GetValue();
+			o_newMesh.m_bindings.fs_images[SLOT_main_mat_normalTex] = g_defaultNormalTextureID.GetValue();
 			for (TextureID const& texID : o_newMesh.m_textures)
 			{
 				TextureData const& tex = GetTexture(texID);
@@ -512,7 +510,7 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		void ProcessNode
+		static void ProcessNode
 		(
 			std::string const& _directory,
 			ModelData& io_model,
@@ -537,7 +535,7 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		bool LoadModel
+		ResourceLoadResult LoadModel
 		(
 			std::string const& _path,
 			ModelID& o_modelID
@@ -570,7 +568,7 @@ namespace Core
 			std::string const directory = _path.substr(0, _path.find_last_of('/'));
 
 			o_modelID = NewModelID();
-			ModelData& newModel = models[o_modelID];
+			ModelData& newModel = g_models[o_modelID];
 			ModelLoadData loadData;
 			newModel.m_path = _path;
 			ProcessNode(directory, newModel, loadData, scene->mRootNode, scene);
@@ -648,7 +646,8 @@ namespace Core
 
 			for (usize meshI = 0; meshI < newModel.m_meshes.size(); ++meshI)
 			{
-				newModel.m_meshes[meshI].SetNumToDraw(static_cast<uint32>(loadData.m_meshes[meshI].m_indices.size()));
+				kaAssert(loadData.m_meshes[meshI].m_indices.size() <= INT_MAX, "Too many vertices want to be rendered in this mesh");
+				newModel.m_meshes[meshI].SetNumToDraw(static_cast<int>(loadData.m_meshes[meshI].m_indices.size()));
 			}
 
 			// All loaded data automatically gets cleared now it's in the GPU
@@ -657,13 +656,13 @@ namespace Core
 			return true;
 		}
 
-		bool LoadCubemap
+		ResourceLoadResult LoadCubemap
 		(
 			std::string const& _cubemapPath,
 			TextureID& o_cubemapID
 		)
 		{
-			for (auto const& [texID, texData] : textures)
+			for (auto const& [texID, texData] : g_textures)
 			{
 				if (texData.m_type == TextureData::Type::Cubemap && texData.m_path == _cubemapPath)
 				{
@@ -676,7 +675,7 @@ namespace Core
 			if (LoadCubemapFromFile(_cubemapPath, newImageID))
 			{
 				o_cubemapID = newImageID;
-				TextureData& newTexData = textures[o_cubemapID];
+				TextureData& newTexData = g_textures[o_cubemapID];
 				newTexData.m_type = TextureData::Type::Cubemap;
 				newTexData.m_path = _cubemapPath;
 
@@ -690,13 +689,13 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		/// sprite
 		//--------------------------------------------------------------------------------
-		bool LoadSprite
+		ResourceLoadResult LoadSprite
 		(
 			std::string const& _path,
 			SpriteID& o_spriteID
 		)
 		{
-			for (auto const& [spriteID, sprite] : sprites)
+			for (auto const& [spriteID, sprite] : g_sprites)
 			{
 				if (sprite.m_path == _path)
 				{
@@ -715,14 +714,14 @@ namespace Core
 			std::string const directory = _path.substr(0, _path.find_last_of('/') + 1);
 
 			o_spriteID = NewSpriteID();
-			SpriteData& newSprite = sprites[o_spriteID];
+			SpriteData& newSprite = g_sprites[o_spriteID];
 			newSprite.m_path = _path;
 
 			std::string line;
 
 			// line 1: texture file
-			int textureWidth{ 0 };
-			int textureHeight{ 0 };
+			float textureWidth{ 1 };
+			float textureHeight{ 1 };
 			if (std::getline(spriteFile, line))
 			{
 				std::string const texturePath = directory + line;
@@ -734,8 +733,8 @@ namespace Core
 					TextureData const& textureData = GetTexture(textureID);
 
 					newSprite.m_texture = textureID;
-					textureWidth = textureData.m_width;
-					textureHeight = textureData.m_height;
+					textureWidth = static_cast<float>(textureData.m_width);
+					textureHeight = static_cast<float>(textureData.m_height);
 				}
 			}
 			else
@@ -787,15 +786,15 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		/// sound
 		//--------------------------------------------------------------------------------
-		bool LoadSoundEffect
+		ResourceLoadResult LoadSoundEffect
 		(
 			std::string const& _path,
 			SoundEffectID& o_soundEffectID
 		)
 		{
-			for (SoundEffectID::ValueType i = 0; i < nextSoundEffectID; ++i)
+			for (SoundEffectID::ValueType i = 0; i < g_nextSoundEffectID; ++i)
 			{
-				if (soundEffects[i].m_path == _path)
+				if (g_soundEffects[i].m_path == _path)
 				{
 					o_soundEffectID = i;
 					return true;
@@ -803,7 +802,7 @@ namespace Core
 			}
 
 			o_soundEffectID = NewSoundEffectID();
-			SoundEffectData& newSoundEffect = soundEffects[o_soundEffectID.GetValue()];
+			SoundEffectData& newSoundEffect = g_soundEffects[o_soundEffectID.GetValue()];
 			if (newSoundEffect.m_sound.load(_path.c_str()) == SoLoud::SO_NO_ERROR)
 			{
 				newSoundEffect.m_path = _path;
@@ -815,15 +814,15 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		bool LoadMusic
+		ResourceLoadResult LoadMusic
 		(
 			std::string const& _path,
 			MusicID& o_musicID
 		)
 		{
-			for (MusicID::ValueType i = 0; i < nextMusicID; ++i)
+			for (MusicID::ValueType i = 0; i < g_nextMusicID; ++i)
 			{
-				if (music[i].m_path == _path)
+				if (g_music[i].m_path == _path)
 				{
 					o_musicID = i;
 					return true;
@@ -831,7 +830,7 @@ namespace Core
 			}
 
 			o_musicID = NewMusicID();
-			MusicData& newMusic = music[o_musicID.GetValue()];
+			MusicData& newMusic = g_music[o_musicID.GetValue()];
 			if (newMusic.m_music.load(_path.c_str()) == SoLoud::SO_NO_ERROR)
 			{
 				newMusic.m_path = _path;

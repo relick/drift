@@ -40,7 +40,7 @@ namespace Core
 	template<typename T_Component>
 	struct ComponentDestroyer : ComponentDestroyerBase
 	{
-		virtual ~ComponentDestroyer() = default;
+		~ComponentDestroyer() override = default;
 		void CleanupComponent(EntityID _entity) const override
 		{
 			Core::CleanupComponent<T_Component>(_entity);
@@ -58,15 +58,15 @@ namespace Core
 		template<typename T_Component>
 		constexpr ComponentHash GetComponentHash() { return ecs::detail::get_type_hash<T_Component>(); }
 
-		extern absl::flat_hash_map<ComponentHash, std::unique_ptr<ComponentDestroyerBase>> destroyers;
+		extern absl::flat_hash_map<ComponentHash, std::unique_ptr<ComponentDestroyerBase>> g_destroyers;
 
 		template<typename T_Component>
 		void EnsureDestroyer(ComponentHash _hash)
 		{
-			auto it = destroyers.find(_hash);
-			if (it == destroyers.end())
+			auto it = g_destroyers.find(_hash);
+			if (it == g_destroyers.end())
 			{
-				destroyers[_hash] = std::unique_ptr<ComponentDestroyerBase>(new ComponentDestroyer<T_Component>());
+				g_destroyers[_hash] = std::unique_ptr<ComponentDestroyerBase>(new ComponentDestroyer<T_Component>());
 			}
 		}
 		

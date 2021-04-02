@@ -16,14 +16,14 @@
 #include <string>
 #include <unordered_map>
 
-sg_imgui_t gfxImGuiState{};
+static sg_imgui_t g_gfxImGuiState{};
 
 struct MenuItem
 {
 	char const* m_name;
 	bool* m_open;
 };
-std::unordered_multimap<std::string, MenuItem> imguiMenuItems;
+static std::unordered_multimap<std::string, MenuItem> g_imguiMenuItems;
 
 namespace Core
 {
@@ -39,12 +39,12 @@ namespace Core
 				simguiDesc.ini_filename = "ImGuiSettings.ini";
 				simguiDesc.no_default_font = true;
 				simgui_setup(&simguiDesc);
-				sg_imgui_init(&gfxImGuiState);
+				sg_imgui_init(&g_gfxImGuiState);
 
 				// use ms gothic
 				{
 					ImGuiIO& io = ImGui::GetIO();
-					io.Fonts->AddFontFromFileTTF("assets/encrypted/fonts/msgothic.ttc", 13.0f, 0, io.Fonts->GetGlyphRangesJapanese());
+					io.Fonts->AddFontFromFileTTF("assets/encrypted/fonts/msgothic.ttc", 13.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
 
 					sg_image_desc imgDesc{
 						.pixel_format = SG_PIXELFORMAT_RGBA8,
@@ -58,7 +58,7 @@ namespace Core
 					uint8* pixelData = nullptr;
 					io.Fonts->GetTexDataAsRGBA32(&pixelData, &imgDesc.width, &imgDesc.height, &bytesPerPixel);
 					imgDesc.data.subimage[0][0].ptr = pixelData;
-					imgDesc.data.subimage[0][0].size = static_cast<usize>(imgDesc.width) * imgDesc.height * bytesPerPixel;
+					imgDesc.data.subimage[0][0].size = static_cast<usize>(imgDesc.width) * static_cast<usize>(imgDesc.height) * static_cast<usize>(bytesPerPixel);
 
 					simgui_setfont(sg_make_image(imgDesc));
 				}
@@ -77,7 +77,7 @@ namespace Core
 				Core::MakeSystem<Sys::IMGUI>([](Core::MT_Only&, Core::FrameData const& _fd, Core::Render::FrameData const& _rfd)
 				{
 					// Draw gfx debug UI
-					sg_imgui_draw(&gfxImGuiState);
+					sg_imgui_draw(&g_gfxImGuiState);
 
 					// Draw menu bar
 					if (ImGui::BeginMainMenuBar())
@@ -85,19 +85,19 @@ namespace Core
 						// Draw gfx toggler
 						if (ImGui::BeginMenu("sokol-gfx"))
 						{
-							ImGui::MenuItem("Buffers", 0, &gfxImGuiState.buffers.open);
-							ImGui::MenuItem("Images", 0, &gfxImGuiState.images.open);
-							ImGui::MenuItem("Shaders", 0, &gfxImGuiState.shaders.open);
-							ImGui::MenuItem("Pipelines", 0, &gfxImGuiState.pipelines.open);
-							ImGui::MenuItem("Passes", 0, &gfxImGuiState.passes.open);
-							ImGui::MenuItem("Calls", 0, &gfxImGuiState.capture.open);
+							ImGui::MenuItem("Buffers", nullptr, &g_gfxImGuiState.buffers.open);
+							ImGui::MenuItem("Images", nullptr, &g_gfxImGuiState.images.open);
+							ImGui::MenuItem("Shaders", nullptr, &g_gfxImGuiState.shaders.open);
+							ImGui::MenuItem("Pipelines", nullptr, &g_gfxImGuiState.pipelines.open);
+							ImGui::MenuItem("Passes", nullptr, &g_gfxImGuiState.passes.open);
+							ImGui::MenuItem("Calls", nullptr, &g_gfxImGuiState.capture.open);
 							ImGui::EndMenu();
 						}
 
 						// Custom menu items from elsewhere
 						std::string currentHeader;
 						bool currentHeaderIsOpen = false;
-						for (auto const& menuPair : imguiMenuItems)
+						for (auto const& menuPair : g_imguiMenuItems)
 						{
 							if (currentHeader != menuPair.first)
 							{
@@ -111,7 +111,7 @@ namespace Core
 							}
 							if (currentHeaderIsOpen)
 							{
-								ImGui::MenuItem(menuPair.second.m_name, 0, menuPair.second.m_open);
+								ImGui::MenuItem(menuPair.second.m_name, nullptr, menuPair.second.m_open);
 							}
 						}
 						if (currentHeaderIsOpen)
@@ -166,7 +166,7 @@ namespace Core
 			void Cleanup()
 			{
 #if IMGUI_DEBUG_ENABLED
-				sg_imgui_discard(&gfxImGuiState);
+				sg_imgui_discard(&g_gfxImGuiState);
 				simgui_shutdown();
 #endif
 			}
@@ -184,7 +184,7 @@ namespace Core
 				bool* _open
 			)
 			{
-				imguiMenuItems.insert({ std::string(_header), { _name, _open } });
+				g_imguiMenuItems.insert({ std::string(_header), { _name, _open } });
 			}
 		}
 	}

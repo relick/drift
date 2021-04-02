@@ -13,7 +13,7 @@ set (CMAKE_CXX_STANDARD 20)
 if (MSVC)
 	set (CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /W3 /GR- /EHsc")
 	if (CXX_COMPILER_ID MATCHES Clang)
-		set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-m64 -fdiagnostics-absolute-paths")
+		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m64 -fdiagnostics-absolute-paths")
 	endif ()
 	set (CMAKE_CXX_FLAGS_DEBUG "/MDd /Zi /Ob0 /Od /RTC1 /DDEBUG=1")
 	set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MD /Zi /O2 /Ob1 /DDEBUG=1")
@@ -38,7 +38,7 @@ set (SHADERS_COMPILED "")
 foreach (Shader IN LISTS Shaders)
 	add_custom_command (
 		OUTPUT ${SHADERS_DIR}/${Shader}.h
-		COMMAND ./sokol-shdc --input ${SHADERS_DIR}/${Shader}.glsl --output ${SHADERS_DIR}/${Shader}.h --slang glsl330:hlsl5 --errfmt=${SOKOL_SDHC_COMPILER} --genver=2
+		COMMAND ./sokol-shdc --input ${SHADERS_DIR}/${Shader}.glsl --output ${SHADERS_DIR}/${Shader}.h --slang glsl330:hlsl5 --errfmt=${SOKOL_SDHC_COMPILER} --genver=4
 		DEPENDS ${SHADERS_DIR}/${Shader}.glsl ${SHADERS_DIR}/${Shader}.vert ${SHADERS_DIR}/${Shader}.frag
 		WORKING_DIRECTORY ${TOOLS_DIR}
 	)
@@ -61,17 +61,41 @@ set (SOURCE_CPP "src/drift.cpp" "src/managers/EntityManager.cpp" "src/systems/Co
 
 add_executable (drift ${SOURCE_H} ${SOURCE_CPP} ${SHADERS_COMPILED})
 
-target_include_directories (drift PUBLIC "src" "ecs/include" "ecs/tls/include" "sokol" "fontstash/src" "stb" "glm" "gcem/include" ${BULLET_INCLUDE_DIR})
+target_include_directories (drift PUBLIC "src") # my code (I care about these warnings)
+target_include_directories (drift SYSTEM PUBLIC "abseil-cpp" "ecs/include" "ecs/tls/include" "sokol" "fontstash/src" "stb" "glm" "gcem/include" ${BULLET_INCLUDE_DIR}) # not my code (I don't care about warnings for these)
 target_link_libraries (drift PRIVATE ${BULLET_LIBRARIES} assimp::assimp absl::flat_hash_map absl::flat_hash_set absl::inlined_vector absl::str_format SoLoud ImGui freetype)
 
 
 ## Compiler options
 target_compile_options (drift PRIVATE
 	$<$<CXX_COMPILER_ID:Clang,GNU>:
+		-Wall
+		-Werror
+
+		# We're on C++20 - no need for C++98 compatibility.
+		-Wno-c++98-compat
+		-Wno-c++98-compat-pedantic
+
+		# These are kinda useless or overly pedantic.
+		-Wno-newline-eof
+		-Wno-language-extension-token
+		-Wno-switch-enum
 		-Wno-unused-function
+		-Wno-unused-parameter
+		-Wno-undef
+
+		# These are broken or don't make any sense.
+		-Wno-gnu-zero-variadic-macro-arguments
+		-Wno-ctad-maybe-unsupported
+
+		# These just tell me I shouldn't be using globals. Well I will anyway.
+		-Wno-exit-time-destructors
+		-Wno-global-constructors
 	>
+
 	$<$<CXX_COMPILER_ID:MSVC>:
-		/Zc:preprocessor /utf-8
+		/Zc:preprocessor
+		/utf-8
 	>
 )
 

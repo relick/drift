@@ -17,6 +17,7 @@
 #include <sokol_glue.h>
 
 #include <functional>
+#include <mutex>
 
 // classes
 namespace Core
@@ -215,7 +216,8 @@ namespace Core
 					renderer = {};
 				}
 			}
-		} state;
+		};
+		static RenderState g_renderState;
 
 		class RenderStateFiller
 		{
@@ -315,7 +317,7 @@ namespace Core
 			std::mutex spritesMutex{};
 		};
 
-		FrameScene frameScene{};
+		static FrameScene g_frameScene{};
 	}
 }
 
@@ -334,7 +336,7 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		void InitBuffers
+		static void InitBuffers
 		(
 			int _mainRenderWidth,
 			int _mainRenderHeight,
@@ -364,7 +366,7 @@ namespace Core
 					},
 				};
 				io_state.Pass(Pass_DirectionalLight)->SetPassAction(passAction);
-				frameScene.directionalShadowMap = io_state.Pass(Pass_DirectionalLight)->GetDepthImage();
+				g_frameScene.directionalShadowMap = io_state.Pass(Pass_DirectionalLight)->GetDepthImage();
 			}
 
 			// Target to screen glue
@@ -414,7 +416,7 @@ namespace Core
 					.data = SG_RANGE(skyboxCube),
 					.label = "skyboxCube-buffer",
 				};
-				frameScene.skyboxBinds.vertex_buffers[0] = sg_make_buffer(skyboxCubeDesc);
+				g_frameScene.skyboxBinds.vertex_buffers[0] = sg_make_buffer(skyboxCubeDesc);
 			}
 
 			{
@@ -431,7 +433,7 @@ namespace Core
 					.data = SG_RANGE(rectangle2DWithUV),
 					.label = "rectangle2DWithUV-buffer",
 				};
-				frameScene.spriteBinds.vertex_buffers[0] = sg_make_buffer(rectangle2DWithUVBufferDesc);
+				g_frameScene.spriteBinds.vertex_buffers[0] = sg_make_buffer(rectangle2DWithUVBufferDesc);
 
 				sg_buffer_desc spriteBufferDesc{
 					.size = sizeof(SpriteBufferData) * g_maxSpritesPerFrame,
@@ -439,13 +441,13 @@ namespace Core
 					.usage = SG_USAGE_STREAM,
 					.label = "sprite-buffer",
 				};
-				frameScene.spriteBuffer = sg_make_buffer(spriteBufferDesc);
-				frameScene.spriteBinds.vertex_buffers[1] = frameScene.spriteBuffer;
+				g_frameScene.spriteBuffer = sg_make_buffer(spriteBufferDesc);
+				g_frameScene.spriteBinds.vertex_buffers[1] = g_frameScene.spriteBuffer;
 			}
 		}
 
 		//--------------------------------------------------------------------------------
-		void InitShaders
+		static void InitShaders
 		(
 			RenderStateFiller& io_state
 		)
@@ -645,7 +647,7 @@ namespace Core
 			int _mainRenderHeight
 		)
 		{
-			RenderStateFiller filler{ state };
+			RenderStateFiller filler{ g_renderState };
 			InitBuffers(_mainRenderWidth, _mainRenderHeight, filler);
 			InitShaders(filler);
 		}
@@ -658,21 +660,21 @@ namespace Core
 			Core::Transform3D const& _t
 		)
 		{
-			kaAssert(!state.IsMainCameraSet(), "only one MainCamera3D allowed!");
-			frameScene.camera.proj = glm::perspective(glm::radians(_cam.m_povY), _rfd.renderArea.f.x / _rfd.renderArea.f.y, 0.01f, 1000.0f);
+			kaAssert(!g_renderState.IsMainCameraSet(), "only one MainCamera3D allowed!");
+			g_frameScene.camera.proj = glm::perspective(glm::radians(_cam.m_povY), _rfd.renderArea.f.x / _rfd.renderArea.f.y, 0.01f, 1000.0f);
 
 			fTrans const cameraTrans = _t.CalculateWorldTransform();
-			frameScene.camera.pos = cameraTrans.m_origin;
-			frameScene.camera.view = glm::lookAt(cameraTrans.m_origin, cameraTrans.m_origin + cameraTrans.forward(), fVec3(0.0f, 1.0f, 0.0f));
+			g_frameScene.camera.pos = cameraTrans.m_origin;
+			g_frameScene.camera.view = glm::lookAt(cameraTrans.m_origin, cameraTrans.m_origin + cameraTrans.forward(), fVec3(0.0f, 1.0f, 0.0f));
 
-			state.MainCameraSet();
+			g_renderState.MainCameraSet();
 		}
 
 		//--------------------------------------------------------------------------------
 		template<typename T_ModelVisitor, typename T_MeshVisitor>
 		void RenderMainScene(T_ModelVisitor const& _fnModelVisitor, T_MeshVisitor const& _fnMeshVisitor)
 		{
-			for (ModelScratchData const& mtd : frameScene.modelScratchData)
+			for (ModelScratchData const& mtd : g_frameScene.modelScratchData)
 			{
 				_fnModelVisitor(mtd.m_renderMatrix, mtd.m_model);
 
@@ -680,27 +682,28 @@ namespace Core
 				{
 					_fnMeshVisitor(mesh);
 
-					state.Draw();
+					g_renderState.Draw();
 				}
 
 			}
 		}
 
 		//--------------------------------------------------------------------------------
-		void RenderSpriteBuffer(Resource::TextureID _texture)
+		static void RenderSpriteBuffer(Resource::TextureID _texture)
 		{
 			// fill and draw buffer
-			frameScene.spriteBinds.vertex_buffer_offsets[1] = sg_append_buffer(frameScene.spriteBuffer, SG_RANGE_VEC(frameScene.spriteBufferData));
-			frameScene.spriteBinds.fs_images[SLOT_sprites_textureAtlas] = _texture.GetValue();
+			g_frameScene.spriteBinds.vertex_buffer_offsets[1] = sg_append_buffer(g_frameScene.spriteBuffer, SG_RANGE_VEC(g_frameScene.spriteBufferData));
+			g_frameScene.spriteBinds.fs_images[SLOT_sprites_textureAtlas] = _texture.GetValue();
 
-			state.SetBinding(frameScene.spriteBinds, 4);
-			state.Draw(frameScene.spriteBufferData.size());
+			g_renderState.SetBinding(g_frameScene.spriteBinds, 4);
+			kaAssert(g_frameScene.spriteBufferData.size() <= INT_MAX); // which it should be anyway if it's less than max sprites.
+			g_renderState.Draw(static_cast<int>(g_frameScene.spriteBufferData.size()));
 
-			frameScene.spriteBufferData.clear();
+			g_frameScene.spriteBufferData.clear();
 		}
 
 		//--------------------------------------------------------------------------------
-		fMat4 GetDirectionalLightOrthoMat(float _bounds, float _nearPlane, float _farPlane)
+		static fMat4 GetDirectionalLightOrthoMat(float _bounds, float _nearPlane, float _farPlane)
 		{
 			// d3d needs off-centre, gl needs usual.
 #if SOKOL_D3D11
@@ -711,7 +714,7 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		fMat4 GetSpriteOrthoMat(Core::Render::FrameData const& _rfd)
+		static fMat4 GetSpriteOrthoMat(Core::Render::FrameData const& _rfd)
 		{
 			return glm::ortho(0.0f, _rfd.renderArea.f.x, _rfd.renderArea.f.y, 0.0f, -1.0f, 1.0f);
 		}
@@ -723,27 +726,27 @@ namespace Core
 
 
 		//--------------------------------------------------------------------------------
-		void Render3D
+		static void Render3D
 		(
 		)
 		{
-			frameScene.modelScratchData.clear();
-			frameScene.modelScratchData.reserve(frameScene.models.size());
-			for (ModelToDraw const& mtd : frameScene.models)
+			g_frameScene.modelScratchData.clear();
+			g_frameScene.modelScratchData.reserve(g_frameScene.models.size());
+			for (ModelToDraw const& mtd : g_frameScene.models)
 			{
-				frameScene.modelScratchData.emplace_back(Resource::GetModel(mtd.m_model), mtd.m_transform.GetRenderMatrix());
+				g_frameScene.modelScratchData.emplace_back(Resource::GetModel(mtd.m_model), mtd.m_transform.GetRenderMatrix());
 			}
 
 			// RENDER_PASSES
 			fMat4 lightSpace{};
 			if constexpr (g_enableDirectionalShadow)
 			{
-				state.NextPass(Pass_DirectionalLight);
-				state.SetRenderer(Renderer_DepthOnly);
+				g_renderState.NextPass(Pass_DirectionalLight);
+				g_renderState.SetRenderer(Renderer_DepthOnly);
 
 				fMat4 const lightProj = GetDirectionalLightOrthoMat(10.0f, 1.0f, 50.0f);
-				fVec3 const lightPos = frameScene.camera.pos - (frameScene.lights.directionalDir * 25.0f);
-				fMat4 const lightView = glm::lookAt(lightPos, lightPos + frameScene.lights.directionalDir, fVec3(0.0f, 1.0f, 0.0f));
+				fVec3 const lightPos = g_frameScene.camera.pos - (g_frameScene.lights.directionalDir * 25.0f);
+				fMat4 const lightView = glm::lookAt(lightPos, lightPos + g_frameScene.lights.directionalDir, fVec3(0.0f, 1.0f, 0.0f));
 				lightSpace = lightProj * lightView;
 
 				auto fnLightModelVisitor = [&lightSpace](fMat4 const& _modelMatrix, Resource::ModelData const& _model)
@@ -760,28 +763,28 @@ namespace Core
 					sg_bindings bufOnlyBinds = _mesh.m_bindings;
 					std::memset(&bufOnlyBinds.vs_images, 0, sizeof(bufOnlyBinds.vs_images));
 					std::memset(&bufOnlyBinds.fs_images, 0, sizeof(bufOnlyBinds.fs_images));
-					state.SetBinding(bufOnlyBinds, _mesh.NumToDraw());
+					g_renderState.SetBinding(bufOnlyBinds, _mesh.NumToDraw());
 				};
 
 				RenderMainScene(fnLightModelVisitor, fnLightMeshVisitor);
 
-				state.NextPass(Pass_MainTarget);
+				g_renderState.NextPass(Pass_MainTarget);
 			}
 
 			if constexpr (g_enableMainRenderer)
 			{
-				state.SetRenderer(Renderer_Main);
-				sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_main_lights, SG_RANGE_REF(frameScene.lights.shader_LightData()));
+				g_renderState.SetRenderer(Renderer_Main);
+				sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_main_lights, SG_RANGE_REF(g_frameScene.lights.shader_LightData()));
 
 				main_vs_params_t vs_params = {
-					.projection = frameScene.camera.proj,
+					.projection = g_frameScene.camera.proj,
 				};
 				sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_main_vs_params, SG_RANGE_REF(vs_params));
 
 				auto fnMainModelVisitor = [&lightSpace](fMat4 const& _modelMatrix, Resource::ModelData const& _model)
 				{
 					main_model_params_t model_params = {
-						.viewModel = frameScene.camera.view * _modelMatrix,
+						.viewModel = g_frameScene.camera.view * _modelMatrix,
 						.normal = glm::transpose(glm::inverse(model_params.viewModel)),
 						.lightSpace = lightSpace * _modelMatrix,
 					};
@@ -792,8 +795,8 @@ namespace Core
 				auto fnMainMeshVisitor = [](Resource::MeshData const& _mesh)
 				{
 					sg_bindings addShadowBinds = _mesh.m_bindings;
-					addShadowBinds.fs_images[SLOT_main_directionalShadowMap] = frameScene.directionalShadowMap.GetValue();
-					state.SetBinding(addShadowBinds, _mesh.NumToDraw());
+					addShadowBinds.fs_images[SLOT_main_directionalShadowMap] = g_frameScene.directionalShadowMap.GetValue();
+					g_renderState.SetBinding(addShadowBinds, _mesh.NumToDraw());
 					sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_main_material, SG_RANGE_REF(_mesh.m_material));
 				};
 
@@ -803,58 +806,58 @@ namespace Core
 			// render skybox (if exists)
 			if constexpr (g_enableSkybox)
 			{
-				if (frameScene.skybox.IsValid())
+				if (g_frameScene.skybox.IsValid())
 				{
-					state.SetRenderer(Renderer_Skybox);
+					g_renderState.SetRenderer(Renderer_Skybox);
 					skybox_vs_params_t vs_params{
-						.untranslated_projView = frameScene.camera.proj * fMat4(fMat3(frameScene.camera.view)),
+						.untranslated_projView = g_frameScene.camera.proj * fMat4(fMat3(g_frameScene.camera.view)),
 					};
 					sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_skybox_vs_params, SG_RANGE_REF(vs_params));
 
 					skybox_fs_params_t fs_params{
-						.sunDir = frameScene.lights.directionalDir,
+						.sunDir = g_frameScene.lights.directionalDir,
 					};
 					sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_skybox_fs_params, SG_RANGE_REF(fs_params));
 
-					frameScene.skyboxBinds.fs_images[SLOT_skybox_skybox] = frameScene.skybox.GetValue();
+					g_frameScene.skyboxBinds.fs_images[SLOT_skybox_skybox] = g_frameScene.skybox.GetValue();
 
-					state.SetBinding(frameScene.skyboxBinds, 14);
-					state.Draw();
+					g_renderState.SetBinding(g_frameScene.skyboxBinds, 14);
+					g_renderState.Draw();
 				}
 			}
 		}
 
 		//--------------------------------------------------------------------------------
-		void RenderSprites
+		static void RenderSprites
 		(
 			Core::Render::FrameData const& _rfd
 		)
 		{
-			state.NextPass(Pass_MainTarget);
-			state.SetRenderer(Renderer_Sprites);
+			g_renderState.NextPass(Pass_MainTarget);
+			g_renderState.SetRenderer(Renderer_Sprites);
 			sprites_vs_params_t vs_params{
 				.projection = GetSpriteOrthoMat(_rfd),
 			};
 			sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_sprites_vs_params, SG_RANGE_REF(vs_params));
 
-			frameScene.spriteScratchData.clear();
-			frameScene.spriteScratchData.reserve(frameScene.sprites.size());
-			for (SpriteToDraw const& std : frameScene.sprites)
+			g_frameScene.spriteScratchData.clear();
+			g_frameScene.spriteScratchData.reserve(g_frameScene.sprites.size());
+			for (SpriteToDraw const& std : g_frameScene.sprites)
 			{
-				frameScene.spriteScratchData.emplace_back(Resource::GetSprite(std.m_sprite), std.m_transform);
+				g_frameScene.spriteScratchData.emplace_back(Resource::GetSprite(std.m_sprite), std.m_transform);
 			}
 
 			// Order by texture
-			std::sort(frameScene.spriteScratchData.begin(), frameScene.spriteScratchData.end(), [](auto const& _a, auto const& _b) -> bool
+			std::sort(g_frameScene.spriteScratchData.begin(), g_frameScene.spriteScratchData.end(), [](auto const& _a, auto const& _b) -> bool
 			{
 				return _a.m_sprite.get().m_texture < _b.m_sprite.get().m_texture;
 			});
 
 			// For each texture, set up buffer and binding and draw sprites
 			Resource::TextureID currentTexture;
-			for (usize spriteI{ 0 }; spriteI < frameScene.spriteScratchData.size(); ++spriteI)
+			for (usize spriteI{ 0 }; spriteI < g_frameScene.spriteScratchData.size(); ++spriteI)
 			{
-				SpriteScratchData const& spriteScratch = frameScene.spriteScratchData[spriteI];
+				SpriteScratchData const& spriteScratch = g_frameScene.spriteScratchData[spriteI];
 				Resource::SpriteData const& sprite = spriteScratch.m_sprite.get();
 				if (currentTexture != sprite.m_texture)
 				{
@@ -867,7 +870,7 @@ namespace Core
 				}
 
 
-				frameScene.spriteBufferData.emplace_back(
+				g_frameScene.spriteBufferData.emplace_back(
 					fVec3(spriteScratch.m_transform.m_pos, spriteScratch.m_transform.m_z),
 					spriteScratch.m_transform.m_scale,
 					spriteScratch.m_transform.m_rot.m_rads,
@@ -878,27 +881,27 @@ namespace Core
 			}
 
 			// final draw
-			if (!frameScene.spriteBufferData.empty())
+			if (!g_frameScene.spriteBufferData.empty())
 			{
 				RenderSpriteBuffer(currentTexture);
 			}
 		}
 
 		//--------------------------------------------------------------------------------
-		void RenderMainToScreen
+		static void RenderMainToScreen
 		(
 			Core::Render::FrameData const& _rfd
 		)
 		{
-			state.NextPass(Pass_RenderToScreen);
-			state.SetRenderer(Renderer_TargetToScreen);
-			state.SetPassGlue(PassGlue_MainTarget_To_Screen);
+			g_renderState.NextPass(Pass_RenderToScreen);
+			g_renderState.SetRenderer(Renderer_TargetToScreen);
+			g_renderState.SetPassGlue(PassGlue_MainTarget_To_Screen);
 
 			render_target_to_screen_vs_params_t aspectData{
 				.aspectMult = (4.0f / 3.0f) * (_rfd.contextWindow.f.y / _rfd.contextWindow.f.x),
 			};
 			sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_render_target_to_screen_vs_params, SG_RANGE_REF(aspectData));
-			state.Draw();
+			g_renderState.Draw();
 		}
 
 		//--------------------------------------------------------------------------------
@@ -908,7 +911,7 @@ namespace Core
 		)
 		{
 			// Only do 3D stuff if main camera set.
-			if (state.IsMainCameraSet())
+			if (g_renderState.IsMainCameraSet())
 			{
 				Render3D();
 			}
@@ -920,10 +923,10 @@ namespace Core
 			}
 
 			// frameScene cleanup
-			frameScene.skybox = Resource::TextureSampleID{};
-			frameScene.lights.Reset();
-			frameScene.models.clear();
-			frameScene.sprites.clear();
+			g_frameScene.skybox = Resource::TextureSampleID{};
+			g_frameScene.lights.Reset();
+			g_frameScene.models.clear();
+			g_frameScene.sprites.clear();
 
 			// end of the main drawing pass
 			// begin of the screen drawing pass
@@ -935,41 +938,41 @@ namespace Core
 			Core::Render::DImGui::Render(); // imgui last, always a debug.
 
 			// RENDER_END
-			state.Commit();
+			g_renderState.Commit();
 		}
 
 		//--------------------------------------------------------------------------------
 		void Cleanup()
 		{
-			state.Cleanup();
+			g_renderState.Cleanup();
 			sg_shutdown();
 		}
 
 		//--------------------------------------------------------------------------------
 		CameraState const& GetCameraState()
 		{
-			return frameScene.camera;
+			return g_frameScene.camera;
 		}
 
 		//--------------------------------------------------------------------------------
 		LightSetter AddLightToScene()
 		{
-			std::scoped_lock lock(frameScene.lightsMutex);
-			return frameScene.lights.AddLight();
+			std::scoped_lock lock(g_frameScene.lightsMutex);
+			return g_frameScene.lights.AddLight();
 		}
 
 		//--------------------------------------------------------------------------------
 		void AddAmbientLightToScene(fVec3 const& _col)
 		{
-			std::scoped_lock lock(frameScene.lightsMutex);
-			frameScene.lights.ambientLight += _col;
+			std::scoped_lock lock(g_frameScene.lightsMutex);
+			g_frameScene.lights.ambientLight += _col;
 		}
 
 		//--------------------------------------------------------------------------------
 		void SetDirectionalLightDir(fVec3 const& _dir)
 		{
-			std::scoped_lock lock(frameScene.lightsMutex);
-			frameScene.lights.directionalDir = _dir;
+			std::scoped_lock lock(g_frameScene.lightsMutex);
+			g_frameScene.lights.directionalDir = _dir;
 		}
 
 		//--------------------------------------------------------------------------------
@@ -979,9 +982,9 @@ namespace Core
 			fTrans2D const& _screenTrans
 		)
 		{
-			std::scoped_lock lock(frameScene.spritesMutex);
-			frameScene.sprites.emplace_back(_sprite, _screenTrans);
-			kaAssert(frameScene.sprites.size() < g_maxSpritesPerFrame);
+			std::scoped_lock lock(g_frameScene.spritesMutex);
+			g_frameScene.sprites.emplace_back(_sprite, _screenTrans);
+			kaAssert(g_frameScene.sprites.size() < g_maxSpritesPerFrame);
 		}
 
 		//--------------------------------------------------------------------------------
@@ -991,8 +994,8 @@ namespace Core
 			fTrans const& _worldTrans
 		)
 		{
-			std::scoped_lock lock(frameScene.modelsMutex);
-			frameScene.models.emplace_back(_model, _worldTrans);
+			std::scoped_lock lock(g_frameScene.modelsMutex);
+			g_frameScene.models.emplace_back(_model, _worldTrans);
 		}
 
 		//--------------------------------------------------------------------------------
@@ -1001,8 +1004,8 @@ namespace Core
 			Core::Resource::TextureSampleID _skybox
 		)
 		{
-			kaAssert(!frameScene.skybox.IsValid(), "only one skybox allowed at a time!");
-			frameScene.skybox = _skybox;
+			kaAssert(!g_frameScene.skybox.IsValid(), "only one skybox allowed at a time!");
+			g_frameScene.skybox = _skybox;
 		}
 	}
 }

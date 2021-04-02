@@ -14,7 +14,7 @@
 
 namespace Core::Resource
 {
-	void FillFilesToLoad
+	static void FillFilesToLoad
 	(
 		std::vector<Core::Resource::Preload::FileToLoad>& o_files
 	)
@@ -70,7 +70,7 @@ namespace Core::Resource
 					}
 					seenOtherFiles.insert(resFilepath);
 #endif
-					static const absl::flat_hash_map<std::string_view, Preload::FileType> fileTypes {
+					static const absl::flat_hash_map<std::string_view, Preload::FileType> s_fileTypes {
 						{ "obj", Preload::FileType::Model },
 						{ "jpg", Preload::FileType::Texture2D },
 						{ "jpeg", Preload::FileType::Texture2D },
@@ -82,8 +82,8 @@ namespace Core::Resource
 						{ "mp3", Preload::FileType::BGM },
 					};
 
-					auto fileTypeI = fileTypes.find(extension);
-					if (fileTypeI != fileTypes.end())
+					auto fileTypeI = s_fileTypes.find(extension);
+					if (fileTypeI != s_fileTypes.end())
 					{
 						o_files.push_back({ resFilepath, fileTypeI->second, });
 					}

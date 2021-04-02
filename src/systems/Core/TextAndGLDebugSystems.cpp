@@ -27,13 +27,13 @@ namespace Core
 
 			LineToDraw(fVec3 const& _start, fVec3 const& _end) : m_start{ _start }, m_end{ _end } {}
 		};
-		absl::flat_hash_map<uint32, std::vector<LineToDraw>> linesToDraw{};
-		std::mutex linesToDrawLock{};
+		static absl::flat_hash_map<uint32, std::vector<LineToDraw>> g_linesToDraw{};
+		static std::mutex g_linesToDrawMutex{};
 
-		void FlushGL()
+		static void FlushGL()
 		{
 			sgl_begin_lines();
-			for (auto const& [col, lines] : linesToDraw)
+			for (auto const& [col, lines] : g_linesToDraw)
 			{
 				sgl_c1i(col);
 				for (auto const& line : lines)
@@ -43,7 +43,7 @@ namespace Core
 				}
 			}
 			sgl_end();
-			linesToDraw.clear();
+			g_linesToDraw.clear();
 		}
 
 		namespace TextAndGLDebug
@@ -124,8 +124,8 @@ namespace Core
 				uint32 _col
 			)
 			{
-				std::scoped_lock lock(linesToDrawLock);
-				linesToDraw[_col].emplace_back(_start, _end);
+				std::scoped_lock lock(g_linesToDrawMutex);
+				g_linesToDraw[_col].emplace_back(_start, _end);
 			}
 
 			void DrawLine
@@ -135,9 +135,9 @@ namespace Core
 				fVec3 const& _col
 			)
 			{
-				std::scoped_lock lock(linesToDrawLock);
+				std::scoped_lock lock(g_linesToDrawMutex);
 				uint32 const col = Colour::ConvertRGB(_col);
-				linesToDraw[col].emplace_back(_start, _end);
+				g_linesToDraw[col].emplace_back(_start, _end);
 			}
 		}
 	}

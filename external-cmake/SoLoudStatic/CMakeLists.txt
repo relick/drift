@@ -96,7 +96,7 @@ target_include_directories(SoLoud PRIVATE
   ${SOLOUD_SRC_DIR}/tools/sanity
   ${SOLOUD_SRC_DIR}/tools/tedsid2dump
 )
-target_include_directories(SoLoud PUBLIC ${SRC_DIR}/soloud/include)
+target_include_directories(SoLoud SYSTEM PUBLIC ${SRC_DIR}/soloud/include)
 target_compile_definitions(SoLoud PRIVATE
   _CRT_SECURE_NO_WARNINGS
   WITH_WINMM

@@ -77,6 +77,9 @@ namespace Core
 			EntityID m_viewObject{};
 			float m_radius{ 0.5f };
 			float m_halfHeight{ 1.0f };
+
+			bool m_onGround{ false };
+			fVec3 m_groundPoint{};
 		};
 
 		Core::EntityID GetPrimaryWorldEntity();

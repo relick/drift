@@ -12,7 +12,7 @@ namespace Game
 {
 	namespace Player
 	{
-		void MouseLookSystem(
+		static void MouseLookSystem(
 #if DEBUG_TOOLS
 			Core::EntityID::CoreType _entity,
 #endif

@@ -14,7 +14,7 @@ class VSCoutFix
 	: public std::stringbuf
 {
 public:
-	virtual ~VSCoutFix() { sync(); }
+	~VSCoutFix() override { sync(); }
 	int sync() override
 	{
 		::OutputDebugStringA(str().c_str());
@@ -22,7 +22,7 @@ public:
 		return 0;
 	}
 };
-VSCoutFix g_VSCoutFix;
+static VSCoutFix g_VSCoutFix;
 #endif
 
 #if DEBUG_TOOLS

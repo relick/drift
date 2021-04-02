@@ -8,16 +8,16 @@
 #if _MSC_VER
 #define ASSERT_MESSAGE(cond, message) (void)(                                            \
             (!!(cond)) ||                                                                \
-            (_wassert(_CRT_WIDE(message), _CRT_WIDE(__FILE__), (unsigned)(__LINE__)), 0) \
+            (_wassert(_CRT_WIDE(message), _CRT_WIDE(__FILE__), static_cast<unsigned>(__LINE__)), 0) \
         )
 
 // use codecvt as it's easier than windows
 #include <codecvt>
 #include <string>
 #define ERROR_MESSAGE(message) \
-{ std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter; \
+do { std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter; \
 std::wstring const m = converter.from_bytes(message); \
-_wassert(m.c_str(), _CRT_WIDE(__FILE__), (unsigned)(__LINE__)); }
+_wassert(m.c_str(), _CRT_WIDE(__FILE__), static_cast<unsigned>(__LINE__)); } while(false)
 #else
 #define ASSERT_MESSAGE(cond, message) assert(cond)
 #define ERROR_MESSAGE(message) ASSERT_MESSAGE(false, message)

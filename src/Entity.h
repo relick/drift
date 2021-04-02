@@ -27,8 +27,14 @@ namespace Core
 	public:
 		bool IsValid() const { return m_entity != s_nullID; }
 		bool IsNull() const { return m_entity == s_nullID; }
-		auto operator<=>(EntityID const&) const = default;
-		bool operator==(EntityID const&) const = default;
+		bool operator<(EntityID const& _o) const
+		{
+			return m_entity < _o.m_entity;
+		}
+		bool operator==(EntityID const& _o) const
+		{
+			return m_entity == _o.m_entity;
+		}
 
 		EntityID() = default;
 		EntityID(CoreType _entity) : m_entity{ _entity } {}

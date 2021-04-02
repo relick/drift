@@ -9,7 +9,7 @@ struct PhysicsWorldInternalData
 {
 	uint32 numBodies{ 0u };
 };
-std::map<Core::EntityID, PhysicsWorldInternalData> physicsWorlds;
+static std::map<Core::EntityID, PhysicsWorldInternalData> g_physicsWorlds;
 
 namespace Core
 {
@@ -17,8 +17,8 @@ namespace Core
 	{
 		Core::EntityID GetPrimaryWorldEntity()
 		{
-			kaAssert(!physicsWorlds.empty());
-			return physicsWorlds.begin()->first;
+			kaAssert(!g_physicsWorlds.empty());
+			return g_physicsWorlds.begin()->first;
 		}
 	}
 	template<>
@@ -54,7 +54,7 @@ namespace Core
 		newComponent.m_dynamicsWorld->setDebugDrawer(Physics::Debug::GetDebugDrawer());
 		Physics::Debug::AddPhysicsWorld(_entity);
 #endif
-		physicsWorlds.emplace(_entity, PhysicsWorldInternalData{ 0u });
+		g_physicsWorlds.emplace(_entity, PhysicsWorldInternalData{ 0u });
 
 		Core::ECS::AddComponent(_entity, newComponent);
 	}
@@ -73,8 +73,8 @@ namespace Core
 #if PHYSICS_DEBUG
 		Physics::Debug::RemovePhysicsWorld(_entity);
 #endif
-		kaAssert(physicsWorlds.at(_entity).numBodies == 0u);
-		physicsWorlds.erase(_entity);
+		kaAssert(g_physicsWorlds.at(_entity).numBodies == 0u);
+		g_physicsWorlds.erase(_entity);
 	}
 
 	template<>
@@ -125,7 +125,7 @@ namespace Core
 		Core::Physics::World& physicsWorld = Physics::GetWorld(newComponent.m_physicsWorld);
 		physicsWorld.m_dynamicsWorld->addRigidBody(newComponent.m_body);
 
-		physicsWorlds.at(newComponent.m_physicsWorld).numBodies++;
+		g_physicsWorlds.at(newComponent.m_physicsWorld).numBodies++;
 
 		// Add to ecs
 		Core::ECS::AddComponent(_entity, newComponent);
@@ -140,7 +140,7 @@ namespace Core
 		Core::Physics::World& physicsWorld = Physics::GetWorld(oldComponent->m_physicsWorld);
 		physicsWorld.m_dynamicsWorld->removeCollisionObject(oldComponent->m_body);
 
-		physicsWorlds.at(oldComponent->m_physicsWorld).numBodies--;
+		g_physicsWorlds.at(oldComponent->m_physicsWorld).numBodies--;
 
 		SafeDelete(oldComponent->m_body);
 		SafeDelete(oldComponent->m_motionState);
@@ -177,7 +177,7 @@ namespace Core
 		Core::Physics::World& physicsWorld = Physics::GetWorld(newComponent.m_physicsWorld);
 		physicsWorld.m_dynamicsWorld->addRigidBody(newComponent.m_body);
 
-		physicsWorlds.at(newComponent.m_physicsWorld).numBodies++;
+		g_physicsWorlds.at(newComponent.m_physicsWorld).numBodies++;
 
 		// Add to ecs
 		Core::ECS::AddComponent(_entity, newComponent);
@@ -192,7 +192,7 @@ namespace Core
 		Core::Physics::World& physicsWorld = Physics::GetWorld(oldComponent->m_physicsWorld);
 		physicsWorld.m_dynamicsWorld->removeCollisionObject(oldComponent->m_body);
 
-		physicsWorlds.at(oldComponent->m_physicsWorld).numBodies--;
+		g_physicsWorlds.at(oldComponent->m_physicsWorld).numBodies--;
 
 		SafeDelete(oldComponent->m_body);
 		SafeDelete(oldComponent->m_motionState);

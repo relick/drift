@@ -54,13 +54,13 @@ namespace Core
 
 		struct MeshData
 		{
-			uint32 m_indexCount{ 0 };
+			int m_indexCount{ 0 };
 			MaterialData m_material;
 			std::vector<TextureID> m_textures;
 			sg_bindings m_bindings{};
 
-			uint32 NumToDraw() const { return m_indexCount; }
-			void SetNumToDraw(uint32 _indexCount) { m_indexCount = _indexCount; }
+			int NumToDraw() const { return m_indexCount; }
+			void SetNumToDraw(int _indexCount) { m_indexCount = _indexCount; }
 		};
 
 		//-------------------------------------------------
@@ -114,10 +114,18 @@ namespace Core::Resource
 	SoundEffectData& GetSoundEffect(SoundEffectID _soundEffect);
 	MusicData& GetMusic(MusicID _music);
 
-	bool Load2DTexture(std::string const& _path, TextureID& o_textureID, TextureData::Type _type, bool* o_semitransparent = nullptr);
-	bool LoadModel(std::string const& _path, ModelID& o_modelID);
-	bool LoadCubemap(std::string const& _folderPath, TextureID& o_cubemapID);
-	bool LoadSprite(std::string const& _path, SpriteID& o_spriteID);
-	bool LoadSoundEffect(std::string const& _path, SoundEffectID& o_soundEffectID);
-	bool LoadMusic(std::string const& _path, MusicID& o_musicID);
+	// make sure all load users check for success
+	struct [[nodiscard]] ResourceLoadResult
+	{
+		bool const success{ false };
+		ResourceLoadResult(bool _success) : success{_success} {}
+		operator bool() const { return success; }
+	};
+
+	ResourceLoadResult Load2DTexture(std::string const& _path, TextureID& o_textureID, TextureData::Type _type, bool* o_semitransparent = nullptr);
+	ResourceLoadResult LoadModel(std::string const& _path, ModelID& o_modelID);
+	ResourceLoadResult LoadCubemap(std::string const& _folderPath, TextureID& o_cubemapID);
+	ResourceLoadResult LoadSprite(std::string const& _path, SpriteID& o_spriteID);
+	ResourceLoadResult LoadSoundEffect(std::string const& _path, SoundEffectID& o_soundEffectID);
+	ResourceLoadResult LoadMusic(std::string const& _path, MusicID& o_musicID);
 }

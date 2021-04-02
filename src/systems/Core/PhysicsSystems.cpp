@@ -16,7 +16,7 @@
 #include "systems/Core/ImGuiSystems.h"
 #include "systems/Core/TextAndGLDebugSystems.h"
 
-std::unique_ptr<btIDebugDraw> debugDrawer;
+static std::unique_ptr<btIDebugDraw> g_debugDrawer;
 
 struct ImGuiWorldData
 {
@@ -31,7 +31,8 @@ struct ImGuiData
 	bool showImguiWin{ false };
 	std::vector<ImGuiWorldData> physicsWorlds{};
 	bool showRBAxes{ false };
-} imGuiData;
+};
+static ImGuiData g_imGuiData;
 
 #endif
 namespace Core
@@ -97,21 +98,21 @@ namespace Core
 
 			btIDebugDraw* GetDebugDrawer()
 			{
-				return debugDrawer.get();
+				return g_debugDrawer.get();
 			}
 
 			void AddPhysicsWorld(Core::EntityID _entity)
 			{
-				imGuiData.physicsWorlds.emplace_back(_entity);
+				g_imGuiData.physicsWorlds.emplace_back(_entity);
 			}
 
 			void RemovePhysicsWorld(Core::EntityID _entity)
 			{
-				for (auto worldI = imGuiData.physicsWorlds.begin(); worldI != imGuiData.physicsWorlds.end(); ++worldI)
+				for (auto worldI = g_imGuiData.physicsWorlds.begin(); worldI != g_imGuiData.physicsWorlds.end(); ++worldI)
 				{
 					if (worldI->worldEntity == _entity)
 					{
-						imGuiData.physicsWorlds.erase(worldI);
+						g_imGuiData.physicsWorlds.erase(worldI);
 						return;
 					}
 				}
@@ -128,15 +129,12 @@ namespace Core
 			colours.m_contactPoint = btVector3(0.0f, 1.0f, 0.0f);
 			colours.m_activeObject = btVector3(0.0f, 0.0f, 1.0f);
 
-			debugDrawer = std::make_unique<Debug::DebugDrawer>();
-			debugDrawer->setDefaultColors(colours);
+			g_debugDrawer = std::make_unique<Debug::DebugDrawer>();
+			g_debugDrawer->setDefaultColors(colours);
 #endif
 		}
-
-		bool onGround{ false };
-		btVector3 groundPoint{};
 		
-		void AddCharacterControllerSystems()
+		static void AddCharacterControllerSystems()
 		{
 			Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Physics::CharacterController& _cc, Core::Transform3D& _t)
 			{
@@ -157,7 +155,7 @@ namespace Core
 					float walkSpeed = walkAccel * _fd.dt;
 
 #if PHYSICS_DEBUG
-					if (imGuiData.showRBAxes)
+					if (g_imGuiData.showRBAxes)
 					{
 						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + forward);
 					}
@@ -181,14 +179,14 @@ namespace Core
 					}
 
 
-					if (onGround)
+					if (_cc.m_onGround)
 					{
 						/* Dampen when on the ground and not being moved by the player */
 						linearVelocity *= powf(0.1f, _fd.dt);
 						_cc.m_body->setLinearVelocity(linearVelocity);
 					}
 
-					if (onGround || yLinVel >= 0.0f)
+					if (_cc.m_onGround || yLinVel >= 0.0f)
 					{
 						fVec3 dv = walkDirection * walkSpeed;
 						linearVelocity += ConvertTobtVector3(dv);
@@ -210,16 +208,16 @@ namespace Core
 				}
 
 				// jump
-				if (Core::Input::PressedOnce(Core::Input::Action::Jump) && onGround)
+				if (Core::Input::PressedOnce(Core::Input::Action::Jump) && _cc.m_onGround)
 				{
 					fVec3 const up = _t.T().up();
 					float magnitude = _cc.m_body->getMass() * 8.0f;
 					fVec3 const impulse = up * magnitude;
 					_cc.m_body->applyCentralImpulse(ConvertTobtVector3(impulse));
-					onGround = false;
+					_cc.m_onGround = false;
 				}
 
-				if (onGround)
+				if (_cc.m_onGround)
 				{
 					_cc.m_body->setGravity({ 0, 0, 0 });
 				}
@@ -243,7 +241,7 @@ namespace Core
 					public:
 						btScalar addSingleResult(btManifoldPoint& cp,
 							const btCollisionObjectWrapper* colObj0, int partId0, int index0,
-							const btCollisionObjectWrapper* colObj1, int partId1, int index1)
+							const btCollisionObjectWrapper* colObj1, int partId1, int index1) override
 						{
 							if (colObj0->m_collisionObject == mMe && !mHaveGround)
 							{
@@ -283,12 +281,12 @@ namespace Core
 					pw.m_dynamicsWorld->contactTest(_cc.m_body, groundCallback);
 					if (groundCallback.mHaveGround)
 					{
-						onGround = true;
-						groundPoint = groundCallback.mGroundPoint;
+						_cc.m_onGround = true;
+						_cc.m_groundPoint = ConvertFrombtVector3(groundCallback.mGroundPoint);
 					}
 					else
 					{
-						onGround = false;
+						_cc.m_onGround = false;
 					}
 				}
 			});
@@ -327,7 +325,7 @@ namespace Core
 			{
 				_pw.m_dynamicsWorld->stepSimulation(_fd.dt, 10);
 #if PHYSICS_DEBUG
-				for (ImGuiWorldData const& world : imGuiData.physicsWorlds)
+				for (ImGuiWorldData const& world : g_imGuiData.physicsWorlds)
 				{
 					if (world.worldEntity == _entity && world.showDebugDraw)
 					{
@@ -338,20 +336,20 @@ namespace Core
 			});
 
 #if PHYSICS_DEBUG
-			Core::Render::DImGui::AddMenuItem("Physics", "Physics Worlds", &imGuiData.showImguiWin);
+			Core::Render::DImGui::AddMenuItem("Physics", "Physics Worlds", &g_imGuiData.showImguiWin);
 
 			Core::MakeSystem<Sys::IMGUI>([](Core::MT_Only&)
 			{
-				if (imGuiData.showImguiWin)
+				if (g_imGuiData.showImguiWin)
 				{
-					if (ImGui::Begin("Physics Worlds", &imGuiData.showImguiWin, 0))
+					if (ImGui::Begin("Physics Worlds", &g_imGuiData.showImguiWin, 0))
 					{
-						ImGui::Checkbox("Show RB axes", &imGuiData.showRBAxes);
+						ImGui::Checkbox("Show RB axes", &g_imGuiData.showRBAxes);
 
-						for (ImGuiWorldData& world : imGuiData.physicsWorlds)
+						for (ImGuiWorldData& world : g_imGuiData.physicsWorlds)
 						{
-							ImGui::PushID((int32)world.worldEntity.GetDebugValue());
-							ImGui::Text("World %u", (uint32)world.worldEntity.GetDebugValue());
+							ImGui::PushID(static_cast<int>(world.worldEntity.GetDebugValue()));
+							ImGui::Text("World %u", static_cast<uint32>(world.worldEntity.GetDebugValue()));
 							ImGui::Checkbox("- Show debug", &world.showDebugDraw);
 							ImGui::PopID();
 						}
@@ -380,7 +378,7 @@ namespace Core
 					_t.SetLocalTransformFromWorldTransform(fTrans(trans));
 
 #if PHYSICS_DEBUG
-					if(imGuiData.showRBAxes)
+					if(g_imGuiData.showRBAxes)
 					{
 						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + _t.T().forward());
 						
@@ -396,7 +394,7 @@ namespace Core
 		void Cleanup()
 		{
 #if PHYSICS_DEBUG
-			debugDrawer.reset();
+			g_debugDrawer.reset();
 #endif
 		}
 }

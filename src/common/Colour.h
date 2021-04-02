@@ -13,7 +13,11 @@ namespace Colour
 	}
 	constexpr uint32 RGBA(uint8 _r, uint8 _g, uint8 _b, uint8 _a = componentMax)
 	{
-		return (_a << detail::aShift) + (_b << detail::bShift) + (_g << detail::gShift) + (_r << detail::rShift);
+		return
+			  (static_cast<uint32>(_a) << detail::aShift)
+			+ (static_cast<uint32>(_b) << detail::bShift)
+			+ (static_cast<uint32>(_g) << detail::gShift)
+			+ (static_cast<uint32>(_r) << detail::rShift);
 	}
 
 	enum class Component
@@ -36,9 +40,9 @@ namespace Colour
 
 	constexpr uint32 ConvertRGB(fVec3 const& _col)
 	{
-		auto const r = static_cast<uint32>(gcem::round(_col.r * componentMax));
-		auto const g = static_cast<uint32>(gcem::round(_col.g * componentMax));
-		auto const b = static_cast<uint32>(gcem::round(_col.b * componentMax));
+		auto const r = static_cast<uint8>(gcem::round(_col.r * componentMax));
+		auto const g = static_cast<uint8>(gcem::round(_col.g * componentMax));
+		auto const b = static_cast<uint8>(gcem::round(_col.b * componentMax));
 		return RGBA(r, g, b);
 	}
 }

@@ -22,35 +22,35 @@ namespace Core
 			ComponentChange(ComponentHash _hash, bool _added) : m_hash{ _hash }, m_added{ _added } {}
 		};
 
-		absl::flat_hash_map<ComponentHash, std::unique_ptr<ComponentDestroyerBase>> destroyers{};
+		absl::flat_hash_map<ComponentHash, std::unique_ptr<ComponentDestroyerBase>> g_destroyers{};
 
-		absl::flat_hash_map<EntityID, std::vector<ComponentChange>> uncommittedComponentChanges{};
-		absl::flat_hash_map<EntityID, std::vector<ComponentHash>> committedComponents{};
-		std::recursive_mutex componentChangeMutex;
+		static absl::flat_hash_map<EntityID, std::vector<ComponentChange>> g_uncommittedComponentChanges{};
+		static absl::flat_hash_map<EntityID, std::vector<ComponentHash>> g_committedComponents{};
+		static std::recursive_mutex g_componentChangeMutex;
 
-		absl::flat_hash_set<EntityID> activeEntities;
-		std::shared_mutex entityMutex;
+		static absl::flat_hash_set<EntityID> g_activeEntities;
+		static std::shared_mutex g_entityMutex;
 
-		ComponentDestroyerBase const* GetDestroyer
+		static ComponentDestroyerBase const* GetDestroyer
 		(
 			ComponentHash _hash
 		)
 		{
-			auto compDestroyerI = destroyers.find(_hash);
-			kaAssert(compDestroyerI != destroyers.end(), "tried to destroy a component that is missing a destroyer");
+			auto compDestroyerI = g_destroyers.find(_hash);
+			kaAssert(compDestroyerI != g_destroyers.end(), "tried to destroy a component that is missing a destroyer");
 			return compDestroyerI->second.get();
 		}
 
-		bool IsActiveEntity
+		static bool IsActiveEntity
 		(
 			EntityID _entity
 		)
 		{
-			std::shared_lock lock(entityMutex);
-			return activeEntities.contains(_entity);
+			std::shared_lock lock(g_entityMutex);
+			return g_activeEntities.contains(_entity);
 		}
 
-		std::vector<ComponentChange>::iterator FindComponentChange
+		static std::vector<ComponentChange>::iterator FindComponentChange
 		(
 			std::vector<ComponentChange>& _compList,
 			ComponentHash _hash
@@ -59,7 +59,7 @@ namespace Core
 			return std::find_if(_compList.begin(), _compList.end(), [&_hash](auto const& _c) { return _c.m_hash == _hash; });
 		}
 
-		std::vector<ComponentHash>::iterator FindComponent
+		static std::vector<ComponentHash>::iterator FindComponent
 		(
 			std::vector<ComponentHash>& _compList,
 			ComponentHash _hash
@@ -75,10 +75,10 @@ namespace Core
 		)
 		{
 			kaAssert(IsActiveEntity(_entity), "tried to add components to dead entity!");
-			std::scoped_lock lock(componentChangeMutex);
+			std::scoped_lock lock(g_componentChangeMutex);
 			// slow assert
-			kaAssert(FindComponentChange(uncommittedComponentChanges[_entity], _hash) == uncommittedComponentChanges[_entity].end(), "do not try to add/remove the same component to an entity more than once a frame");
-			uncommittedComponentChanges[_entity].emplace_back(_hash, true);
+			kaAssert(FindComponentChange(g_uncommittedComponentChanges[_entity], _hash) == g_uncommittedComponentChanges[_entity].end(), "do not try to add/remove the same component to an entity more than once a frame");
+			g_uncommittedComponentChanges[_entity].emplace_back(_hash, true);
 		}
 
 		void RemoveComponentHash
@@ -87,20 +87,20 @@ namespace Core
 			ComponentHash _hash
 		)
 		{
-			std::scoped_lock lock(componentChangeMutex);
+			std::scoped_lock lock(g_componentChangeMutex);
 
 			// slow assert
-			kaAssert(FindComponentChange(uncommittedComponentChanges[_entity], _hash) == uncommittedComponentChanges[_entity].end(), "do not try to add/remove the same component to an entity more than once a frame");
-			uncommittedComponentChanges[_entity].emplace_back(_hash, false);
+			kaAssert(FindComponentChange(g_uncommittedComponentChanges[_entity], _hash) == g_uncommittedComponentChanges[_entity].end(), "do not try to add/remove the same component to an entity more than once a frame");
+			g_uncommittedComponentChanges[_entity].emplace_back(_hash, false);
 		}
 
 		void CommitChanges()
 		{
-			std::scoped_lock lock(componentChangeMutex);
+			std::scoped_lock lock(g_componentChangeMutex);
 
-			for (auto const& [entity, compChangeList] : uncommittedComponentChanges)
+			for (auto const& [entity, compChangeList] : g_uncommittedComponentChanges)
 			{
-				auto& componentList = committedComponents[entity];
+				auto& componentList = g_committedComponents[entity];
 				for (auto const& change : compChangeList)
 				{
 					if (change.m_added)
@@ -117,48 +117,48 @@ namespace Core
 					}
 				}
 			}
-			uncommittedComponentChanges.clear();
+			g_uncommittedComponentChanges.clear();
 
-			for (auto entityI = committedComponents.begin(); entityI != committedComponents.end();)
+			for (auto entityI = g_committedComponents.begin(); entityI != g_committedComponents.end();)
 			{
 				auto entityCopyI = entityI++;
 				if (entityCopyI->second.empty())
 				{
-					committedComponents.erase(entityCopyI);
+					g_committedComponents.erase(entityCopyI);
 				}
 			}
 		}
 
-		void AddActiveEntity
+		static void AddActiveEntity
 		(
 			EntityID _entity
 		)
 		{
-			std::unique_lock lock(entityMutex);
-			activeEntities.insert(_entity);
+			std::unique_lock lock(g_entityMutex);
+			g_activeEntities.insert(_entity);
 
 			kaLog(absl::StrFormat("Entity %d was created", _entity.GetDebugValue()));
 		}
 
-		void RemoveActiveEntity
+		static void RemoveActiveEntity
 		(
 			EntityID _entity
 		)
 		{
-			std::unique_lock lock(entityMutex);
-			activeEntities.erase(_entity);
+			std::unique_lock lock(g_entityMutex);
+			g_activeEntities.erase(_entity);
 
 			kaLog(absl::StrFormat("Entity %d was killed", _entity.GetDebugValue()));
 		}
-		void RemoveAllActiveEntities()
+		static void RemoveAllActiveEntities()
 		{
-			std::unique_lock lock(entityMutex);
-			activeEntities.clear();
+			std::unique_lock lock(g_entityMutex);
+			g_activeEntities.clear();
 
 			kaLog("-- All entities killed --");
 		}
 
-		void DestroyEntityAndComponents
+		static void DestroyEntityAndComponents
 		(
 			EntityID _entity
 		)
@@ -166,10 +166,10 @@ namespace Core
 			kaAssert(IsActiveEntity(_entity), "tried to destroy dead entity!");
 
 			// this function is what all this effort is for.
-			std::scoped_lock lock(componentChangeMutex);
+			std::scoped_lock lock(g_componentChangeMutex);
 
-			auto entityI = committedComponents.find(_entity);
-			kaAssert(entityI != committedComponents.end(), "tried to destroy non-existent entity");
+			auto entityI = g_committedComponents.find(_entity);
+			kaAssert(entityI != g_committedComponents.end(), "tried to destroy non-existent entity");
 
 			for (auto compHashI = entityI->second.rbegin(); compHashI != entityI->second.rend(); ++compHashI)
 			{
@@ -178,29 +178,29 @@ namespace Core
 			CommitChanges();
 		}
 
-		void DestroyAllEntities()
+		static void DestroyAllEntities()
 		{
 			{
-				std::shared_lock lock(entityMutex);
+				std::shared_lock lock(g_entityMutex);
 
-				while (!activeEntities.empty())
+				while (!g_activeEntities.empty())
 				{
-					auto maxI = std::max_element(activeEntities.begin(), activeEntities.end());
+					auto maxI = std::max_element(g_activeEntities.begin(), g_activeEntities.end());
 
 					DestroyEntityAndComponents(*maxI);
 
-					activeEntities.erase(maxI);
+					g_activeEntities.erase(maxI);
 				}
 			}
 			RemoveAllActiveEntities();
 		}
 	}
 
-	EntityID::CoreType nextID = 0;
+	static EntityID::CoreType g_nextID = 0;
 
 	EntityID CreateEntity()
 	{
-		EntityID newID{ nextID++ };
+		EntityID newID{ g_nextID++ };
 		EntityManagement::AddActiveEntity(newID);
 		return newID;
 	}

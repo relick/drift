@@ -30,6 +30,14 @@ namespace Core
 			Count,
 		};
 
+		enum class KeyIndex : uint8
+		{
+			Primary,
+			Secondary,
+
+			Count,
+		};
+
 		enum class KeyType : uint8
 		{
 			Keyboard,
@@ -38,7 +46,7 @@ namespace Core
 		struct ActionKey
 		{
 			KeyType keyType{ KeyType::Keyboard };
-			int key{ 0 /* keycode invalid */ };
+			usize key{ 0 /* keycode invalid */ };
 		};
 
 		void Setup();
@@ -46,8 +54,8 @@ namespace Core
 		void Event(sapp_event const* _event);
 
 		// key should be SAPP_KEYCODE if keyboard type, SAPP_MOUSEBUTTON if mouse type
-		void SetActionKey(Action _action, int _index, ActionKey _actionKey);
-		ActionKey GetActionKey(Action _action, int _index);
+		void SetActionKey(Action _action, KeyIndex _index, ActionKey _actionKey);
+		ActionKey GetActionKey(Action _action, KeyIndex _index);
 		bool Pressed(Action _action);
 		bool PressedOnce(Action _action);
 		fVec2 GetMouseDelta();

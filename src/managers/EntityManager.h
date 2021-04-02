@@ -4,6 +4,7 @@
 
 #include <ecs/ecs.h>
 #include "Entity.h"
+#include "scenes/Scene.h"
 
 #include <absl/container/flat_hash_map.h>
 #include <absl/strings/str_format.h>
@@ -20,13 +21,15 @@ namespace Core
 	}
 
 	EntityID CreateEntity();
+	EntityID CreatePersistentEntity();
 	void DestroyEntity(EntityID _entity);
 	void DestroyAllEntities();
+	void ChangeEntityPersistence(EntityID _entity, bool _keepBetweenScenes);
 
-	template<typename T_Component>
+	template<detail::ValidComponent T_Component>
 	void CleanupComponent(EntityID const _entity);
 
-	template<typename T_Component>
+	template<detail::ValidComponent T_Component>
 	void RemoveComponent(EntityID const _entity);
 	
 	// Helpers for destroying components based on type hash when destroying entities
@@ -55,12 +58,12 @@ namespace Core
 	{
 		// part of ecs::detail so not explicitly part of the API... but there's no point rewriting good code if we can just reuse it
 		using ComponentHash = ecs::detail::type_hash;
-		template<typename T_Component>
+		template<detail::ValidComponent T_Component>
 		constexpr ComponentHash GetComponentHash() { return ecs::detail::get_type_hash<T_Component>(); }
 
 		extern absl::flat_hash_map<ComponentHash, std::unique_ptr<ComponentDestroyerBase>> g_destroyers;
 
-		template<typename T_Component>
+		template<detail::ValidComponent T_Component>
 		void EnsureDestroyer(ComponentHash _hash)
 		{
 			auto it = g_destroyers.find(_hash);
@@ -73,7 +76,7 @@ namespace Core
 		void AddComponentHash(EntityID _entity, ComponentHash _hash);
 		void RemoveComponentHash(EntityID _entity, ComponentHash _hash);
 
-		template<typename T_Component>
+		template<detail::ValidComponent T_Component>
 		void ComponentAdded(EntityID _entity)
 		{
 			ComponentHash const hash = GetComponentHash<T_Component>();
@@ -82,7 +85,7 @@ namespace Core
 
 			kaLog(absl::StrFormat("Entity %d requested component %s to be added", _entity.GetDebugValue(), typeid(T_Component).name()));
 		}
-		template<typename T_Component>
+		template<detail::ValidComponent T_Component>
 		void ComponentRemoved(EntityID _entity)
 		{
 			ComponentHash const hash = GetComponentHash<T_Component>();
@@ -91,6 +94,8 @@ namespace Core
 			kaLog(absl::StrFormat("Entity %d requested component %s to be removed", _entity.GetDebugValue(), typeid(T_Component).name()));
 		}
 		void CommitChanges();
+
+		void TransitionScene(std::unique_ptr<Core::Scene::BaseScene> _nextScene);
 	}
 
 	// functions used by elements of the ECS itself and not by game code
@@ -144,47 +149,58 @@ namespace Core
 
 	// Basic CleanupComponent. This allows for specialisation for components that want to destroy things
 	// pre-condition: entity has the component.
-	template<typename T_Component>
+	template<detail::ValidComponent T_Component>
 	void CleanupComponent(EntityID const _entity)
 	{
 	}
 
 	// Basic RemoveComponent. Do not specialise
 	// pre-condition: entity has the component.
-	template<typename T_Component>
+	template<detail::ValidComponent T_Component>
 	void RemoveComponent(EntityID const _entity)
 	{
 		ECS::RemoveComponent<T_Component>(_entity);
 	}
 
 	// Wrap get_component. Nothing special
-	template<typename T_Component>
+	template<detail::ValidComponent T_Component>
 	T_Component* GetComponent(EntityID const _entity)
 	{
 		return ecs::get_component<T_Component>(Core::detail::AccessECSID(_entity));
 	}
 
-	template<typename T_Component>
+	template<detail::ValidComponent T_Component>
 	T_Component& GetGlobalComponent()
 	{
 		return ecs::get_global_component<T_Component>();
 	}
 
 	// Wrap ecs::make_system
-	template<int _Group, typename T_SystemFn, typename T_SortFn = std::nullptr_t>
+	template<int t_Group, typename T_SystemFn, typename T_SortFn = std::nullptr_t>
 	auto& MakeSystem(T_SystemFn _sysFn, T_SortFn _sortFn = nullptr)
 	{
-		return ecs::make_system<ecs::opts::group<_Group>>(_sysFn, _sortFn);
+		return ecs::make_system<ecs::opts::group<t_Group>>(_sysFn, _sortFn);
 	}
 
-	template<int _Group, typename T_SystemFn, typename T_SortFn = std::nullptr_t>
+	template<int t_Group, typename T_SystemFn, typename T_SortFn = std::nullptr_t>
 	auto& MakeSerialSystem(T_SystemFn _sysFn, T_SortFn _sortFn = nullptr)
 	{
-		return ecs::make_system<ecs::opts::group<_Group>, ecs::opts::not_parallel>(_sysFn, _sortFn);
+		return ecs::make_system<ecs::opts::group<t_Group>, ecs::opts::not_parallel>(_sysFn, _sortFn);
 	}
+
 
 	namespace Scene
 	{
-		void AddDemoScene();
+		namespace detail
+		{
+			template<typename T>
+			concept SceneType = std::derived_from<T, Core::Scene::BaseScene>;
+		}
+
+		template<detail::SceneType T_Scene>
+		void NextScene()
+		{
+			EntityManagement::TransitionScene(std::unique_ptr<BaseScene>(new T_Scene{}));
+		}
 	}
 }

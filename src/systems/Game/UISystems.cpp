@@ -9,6 +9,8 @@
 #include "managers/ResourceManager.h"
 #include "managers/TextManager.h"
 
+#include "scenes/CubeTest.h"
+
 #include <absl/strings/str_format.h>
 
 namespace Game::UI
@@ -20,8 +22,7 @@ namespace Game::UI
 			auto const preload = Core::GetComponent<Core::Resource::Preload>(_entity);
 			if (preload == nullptr)
 			{
-				Core::DestroyEntity(_entity);
-				Core::Scene::AddDemoScene();
+				Core::Scene::NextScene<Game::Scene::CubeTestScene>();
 				return;
 			}
 			if (preload->m_currentLoadingIndex < preload->m_filesToLoad.size())
@@ -39,12 +40,6 @@ namespace Game::UI
 
 		Core::MakeSystem<Sys::RENDER_QUEUE>([](Game::UI::LoadingScreen& _loadingScreen)
 		{
-			if (_loadingScreen.m_fullScreenSprite.IsNull())
-			{
-				bool const success = Core::Resource::LoadSprite("assets/sprites/loading/loading.spr", _loadingScreen.m_fullScreenSprite);
-				kaAssert(success);
-			}
-
 			fTrans2D fullScreenSpriteTrans; // default will cover the whole screen.
 			Core::Render::AddSpriteToScene(_loadingScreen.m_fullScreenSprite, fullScreenSpriteTrans);
 		});

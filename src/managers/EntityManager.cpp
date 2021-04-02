@@ -2,8 +2,6 @@
 
 #include "components.h"
 
-#include "CubeTest.h"
-
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
 
@@ -29,7 +27,10 @@ namespace Core
 		static std::recursive_mutex g_componentChangeMutex;
 
 		static absl::flat_hash_set<EntityID> g_activeEntities;
+		static absl::flat_hash_set<EntityID> g_sceneActiveEntities;
 		static std::shared_mutex g_entityMutex;
+
+		static std::unique_ptr<Core::Scene::BaseScene> g_currentScene;
 
 		static ComponentDestroyerBase const* GetDestroyer
 		(
@@ -41,13 +42,21 @@ namespace Core
 			return compDestroyerI->second.get();
 		}
 
+		static bool IsActiveEntity_Unsafe
+		(
+			EntityID _entity
+		)
+		{
+			return g_activeEntities.contains(_entity);
+		}
+
 		static bool IsActiveEntity
 		(
 			EntityID _entity
 		)
 		{
 			std::shared_lock lock(g_entityMutex);
-			return g_activeEntities.contains(_entity);
+			return IsActiveEntity_Unsafe(_entity);
 		}
 
 		static std::vector<ComponentChange>::iterator FindComponentChange
@@ -129,15 +138,40 @@ namespace Core
 			}
 		}
 
+		static void AddActiveEntity_Unsafe
+		(
+			EntityID _entity,
+			bool _persistent
+		)
+		{
+			g_activeEntities.insert(_entity);
+			if (!_persistent)
+			{
+				g_sceneActiveEntities.insert(_entity);
+			}
+
+			kaLog(absl::StrFormat("Entity %d was created", _entity.GetDebugValue()));
+		}
+
 		static void AddActiveEntity
+		(
+			EntityID _entity,
+			bool _persistent
+		)
+		{
+			std::unique_lock lock(g_entityMutex);
+			AddActiveEntity_Unsafe(_entity, _persistent);
+		}
+
+		static void RemoveActiveEntity_Unsafe
 		(
 			EntityID _entity
 		)
 		{
-			std::unique_lock lock(g_entityMutex);
-			g_activeEntities.insert(_entity);
+			g_activeEntities.erase(_entity);
+			g_sceneActiveEntities.erase(_entity);
 
-			kaLog(absl::StrFormat("Entity %d was created", _entity.GetDebugValue()));
+			kaLog(absl::StrFormat("Entity %d was killed", _entity.GetDebugValue()));
 		}
 
 		static void RemoveActiveEntity
@@ -146,16 +180,41 @@ namespace Core
 		)
 		{
 			std::unique_lock lock(g_entityMutex);
-			g_activeEntities.erase(_entity);
-
-			kaLog(absl::StrFormat("Entity %d was killed", _entity.GetDebugValue()));
+			RemoveActiveEntity_Unsafe(_entity);
 		}
+
+		static void RemoveAllActiveEntities_Unsafe()
+		{
+			g_activeEntities.clear();
+			g_sceneActiveEntities.clear();
+
+			kaLog("-- All entities killed --");
+		}
+
 		static void RemoveAllActiveEntities()
 		{
 			std::unique_lock lock(g_entityMutex);
-			g_activeEntities.clear();
+			RemoveAllActiveEntities_Unsafe();
+		}
 
-			kaLog("-- All entities killed --");
+
+		static void ChangeEntityPersistence
+		(
+			EntityID _entity,
+			bool _keepBetweenScenes
+		)
+		{
+			std::unique_lock lock(g_entityMutex);
+			kaAssert(IsActiveEntity_Unsafe(_entity), "Tried to change persistence of inactive entity!");
+
+			if (_keepBetweenScenes)
+			{
+				g_sceneActiveEntities.erase(_entity);
+			}
+			else
+			{
+				g_sceneActiveEntities.emplace(_entity);
+			}
 		}
 
 		static void DestroyEntityAndComponents
@@ -163,36 +222,80 @@ namespace Core
 			EntityID _entity
 		)
 		{
-			kaAssert(IsActiveEntity(_entity), "tried to destroy dead entity!");
-
 			// this function is what all this effort is for.
 			std::scoped_lock lock(g_componentChangeMutex);
 
-			auto entityI = g_committedComponents.find(_entity);
-			kaAssert(entityI != g_committedComponents.end(), "tried to destroy non-existent entity");
-
-			for (auto compHashI = entityI->second.rbegin(); compHashI != entityI->second.rend(); ++compHashI)
+			absl::InlinedVector<EntityID, 32> entitiesToDestroy;
+			entitiesToDestroy.emplace_back(_entity);
+			
+			// fill vector until no more children are found
+			for(usize entityToCheckI{ 0 }; entityToCheckI < entitiesToDestroy.size(); ++entityToCheckI)
 			{
-				GetDestroyer(*compHashI)->RemoveComponent(_entity);
+				for (auto const& entity : g_activeEntities)
+				{
+					if (auto const transform = Core::GetComponent<Core::Transform3D>(entity); transform && transform->m_parent.IsValid())
+					{
+						if (transform->m_parent == entitiesToDestroy[entityToCheckI])
+						{
+							entitiesToDestroy.emplace_back(entity);
+						}
+					}
+				}
 			}
-			CommitChanges();
+
+			for (auto entityI = entitiesToDestroy.rbegin(); entityI != entitiesToDestroy.rend(); ++entityI)
+			{
+				kaAssert(IsActiveEntity_Unsafe(*entityI), "tried to destroy dead entity!");
+
+				auto commCompI = g_committedComponents.find(*entityI);
+				kaAssert(commCompI != g_committedComponents.end(), "tried to destroy non-existent entity");
+
+				for (auto compHashI = commCompI->second.rbegin(); compHashI != commCompI->second.rend(); ++compHashI)
+				{
+					GetDestroyer(*compHashI)->RemoveComponent(*entityI);
+				}
+				CommitChanges();
+
+				RemoveActiveEntity_Unsafe(*entityI);
+			}
 		}
 
 		static void DestroyAllEntities()
 		{
+			std::unique_lock lock(g_entityMutex);
+
+			while (!g_activeEntities.empty())
 			{
-				std::shared_lock lock(g_entityMutex);
+				auto maxI = std::max_element(g_activeEntities.begin(), g_activeEntities.end());
 
-				while (!g_activeEntities.empty())
-				{
-					auto maxI = std::max_element(g_activeEntities.begin(), g_activeEntities.end());
-
-					DestroyEntityAndComponents(*maxI);
-
-					g_activeEntities.erase(maxI);
-				}
+				DestroyEntityAndComponents(*maxI);
 			}
-			RemoveAllActiveEntities();
+
+			RemoveAllActiveEntities_Unsafe();
+		}
+
+		static void DestroyAllSceneEntities()
+		{
+			std::unique_lock lock(g_entityMutex);
+
+			while (!g_sceneActiveEntities.empty())
+			{
+				auto maxI = std::max_element(g_sceneActiveEntities.begin(), g_sceneActiveEntities.end());
+
+				DestroyEntityAndComponents(*maxI);
+			}
+		}
+
+		void TransitionScene
+		(
+			std::unique_ptr<Core::Scene::BaseScene> _nextScene
+		)
+		{
+			DestroyAllSceneEntities();
+			g_currentScene.reset();
+
+			g_currentScene = std::move(_nextScene);
+			g_currentScene->Setup();
 		}
 	}
 
@@ -201,7 +304,14 @@ namespace Core
 	EntityID CreateEntity()
 	{
 		EntityID newID{ g_nextID++ };
-		EntityManagement::AddActiveEntity(newID);
+		EntityManagement::AddActiveEntity(newID, false);
+		return newID;
+	}
+
+	EntityID CreatePersistentEntity()
+	{
+		EntityID newID{ g_nextID++ };
+		EntityManagement::AddActiveEntity(newID, true);
 		return newID;
 	}
 
@@ -211,7 +321,6 @@ namespace Core
 	)
 	{
 		EntityManagement::DestroyEntityAndComponents(_entity);
-		EntityManagement::RemoveActiveEntity(_entity);
 	}
 
 	void DestroyAllEntities()
@@ -219,32 +328,12 @@ namespace Core
 		EntityManagement::DestroyAllEntities();
 	}
 
-	namespace Scene
+	void ChangeEntityPersistence
+	(
+		EntityID _entity,
+		bool _keepBetweenScenes
+	)
 	{
-		void AddDemoScene()
-		{
-			Core::EntityID const camera = Core::CreateEntity();
-			Core::EntityID const character = Core::CreateEntity();
-			fTrans const characterTrans{ fQuatIdentity(), fVec3(2.0f, 0.0f, 0.0f) };
-			Core::AddComponent(character, Core::Transform3D(characterTrans));
-			{
-				Core::Physics::CharacterControllerDesc ccDesc{};
-				ccDesc.m_viewObject = camera;
-				ccDesc.m_halfHeight = 0.9f;
-				ccDesc.m_radius = 0.5f;
-				ccDesc.m_mass = 80.0f;
-				ccDesc.m_startTransform = characterTrans;
-				ccDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
-
-				Core::AddComponent(character, ccDesc);
-			}
-
-			Core::AddComponent(camera, Core::Transform3D(fQuatIdentity(), fVec3(0.0f, 0.8f, 0.0f), character));
-			Core::AddComponent(camera, Core::Render::MainCamera3D());
-			Core::AddComponent(camera, Core::Render::DebugCameraControl());
-			Core::AddComponent(camera, Game::Player::MouseLook());
-
-			CubeTestEntities();
-		}
+		EntityManagement::ChangeEntityPersistence(_entity, _keepBetweenScenes);
 	}
 }

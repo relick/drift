@@ -15,7 +15,7 @@
 #include <sokol_app.h>
 #include <sokol_time.h>
 
-#include "CubeTest.h"
+#include "scenes/CubeTest.h"
 
 constexpr int g_renderAreaWidth = 320;
 constexpr int g_renderAreaHeight = (g_renderAreaWidth / 4) * 3;
@@ -85,7 +85,7 @@ void Initialise()
 
 	// pre-scene required entity setup
 	{
-		Core::EntityID const primaryPhysicsWorld = Core::CreateEntity();
+		Core::EntityID const primaryPhysicsWorld = Core::CreatePersistentEntity();
 		Core::AddComponent(primaryPhysicsWorld, Core::Physics::World{});
 
 		Core::ECS::CommitChanges();

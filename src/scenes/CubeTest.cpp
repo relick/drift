@@ -1,15 +1,9 @@
 #include "CubeTest.h"
 
-#include <fstream>
-#include <sstream>
-
-#include <sokol_app.h>
-#include <sokol_gfx.h>
-
-#include <ecs/ecs.h>
 #include "managers/EntityManager.h"
 #include "components.h"
 #include "systems.h"
+
 
 struct CubeTest
 {
@@ -18,7 +12,7 @@ struct CubeTest
 	float ry{ 0.0f };
 };
 
-void CubeTestEntities()
+static void CubeTestEntities()
 {
 	Core::EntityID ground = Core::CreateEntity();
 	fTrans const groundTrans{ fQuatIdentity(), fVec3(0.0f, -2.0f, 0.0f) };
@@ -151,6 +145,7 @@ void CubeTestEntities()
 	}
 
 }
+
 void CubeTestSystems()
 {
 	Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, CubeTest& _cubeTest, Core::Transform3D& _t)
@@ -179,4 +174,33 @@ void CubeTestSystems()
 			_t.T().m_basis = RotationFromForward(fVec3(cos(n), sin(n), 1.0f));
 		}
 	});
+}
+
+namespace Game::Scene
+{
+	void CubeTestScene::Setup()
+	{
+		Core::EntityID const camera = Core::CreateEntity();
+		Core::EntityID const character = Core::CreateEntity();
+		fTrans const characterTrans{ fQuatIdentity(), fVec3(2.0f, 0.0f, 0.0f) };
+		Core::AddComponent(character, Core::Transform3D(characterTrans));
+		{
+			Core::Physics::CharacterControllerDesc ccDesc{};
+			ccDesc.m_viewObject = camera;
+			ccDesc.m_halfHeight = 0.9f;
+			ccDesc.m_radius = 0.5f;
+			ccDesc.m_mass = 80.0f;
+			ccDesc.m_startTransform = characterTrans;
+			ccDesc.m_physicsWorld = Core::Physics::GetPrimaryWorldEntity();
+
+			Core::AddComponent(character, ccDesc);
+		}
+
+		Core::AddComponent(camera, Core::Transform3D(fQuatIdentity(), fVec3(0.0f, 0.8f, 0.0f), character));
+		Core::AddComponent(camera, Core::Render::MainCamera3D());
+		Core::AddComponent(camera, Core::Render::DebugCameraControl());
+		Core::AddComponent(camera, Game::Player::MouseLook());
+
+		CubeTestEntities();
+	}
 }

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <ecs/entity_id.h>
-#include <compare>
 
 namespace Core
 {
@@ -21,7 +20,7 @@ namespace Core
 	private:
 		friend CoreType detail::AccessECSID(EntityID);
 
-		static constexpr CoreType s_nullID{ static_cast<CoreType>(-1) };
+		static constexpr CoreType s_nullID{ static_cast<std::size_t>(-1) };
 		CoreType m_entity{ s_nullID };
 
 	public:

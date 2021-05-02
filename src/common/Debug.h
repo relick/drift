@@ -29,9 +29,9 @@ _wassert(m.c_str(), _CRT_WIDE(__FILE__), static_cast<unsigned>(__LINE__)); } whi
 void kaLog(std::string const& _message);
 
 #include <thread>
-extern std::thread::id mainThreadID;
+inline const std::thread::id g_mainThreadID = std::this_thread::get_id();
 
-#define kaMainThreadAssert(...) kaAssert(mainThreadID == std::this_thread::get_id(), "Assert ran on non-main thread"); kaAssert(__VA_ARGS__)
+#define kaMainThreadAssert(...) kaAssert(g_mainThreadID == std::this_thread::get_id(), "Assert ran on non-main thread"); kaAssert(__VA_ARGS__)
 
 #else
 

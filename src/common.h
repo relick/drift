@@ -15,7 +15,10 @@
 template<typename T>
 constexpr void SafeDelete(T*& _obj)
 {
-	delete _obj;
+	if (_obj != nullptr)
+	{
+		delete _obj;
+	}
 	_obj = nullptr;
 }
 

@@ -8,6 +8,14 @@
 #include <mutex>
 #include <shared_mutex>
 
+
+ecs::runtime& Core::detail::GetEcsRuntime()
+{
+	// FIXME: love some hacky statics. I'll refactor everything later.
+	static ecs::runtime globalRuntime;
+	return globalRuntime;
+}
+
 namespace Core
 {
 	namespace EntityManagement
@@ -150,7 +158,7 @@ namespace Core
 				g_sceneActiveEntities.insert(_entity);
 			}
 
-			kaLog(absl::StrFormat("Entity %d was created", _entity.GetDebugValue()));
+			kaLog(std::format("Entity {:d} was created", _entity.GetDebugValue()));
 		}
 
 		static void AddActiveEntity
@@ -171,7 +179,7 @@ namespace Core
 			g_activeEntities.erase(_entity);
 			g_sceneActiveEntities.erase(_entity);
 
-			kaLog(absl::StrFormat("Entity %d was killed", _entity.GetDebugValue()));
+			kaLog(std::format("Entity {:d} was killed", _entity.GetDebugValue()));
 		}
 
 		static void RemoveActiveEntity

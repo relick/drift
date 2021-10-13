@@ -20,7 +20,7 @@ namespace Core
 	private:
 		friend CoreType detail::AccessECSID(EntityID);
 
-		static constexpr CoreType s_nullID{ static_cast<std::size_t>(-1) };
+		static constexpr CoreType s_nullID{ static_cast<CoreType::value>(-1) };
 		CoreType m_entity{ s_nullID };
 
 	public:
@@ -39,7 +39,7 @@ namespace Core
 		EntityID(CoreType _entity) : m_entity{ _entity } {}
 
 #if DEBUG_TOOLS
-		CoreType GetDebugValue() const { return m_entity; }
+		CoreType::value GetDebugValue() const { return m_entity; }
 		// GetDebugString()
 #endif
 	};

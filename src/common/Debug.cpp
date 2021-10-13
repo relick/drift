@@ -4,7 +4,7 @@
 #include "managers/EntityManager.h"
 #include "components.h"
 
-#include <absl/strings/str_format.h>
+#include <format>
 
 #if _MSC_VER && DEBUG_TOOLS
 #include <Windows.h>
@@ -27,7 +27,7 @@ static VSCoutFix g_VSCoutFix;
 void kaLog(std::string const& _message)
 {
 	Core::FrameData const& fd = Core::GetGlobalComponent<Core::FrameData>();
-	std::cout << absl::StrFormat("[%d : %.2f Log]\t%s\n", fd.m_debug_frameCount, fd.m_debug_elapsedTime, _message);
+	std::cout << std::format("[{:d} : {:.2f} Log]\t{:s}\n", fd.m_debug_frameCount, fd.m_debug_elapsedTime, _message);
 #if _MSC_VER
 	g_VSCoutFix.sync();
 #endif

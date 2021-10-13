@@ -11,7 +11,7 @@
 
 #include "scenes/CubeTest.h"
 
-#include <absl/strings/str_format.h>
+#include <format>
 
 namespace Game::UI
 {
@@ -35,7 +35,7 @@ namespace Game::UI
 
 		Core::MakeSystem<Sys::TEXT>([](Game::UI::LoadingScreen const& _ls)
 		{
-			Core::Render::Text::Write(fVec2{ 10, 200 }, absl::StrFormat("%d/%d loaded - %s", _ls.m_currentlyLoaded, _ls.m_totalToLoad, _ls.m_nextLoadedFilename).c_str(), 10.0f);
+			Core::Render::Text::Write(fVec2{ 10, 200 }, std::format("{:d}/{:d} loaded - {:s}", _ls.m_currentlyLoaded, _ls.m_totalToLoad, _ls.m_nextLoadedFilename).c_str(), 10.0f);
 		});
 
 		Core::MakeSystem<Sys::RENDER_QUEUE>([](Game::UI::LoadingScreen& _loadingScreen)

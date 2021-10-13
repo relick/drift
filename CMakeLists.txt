@@ -1,7 +1,7 @@
 ﻿# CMakeList.txt : CMake project for drift, include source and define
 # project specific logic here.
 #
-cmake_minimum_required (VERSION 3.15)
+cmake_minimum_required (VERSION 3.21.3)
 cmake_policy(SET CMP0091 NEW)
 
 project ("drift")
@@ -9,7 +9,7 @@ project ("drift")
 set (CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
 
 ## Set C++ details
-set (CMAKE_CXX_STANDARD 20)
+set (CMAKE_CXX_STANDARD 23)
 if (MSVC)
 	set (CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /W3 /GR- /EHsc")
 	if (CXX_COMPILER_ID MATCHES Clang)
@@ -52,6 +52,7 @@ add_compile_options ("$<$<CXX_COMPILER_ID:MSVC>:/Zc:__cplusplus>")
 find_package (Bullet CONFIG REQUIRED)
 find_package (Assimp CONFIG REQUIRED)
 find_package (freetype CONFIG REQUIRED)
+set (ABSL_PROPAGATE_CXX_STD ON) # will be set as default in future version so can eventually be removed, required for building with C++-latest.
 add_subdirectory (abseil-cpp)
 add_subdirectory (external-cmake)
 
@@ -63,7 +64,7 @@ add_executable (drift ${SOURCE_H} ${SOURCE_CPP} ${SHADERS_COMPILED})
 
 target_include_directories (drift PUBLIC "src") # my code (I care about these warnings)
 target_include_directories (drift SYSTEM PUBLIC "abseil-cpp" "ecs/include" "ecs/tls/include" "sokol" "fontstash/src" "stb" "glm" "gcem/include" ${BULLET_INCLUDE_DIR}) # not my code (I don't care about warnings for these)
-target_link_libraries (drift PRIVATE ${BULLET_LIBRARIES} assimp::assimp absl::flat_hash_map absl::flat_hash_set absl::inlined_vector absl::str_format SoLoud ImGui freetype)
+target_link_libraries (drift PRIVATE ${BULLET_LIBRARIES} assimp::assimp absl::flat_hash_map absl::flat_hash_set absl::inlined_vector SoLoud ImGui freetype)
 
 
 ## Compiler options
@@ -95,6 +96,8 @@ target_compile_options (drift PRIVATE
 	$<$<CXX_COMPILER_ID:MSVC>:
 		/Zc:preprocessor
 		/utf-8
+
+		/wd5105 # /Zc:preprocessor unfortunately makes winbase.h complain about undefined behaviour. Since this is MS's, we'll just have to put up with it.
 	>
 )
 

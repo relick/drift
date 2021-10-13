@@ -13,9 +13,6 @@
 [submodule "glm"]
 	path = glm
 	url = https://github.com/g-truc/glm
-[submodule "gcem"]
-	path = gcem
-	url = https://github.com/kthohr/gcem
 [submodule "soloud"]
 	path = soloud
 	url = https://github.com/jarikomppa/soloud
@@ -28,3 +25,6 @@
 [submodule "vcpkg"]
 	path = vcpkg
 	url = https://github.com/microsoft/vcpkg.git
+[submodule "gcem"]
+	path = gcem
+	url = https://github.com/relick/gcem.git

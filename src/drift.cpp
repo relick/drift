@@ -96,12 +96,12 @@ void Initialise()
 	{
 		if (Core::Input::PressedOnce(Core::Input::Action::Pause))
 		{
-			Core::FrameData& fd = ecs::get_global_component<Core::FrameData>();
+			Core::FrameData& fd = Core::GetGlobalComponent<Core::FrameData>();
 			fd.m_scale = (fd.m_scale == 0.0 ? fd.m_unpausedSpeed : 0.0);
 		}
 		if (Core::Input::PressedOnce(Core::Input::Action::Debug_SpeedUp))
 		{
-			Core::FrameData& fd = ecs::get_global_component<Core::FrameData>();
+			Core::FrameData& fd = Core::GetGlobalComponent<Core::FrameData>();
 			fd.m_unpausedSpeed = (fd.m_unpausedSpeed == 1.0 ? 2.0 : (fd.m_unpausedSpeed == 2.0 ? 5.0 : 1.0));
 			fd.m_scale = (fd.m_scale == 0.0 ? 0.0 : fd.m_unpausedSpeed);
 		}
@@ -126,7 +126,7 @@ void Initialise()
 void Frame()
 {
 	{
-		Core::FrameData& fd = ecs::get_global_component<Core::FrameData>();
+		Core::FrameData& fd = Core::GetGlobalComponent<Core::FrameData>();
 		uint64 const lappedTicks = stm_laptime(&fd.m_lastFrameTicks);
 		// stm_round_to_common_refresh_rate?
 		fd.unscaled_ddt = stm_sec(lappedTicks);
@@ -141,7 +141,7 @@ void Frame()
 	}
 
 	{
-		Core::Render::FrameData& rfd = ecs::get_global_component<Core::Render::FrameData>();
+		Core::Render::FrameData& rfd = Core::GetGlobalComponent<Core::Render::FrameData>();
 		rfd.contextWindow.i.x = sapp_width();
 		rfd.contextWindow.i.y = sapp_height();
 		rfd.contextWindow.f = rfd.contextWindow.i;

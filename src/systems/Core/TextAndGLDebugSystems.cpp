@@ -1,6 +1,7 @@
 #include "TextAndGLDebugSystems.h"
 
 #include "components.h"
+#include "common/Mutex.h"
 #include "systems/Core/ImGuiSystems.h"
 #include "managers/EntityManager.h"
 #include "managers/TextManager.h"
@@ -12,7 +13,6 @@
 #include <imgui.h>
 
 #include <vector>
-#include <mutex>
 #include <absl/container/flat_hash_map.h>
 
 namespace Core
@@ -26,13 +26,13 @@ namespace Core
 
 			LineToDraw(Vec3 const& _start, Vec3 const& _end) : m_start{ _start }, m_end{ _end } {}
 		};
-		static absl::flat_hash_map<uint32, std::vector<LineToDraw>> g_linesToDraw{};
-		static std::mutex g_linesToDrawMutex{};
+		static Mutex<absl::flat_hash_map<uint32, std::vector<LineToDraw>>> g_linesToDraw{};
 
 		static void FlushGL()
 		{
+			auto linesToDrawAccess = g_linesToDraw.Write();
 			sgl_begin_lines();
-			for (auto const& [col, lines] : g_linesToDraw)
+			for (auto const& [col, lines] : *linesToDrawAccess)
 			{
 				sgl_c1i(col);
 				for (auto const& line : lines)
@@ -42,7 +42,7 @@ namespace Core
 				}
 			}
 			sgl_end();
-			g_linesToDraw.clear();
+			linesToDrawAccess->clear();
 		}
 
 		namespace TextAndGLDebug
@@ -123,8 +123,7 @@ namespace Core
 				uint32 _col
 			)
 			{
-				std::scoped_lock<std::mutex> lock{ g_linesToDrawMutex };
-				g_linesToDraw[_col].emplace_back(_start, _end);
+				(*g_linesToDraw.Write())[_col].emplace_back(_start, _end);
 			}
 
 			void DrawLine
@@ -134,9 +133,8 @@ namespace Core
 				Vec3 const& _col
 			)
 			{
-				std::scoped_lock<std::mutex> lock{ g_linesToDrawMutex };
 				uint32 const col = Colour::ConvertRGB(_col);
-				g_linesToDraw[col].emplace_back(_start, _end);
+				(*g_linesToDraw.Write())[col].emplace_back(_start, _end);
 			}
 		}
 	}

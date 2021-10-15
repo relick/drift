@@ -70,7 +70,7 @@ namespace Core
 				g_defaultTextureID = sg_make_image(emptyTexDesc);
 			}
 			{
-				auto const emptyTex = MakeArray< uint8 >( g_textureNormalZero, g_textureNormalZero, g_textureNormalOne, 0 );
+				auto const emptyTex = std::to_array< uint8 >( { g_textureNormalZero, g_textureNormalZero, g_textureNormalOne, 0, } );
 				sg_image_data emptyTexData{};
 				emptyTexData.subimage[0][0] = SG_RANGE(emptyTex);
 				sg_image_desc emptyTexDesc{

@@ -55,7 +55,7 @@ namespace Core
 				lightData.ambient = {};
 				directionalDir = {};
 			}
-			main_lights_t const& shader_LightData() { return lightData; }
+			main_lights_t const& shader_LightData() const { return lightData; }
 		};
 
 		class RenderStateFiller;
@@ -369,12 +369,12 @@ namespace Core
 			// Target to screen glue
 			{
 				// in triangle-strip form
-				auto rectangleWithUV = MakeArray< Vec1 >(
+				auto rectangleWithUV = std::to_array< Vec1 >( {
 					-1.0f,  1.0f,	0, 0,
 					 1.0f,  1.0f,	1, 0,
 					-1.0f, -1.0f,	0, 1,
-					 1.0f, -1.0f,	1, 1
-				);
+					 1.0f, -1.0f,	1, 1,
+				} );
 
 				sg_buffer_desc rectangleWithUVBufferDesc{
 					.type = SG_BUFFERTYPE_VERTEXBUFFER,
@@ -391,7 +391,7 @@ namespace Core
 
 			{
 				// in triangle-strip form
-				auto skyboxCube = MakeArray< Vec1 >(
+				auto skyboxCube = std::to_array< Vec1 >( {
 					 1.0f,  1.0f, -1.0f, // front-top-right
 					-1.0f,  1.0f, -1.0f, // front-top-left
 					 1.0f,  1.0f,  1.0f, // back-top-right
@@ -405,8 +405,8 @@ namespace Core
 					 1.0f, -1.0f,  1.0f, // back-bottom-right
 					-1.0f, -1.0f,  1.0f, // back-bottom-left
 					 1.0f, -1.0f, -1.0f, // front-bottom-right
-					-1.0f, -1.0f, -1.0f // front-bottom-left
-				);
+					-1.0f, -1.0f, -1.0f, // front-bottom-left
+				} );
 
 				sg_buffer_desc skyboxCubeDesc{
 					.type = SG_BUFFERTYPE_VERTEXBUFFER,
@@ -418,12 +418,12 @@ namespace Core
 
 			{
 				// in triangle-strip form
-				auto rectangle2DWithUV = MakeArray< Vec1 >(
+				auto rectangle2DWithUV = std::to_array< Vec1 >( {
 					0.0f, 0.0f,		0, 0,
 					1.0f, 0.0f,		1, 0,
 					0.0f, 1.0f,		0, 1,
-					1.0f, 1.0f,		1, 1
-				);
+					1.0f, 1.0f,		1, 1,
+				} );
 
 				sg_buffer_desc rectangle2DWithUVBufferDesc{
 					.type = SG_BUFFERTYPE_VERTEXBUFFER,
@@ -727,8 +727,8 @@ namespace Core
 		(
 		)
 		{
-			auto modelsAccess = g_frameScene.models.Lock();
-			auto lightsAccess = g_frameScene.lights.Lock();
+			auto modelsAccess = g_frameScene.models.Read();
+			auto lightsAccess = g_frameScene.lights.Read();
 
 			g_frameScene.modelScratchData.clear();
 			g_frameScene.modelScratchData.reserve( modelsAccess->size() );
@@ -834,7 +834,7 @@ namespace Core
 			Core::Render::FrameData const& _rfd
 		)
 		{
-			auto spritesAccess = g_frameScene.sprites.Lock();
+			auto spritesAccess = g_frameScene.sprites.Read();
 
 			g_renderState.NextPass(Pass_MainTarget);
 			g_renderState.SetRenderer(Renderer_Sprites);
@@ -927,9 +927,9 @@ namespace Core
 
 			// frameScene cleanup
 			g_frameScene.skybox = Resource::TextureSampleID{};
-			g_frameScene.lights.Lock()->Reset();
-			g_frameScene.models.Lock()->clear();
-			g_frameScene.sprites.Lock()->clear();
+			g_frameScene.lights.Write()->Reset();
+			g_frameScene.models.Write()->clear();
+			g_frameScene.sprites.Write()->clear();
 
 			// end of the main drawing pass
 			// begin of the screen drawing pass
@@ -960,19 +960,19 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		LightSetter AddLightToScene()
 		{
-			return g_frameScene.lights.Lock()->AddLight();
+			return g_frameScene.lights.Write()->AddLight();
 		}
 
 		//--------------------------------------------------------------------------------
 		void AddAmbientLightToScene(Vec3 const& _col)
 		{
-			g_frameScene.lights.Lock()->ambientLight += _col;
+			g_frameScene.lights.Write()->ambientLight += _col;
 		}
 
 		//--------------------------------------------------------------------------------
 		void SetDirectionalLightDir(Vec3 const& _dir)
 		{
-			g_frameScene.lights.Lock()->directionalDir = _dir;
+			g_frameScene.lights.Write()->directionalDir = _dir;
 		}
 
 		//--------------------------------------------------------------------------------
@@ -982,7 +982,7 @@ namespace Core
 			Trans2D const& _screenTrans
 		)
 		{
-			auto spritesAccess = g_frameScene.sprites.Lock();
+			auto spritesAccess = g_frameScene.sprites.Write();
 			spritesAccess->emplace_back(_sprite, _screenTrans);
 			kaAssert( spritesAccess->size() < g_maxSpritesPerFrame );
 		}
@@ -994,7 +994,7 @@ namespace Core
 			Trans const& _worldTrans
 		)
 		{
-			g_frameScene.models.Lock()->emplace_back(_model, _worldTrans);
+			g_frameScene.models.Write()->emplace_back(_model, _worldTrans);
 		}
 
 		//--------------------------------------------------------------------------------

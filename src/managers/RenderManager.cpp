@@ -2,6 +2,7 @@
 
 #include "managers/ResourceManager.h"
 
+#include "common/Mutex.h"
 #include "systems.h"
 #include "components.h"
 #include "shaders/main.h"
@@ -17,7 +18,6 @@
 #include <sokol_glue.h>
 
 #include <functional>
-#include <mutex>
 
 // classes
 namespace Core
@@ -300,21 +300,18 @@ namespace Core
 
 		struct FrameScene
 		{
-			LightsState lights{};
+			Mutex< LightsState > lights{};
 			Resource::TextureSampleID directionalShadowMap{};
 			CameraState camera{};
-			std::vector<ModelToDraw> models;
+			Mutex< std::vector<ModelToDraw> > models;
 			std::vector<ModelScratchData> modelScratchData;
-			std::vector<SpriteToDraw> sprites;
+			Mutex< std::vector<SpriteToDraw> > sprites;
 			std::vector<SpriteScratchData> spriteScratchData;
 			std::vector<SpriteBufferData> spriteBufferData;
 			sg_bindings spriteBinds{};
 			sg_buffer spriteBuffer{};
 			Resource::TextureSampleID skybox{};
 			sg_bindings skyboxBinds{};
-			std::mutex lightsMutex{};
-			std::mutex modelsMutex{};
-			std::mutex spritesMutex{};
 		};
 
 		static FrameScene g_frameScene{};
@@ -730,12 +727,16 @@ namespace Core
 		(
 		)
 		{
+			auto modelsAccess = g_frameScene.models.Lock();
+			auto lightsAccess = g_frameScene.lights.Lock();
+
 			g_frameScene.modelScratchData.clear();
-			g_frameScene.modelScratchData.reserve(g_frameScene.models.size());
-			for (ModelToDraw const& mtd : g_frameScene.models)
+			g_frameScene.modelScratchData.reserve( modelsAccess->size() );
+			for ( ModelToDraw const& mtd : *modelsAccess )
 			{
-				g_frameScene.modelScratchData.emplace_back(Resource::GetModel(mtd.m_model), mtd.m_transform.GetRenderMatrix());
+				g_frameScene.modelScratchData.emplace_back( Resource::GetModel( mtd.m_model ), mtd.m_transform.GetRenderMatrix() );
 			}
+
 
 			// RENDER_PASSES
 			Mat4 lightSpace{};
@@ -744,9 +745,9 @@ namespace Core
 				g_renderState.NextPass(Pass_DirectionalLight);
 				g_renderState.SetRenderer(Renderer_DepthOnly);
 
-				Mat4 const lightProj = GetDirectionalLightOrthoMat(10.0f, 1.0f, 50.0f);
-				Vec3 const lightPos = g_frameScene.camera.pos - (g_frameScene.lights.directionalDir * 25.0f);
-				Mat4 const lightView = glm::lookAt(lightPos, lightPos + g_frameScene.lights.directionalDir, Vec3(0.0f, 1.0f, 0.0f));
+				Mat4 const lightProj = GetDirectionalLightOrthoMat( 10.0f, 1.0f, 50.0f );
+				Vec3 const lightPos = g_frameScene.camera.pos - ( lightsAccess->directionalDir * 25.0f );
+				Mat4 const lightView = glm::lookAt( lightPos, lightPos + lightsAccess->directionalDir, Vec3( 0.0f, 1.0f, 0.0f ) );
 				lightSpace = lightProj * lightView;
 
 				auto fnLightModelVisitor = [&lightSpace](Mat4 const& _modelMatrix, Resource::ModelData const& _model)
@@ -774,7 +775,7 @@ namespace Core
 			if constexpr (g_enableMainRenderer)
 			{
 				g_renderState.SetRenderer(Renderer_Main);
-				sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_main_lights, SG_RANGE_REF(g_frameScene.lights.shader_LightData()));
+				sg_apply_uniforms( SG_SHADERSTAGE_FS, SLOT_main_lights, SG_RANGE_REF( lightsAccess->shader_LightData() ) );
 
 				main_vs_params_t vs_params = {
 					.projection = g_frameScene.camera.proj,
@@ -815,7 +816,7 @@ namespace Core
 					sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_skybox_vs_params, SG_RANGE_REF(vs_params));
 
 					skybox_fs_params_t fs_params{
-						.sunDir = g_frameScene.lights.directionalDir,
+						.sunDir = lightsAccess->directionalDir,
 					};
 					sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_skybox_fs_params, SG_RANGE_REF(fs_params));
 
@@ -833,6 +834,8 @@ namespace Core
 			Core::Render::FrameData const& _rfd
 		)
 		{
+			auto spritesAccess = g_frameScene.sprites.Lock();
+
 			g_renderState.NextPass(Pass_MainTarget);
 			g_renderState.SetRenderer(Renderer_Sprites);
 			sprites_vs_params_t vs_params{
@@ -841,10 +844,10 @@ namespace Core
 			sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_sprites_vs_params, SG_RANGE_REF(vs_params));
 
 			g_frameScene.spriteScratchData.clear();
-			g_frameScene.spriteScratchData.reserve(g_frameScene.sprites.size());
-			for (SpriteToDraw const& std : g_frameScene.sprites)
+			g_frameScene.spriteScratchData.reserve( spritesAccess->size() );
+			for ( SpriteToDraw const& std : *spritesAccess )
 			{
-				g_frameScene.spriteScratchData.emplace_back(Resource::GetSprite(std.m_sprite), std.m_transform);
+				g_frameScene.spriteScratchData.emplace_back( Resource::GetSprite( std.m_sprite ), std.m_transform );
 			}
 
 			// Order by texture
@@ -924,9 +927,9 @@ namespace Core
 
 			// frameScene cleanup
 			g_frameScene.skybox = Resource::TextureSampleID{};
-			g_frameScene.lights.Reset();
-			g_frameScene.models.clear();
-			g_frameScene.sprites.clear();
+			g_frameScene.lights.Lock()->Reset();
+			g_frameScene.models.Lock()->clear();
+			g_frameScene.sprites.Lock()->clear();
 
 			// end of the main drawing pass
 			// begin of the screen drawing pass
@@ -957,22 +960,19 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		LightSetter AddLightToScene()
 		{
-			std::scoped_lock<std::mutex> lock{ g_frameScene.lightsMutex };
-			return g_frameScene.lights.AddLight();
+			return g_frameScene.lights.Lock()->AddLight();
 		}
 
 		//--------------------------------------------------------------------------------
 		void AddAmbientLightToScene(Vec3 const& _col)
 		{
-			std::scoped_lock<std::mutex> lock{ g_frameScene.lightsMutex };
-			g_frameScene.lights.ambientLight += _col;
+			g_frameScene.lights.Lock()->ambientLight += _col;
 		}
 
 		//--------------------------------------------------------------------------------
 		void SetDirectionalLightDir(Vec3 const& _dir)
 		{
-			std::scoped_lock<std::mutex> lock{ g_frameScene.lightsMutex };
-			g_frameScene.lights.directionalDir = _dir;
+			g_frameScene.lights.Lock()->directionalDir = _dir;
 		}
 
 		//--------------------------------------------------------------------------------
@@ -982,9 +982,9 @@ namespace Core
 			Trans2D const& _screenTrans
 		)
 		{
-			std::scoped_lock<std::mutex> lock{ g_frameScene.spritesMutex };
-			g_frameScene.sprites.emplace_back(_sprite, _screenTrans);
-			kaAssert(g_frameScene.sprites.size() < g_maxSpritesPerFrame);
+			auto spritesAccess = g_frameScene.sprites.Lock();
+			spritesAccess->emplace_back(_sprite, _screenTrans);
+			kaAssert( spritesAccess->size() < g_maxSpritesPerFrame );
 		}
 
 		//--------------------------------------------------------------------------------
@@ -994,8 +994,7 @@ namespace Core
 			Trans const& _worldTrans
 		)
 		{
-			std::scoped_lock<std::mutex> lock{ g_frameScene.modelsMutex };
-			g_frameScene.models.emplace_back(_model, _worldTrans);
+			g_frameScene.models.Lock()->emplace_back(_model, _worldTrans);
 		}
 
 		//--------------------------------------------------------------------------------

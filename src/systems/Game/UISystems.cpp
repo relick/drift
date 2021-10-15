@@ -2,7 +2,6 @@
 
 #include "components.h"
 #include "systems.h"
-#include "SystemOrdering.h"
 
 #include "managers/EntityManager.h"
 #include "managers/RenderManager.h"
@@ -33,14 +32,14 @@ namespace Game::UI
 			_loadingScreen.m_totalToLoad = preload->m_filesToLoad.size();
 		});
 
-		Core::MakeSystem<Sys::TEXT>([](Game::UI::LoadingScreen const& _ls)
+		Core::MakeSystem<Sys::TEXT>([](Core::MT_Only&, Game::UI::LoadingScreen const& _ls)
 		{
-			Core::Render::Text::Write(fVec2{ 10, 200 }, std::format("{:d}/{:d} loaded - {:s}", _ls.m_currentlyLoaded, _ls.m_totalToLoad, _ls.m_nextLoadedFilename).c_str(), 10.0f);
+			Core::Render::Text::Write(Vec2{ 10, 200 }, std::format("{:d}/{:d} loaded - {:s}", _ls.m_currentlyLoaded, _ls.m_totalToLoad, _ls.m_nextLoadedFilename).c_str(), 10.0f);
 		});
 
 		Core::MakeSystem<Sys::RENDER_QUEUE>([](Game::UI::LoadingScreen& _loadingScreen)
 		{
-			fTrans2D fullScreenSpriteTrans; // default will cover the whole screen.
+			Trans2D fullScreenSpriteTrans; // default will cover the whole screen.
 			Core::Render::AddSpriteToScene(_loadingScreen.m_fullScreenSprite, fullScreenSpriteTrans);
 		});
 	}

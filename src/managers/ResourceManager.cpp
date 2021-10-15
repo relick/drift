@@ -70,7 +70,7 @@ namespace Core
 				g_defaultTextureID = sg_make_image(emptyTexDesc);
 			}
 			{
-				uint8 const emptyTex[] = { g_textureNormalZero, g_textureNormalZero, g_textureNormalOne, 0, };
+				auto const emptyTex = MakeArray< uint8 >( g_textureNormalZero, g_textureNormalZero, g_textureNormalOne, 0 );
 				sg_image_data emptyTexData{};
 				emptyTexData.subimage[0][0] = SG_RANGE(emptyTex);
 				sg_image_desc emptyTexDesc{
@@ -408,7 +408,7 @@ namespace Core
 
 		struct ModelLoadData
 		{
-			absl::InlinedVector<float, 256> m_vertexBufferData;
+			absl::InlinedVector<Vec1, 256> m_vertexBufferData;
 			absl::InlinedVector<uint32, 256> m_indexBufferData;
 
 			absl::InlinedVector<MeshLoadData, 64> m_meshes;
@@ -433,13 +433,13 @@ namespace Core
 			// process vertices
 			for (uint32 i = 0; i < _mesh->mNumVertices; i++)
 			{
-				o_loadData.m_vertices[i].position = fVec3(_mesh->mVertices[i].x, _mesh->mVertices[i].y, _mesh->mVertices[i].z);
-				o_loadData.m_vertices[i].normal = fVec3(_mesh->mNormals[i].x, _mesh->mNormals[i].y, _mesh->mNormals[i].z);
+				o_loadData.m_vertices[i].position = Vec3(_mesh->mVertices[i].x, _mesh->mVertices[i].y, _mesh->mVertices[i].z);
+				o_loadData.m_vertices[i].normal = Vec3(_mesh->mNormals[i].x, _mesh->mNormals[i].y, _mesh->mNormals[i].z);
 				if (_mesh->mTextureCoords[0] != nullptr)
 				{
-					o_loadData.m_vertices[i].uv = fVec2(_mesh->mTextureCoords[0][i].x, _mesh->mTextureCoords[0][i].y);
+					o_loadData.m_vertices[i].uv = Vec2(_mesh->mTextureCoords[0][i].x, _mesh->mTextureCoords[0][i].y);
 				}
-				o_loadData.m_vertices[i].tangent = fVec3(_mesh->mTangents[i].x, _mesh->mTangents[i].y, _mesh->mTangents[i].z);
+				o_loadData.m_vertices[i].tangent = Vec3(_mesh->mTangents[i].x, _mesh->mTangents[i].y, _mesh->mTangents[i].z);
 			}
 
 			for (usize i = 0; i < _mesh->mNumFaces; i++)
@@ -460,16 +460,16 @@ namespace Core
 				LoadMaterialTextures(_directory, material, o_newMesh.m_textures);
 
 				aiColor3D colour(0.0f, 0.0f, 0.0f);
-				float shininess{ 0.0f };
+				Vec1 shininess{ 0.0f };
 
 				material->Get(AI_MATKEY_COLOR_DIFFUSE, colour);
-				newMaterial.diffuseColour = fVec3(colour.r, colour.g, colour.b);
+				newMaterial.diffuseColour = Vec3(colour.r, colour.g, colour.b);
 
 				material->Get(AI_MATKEY_COLOR_AMBIENT, colour);
-				newMaterial.ambientColour = fVec3(colour.r, colour.g, colour.b);
+				newMaterial.ambientColour = Vec3(colour.r, colour.g, colour.b);
 
 				material->Get(AI_MATKEY_COLOR_SPECULAR, colour);
-				newMaterial.specularColour = fVec3(colour.r, colour.g, colour.b);
+				newMaterial.specularColour = Vec3(colour.r, colour.g, colour.b);
 
 				material->Get(AI_MATKEY_SHININESS, shininess);
 				newMaterial.shininess = shininess;
@@ -587,7 +587,7 @@ namespace Core
 				totalVertexCount += meshLoadData.m_vertices.size();
 				totalIndexCount += meshLoadData.m_indices.size();
 			}
-			loadData.m_vertexBufferData.reserve((sizeof(Resource::VertexData)/sizeof(float)) * totalVertexCount);
+			loadData.m_vertexBufferData.reserve((sizeof(Resource::VertexData)/sizeof( Vec1 )) * totalVertexCount);
 			loadData.m_indexBufferData.reserve(totalIndexCount);
 			for (usize meshI = 0; meshI < newModel.m_meshes.size(); ++meshI)
 			{
@@ -620,7 +620,7 @@ namespace Core
 			{
 				sg_buffer_desc vBufDesc{};
 				vBufDesc.type = SG_BUFFERTYPE_VERTEXBUFFER;
-				vBufDesc.data = { &loadData.m_vertexBufferData[0], loadData.m_vertexBufferData.size() * sizeof(float), };
+				vBufDesc.data = { &loadData.m_vertexBufferData[0], loadData.m_vertexBufferData.size() * sizeof( Vec1 ), };
 #if DEBUG_TOOLS
 				newModel._traceName_vBufData = directory + "/vertices";
 				vBufDesc.label = newModel._traceName_vBufData.c_str();
@@ -720,8 +720,8 @@ namespace Core
 			std::string line;
 
 			// line 1: texture file
-			float textureWidth{ 1 };
-			float textureHeight{ 1 };
+			Vec1 textureWidth{ 1 };
+			Vec1 textureHeight{ 1 };
 			if (std::getline(spriteFile, line))
 			{
 				std::string const texturePath = directory + line;
@@ -733,8 +733,8 @@ namespace Core
 					TextureData const& textureData = GetTexture(textureID);
 
 					newSprite.m_texture = textureID;
-					textureWidth = static_cast<float>(textureData.m_width);
-					textureHeight = static_cast<float>(textureData.m_height);
+					textureWidth = static_cast< Vec1 >(textureData.m_width);
+					textureHeight = static_cast< Vec1 >(textureData.m_height);
 				}
 			}
 			else
@@ -747,8 +747,8 @@ namespace Core
 			if (std::getline(spriteFile, line))
 			{
 				usize const mid = line.find_first_of(' ');
-				float const width = static_cast<float>(std::atof(line.substr(0, mid).c_str()));
-				float const height = static_cast<float>(std::atof(line.substr(mid + 1).c_str()));
+				Vec1 const width = static_cast< Vec1 >(std::atof(line.substr(0, mid).c_str()));
+				Vec1 const height = static_cast< Vec1 >(std::atof(line.substr(mid + 1).c_str()));
 				newSprite.m_dimensions = { width, height };
 			}
 			else
@@ -762,8 +762,8 @@ namespace Core
 			if (std::getline(spriteFile, line))
 			{
 				usize const mid = line.find_first_of(' ');
-				float const x = static_cast<float>(std::atof(line.substr(0, mid).c_str()));
-				float const y = static_cast<float>(std::atof(line.substr(mid + 1).c_str()));
+				Vec1 const x = static_cast< Vec1 >(std::atof(line.substr(0, mid).c_str()));
+				Vec1 const y = static_cast< Vec1 >(std::atof(line.substr(mid + 1).c_str()));
 				newSprite.m_topLeftUV = { x, y };
 			}
 			else

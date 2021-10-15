@@ -13,7 +13,7 @@ class VSCoutFix
 {
 public:
 	~VSCoutFix() override { sync(); }
-	int sync() override
+	int32 sync() override
 	{
 		::OutputDebugStringA(str().c_str());
 		str(std::string()); // Clear the string buffer

@@ -39,7 +39,7 @@ namespace Core::Sound
 	void PlaySoundEffect
 	(
 		Resource::SoundEffectID _soundEffect,
-		float _volume // = -1.0f
+		Vec1 _volume // = -1.0f
 	)
 	{
 		Resource::SoundEffectData& sfxData = Resource::GetSoundEffect(_soundEffect);
@@ -50,8 +50,8 @@ namespace Core::Sound
 	SoLoud::handle AddSoundEffect3D
 	(
 		Resource::SoundEffectID _soundEffect,
-		fVec3 const& _pos,
-		float _volume // = -1.0f
+		Vec3 const& _pos,
+		Vec1 _volume // = -1.0f
 	)
 	{
 		Resource::SoundEffectData& sfxData = Resource::GetSoundEffect(_soundEffect);
@@ -65,8 +65,8 @@ namespace Core::Sound
 	void UpdateSoundEffect3D
 	(
 		SoLoud::handle _handle,
-		fVec3 const& _pos,
-		fVec3 const& _vel
+		Vec3 const& _pos,
+		Vec3 const& _vel
 	)
 	{
 		g_soundState.soloud.set3dSourceParameters(_handle,
@@ -79,7 +79,7 @@ namespace Core::Sound
 	void UpdateSoundEffect3D
 	(
 		SoLoud::handle _handle,
-		fVec3 const& _pos
+		Vec3 const& _pos
 	)
 	{
 		g_soundState.soloud.set3dSourcePosition(_handle,
@@ -100,7 +100,7 @@ namespace Core::Sound
 	void PlayBGM
 	(
 		Resource::MusicID _music,
-		float _initVolume // = -1.0f
+		Vec1 _initVolume // = -1.0f
 	)
 	{
 		if (g_soundState.currentPlayingBGM.music.IsValid())
@@ -143,7 +143,7 @@ namespace Core::Sound
 	//--------------------------------------------------------------------------------
 	void ChangeBGMVolume
 	(
-		float _volume
+		Vec1 _volume
 	)
 	{
 		if (g_soundState.currentPlayingBGM.music.IsValid())
@@ -153,7 +153,7 @@ namespace Core::Sound
 	}
 
 	//--------------------------------------------------------------------------------
-	float GetBGMVolume()
+	Vec1 GetBGMVolume()
 	{
 		if (g_soundState.currentPlayingBGM.music.IsValid())
 		{
@@ -165,14 +165,14 @@ namespace Core::Sound
 	//--------------------------------------------------------------------------------
 	void SetHead3DParams
 	(
-		fTrans const& _t,
-		fVec3 const& _vel
+		Trans const& _t,
+		Vec3 const& _vel
 	)
 	{
 		g_soundState.soloud.set3dListenerParameters(
 			_t.m_origin.x, _t.m_origin.y, _t.m_origin.z,
-			_t.forward().x, _t.forward().y, _t.forward().z,
-			_t.up().x, _t.up().y, _t.up().z,
+			_t.Forward().x, _t.Forward().y, _t.Forward().z,
+			_t.Up().x, _t.Up().y, _t.Up().z,
 			_vel.x, _vel.y, _vel.z
 		);
 	}
@@ -180,17 +180,17 @@ namespace Core::Sound
 	//--------------------------------------------------------------------------------
 	void SetHead3DTransform
 	(
-		fTrans const& _t
+		Trans const& _t
 	)
 	{
 		g_soundState.soloud.set3dListenerPosition(
 			_t.m_origin.x, _t.m_origin.y, _t.m_origin.z
 		);
 		g_soundState.soloud.set3dListenerAt(
-			_t.forward().x, _t.forward().y, _t.forward().z
+			_t.Forward().x, _t.Forward().y, _t.Forward().z
 		);
 		g_soundState.soloud.set3dListenerUp(
-			_t.up().x, _t.up().y, _t.up().z
+			_t.Up().x, _t.Up().y, _t.Up().z
 		);
 	}
 }

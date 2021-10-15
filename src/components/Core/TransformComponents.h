@@ -14,28 +14,28 @@ namespace Core
 	struct Transform3D
 	{
 		// origin = position, basis = rotation
-		fTrans m_transform{};
+		Trans m_transform{};
 		Core::EntityID m_parent;
 
 		Transform3D(Core::EntityID _parent = Core::EntityID{})
 			: m_parent{ _parent }
 		{}
-		explicit Transform3D(fTrans const& _t, Core::EntityID _parent = Core::EntityID{})
+		explicit Transform3D(Trans const& _t, Core::EntityID _parent = Core::EntityID{})
 			: m_transform{ _t }
 			, m_parent{ _parent }
 		{}
-		explicit Transform3D(fQuat const& _q, fVec3 const& _p, Core::EntityID _parent = Core::EntityID{})
-			: m_transform{ static_cast<fMat3>(_q), _p }
+		explicit Transform3D(Quat const& _q, Vec3 const& _p, Core::EntityID _parent = Core::EntityID{})
+			: m_transform{ static_cast<Mat3>(_q), _p }
 			, m_parent{ _parent }
 		{}
-		explicit Transform3D(fMat3 const& _m, fVec3 const& _p, Core::EntityID _parent = Core::EntityID{})
+		explicit Transform3D(Mat3 const& _m, Vec3 const& _p, Core::EntityID _parent = Core::EntityID{})
 			: m_transform{ _m, _p }
 			, m_parent{ _parent }
 		{}
 
 		// shorthand accessor
-		fTrans& T() { return m_transform; }
-		fTrans const& T() const { return m_transform; }
+		Trans& T() { return m_transform; }
+		Trans const& T() const { return m_transform; }
 
 		void DetachFromParent()
 		{
@@ -43,10 +43,10 @@ namespace Core
 			m_parent = Core::EntityID();
 		}
 
-		void SetLocalTransformFromWorldTransform(fTrans const& _worldTransform)
+		void SetLocalTransformFromWorldTransform(Trans const& _worldTransform)
 		{
 			Core::EntityID nextParent = m_parent;
-			fTrans finalTransform = fTrans();
+			Trans finalTransform = Trans();
 			while (nextParent.IsValid())
 			{
 				Transform3D const* const parentTrans = Core::GetComponent<Transform3D>(nextParent);
@@ -59,10 +59,10 @@ namespace Core
 			m_transform = finalTransform.ToLocal(_worldTransform);
 		}
 
-		fTrans CalculateWorldTransform() const
+		Trans CalculateWorldTransform() const
 		{
 			Core::EntityID nextParent = m_parent;
-			fTrans finalTransform = m_transform;
+			Trans finalTransform = m_transform;
 			while (nextParent.IsValid())
 			{
 				Transform3D const* const parentTrans = Core::GetComponent<Transform3D>(nextParent);
@@ -75,12 +75,12 @@ namespace Core
 			return finalTransform;
 		}
 
-		fTrans CalculateWorldTransform(fTrans const& _localTransform) const
+		Trans CalculateWorldTransform(Trans const& _localTransform) const
 		{
 			return CalculateWorldTransform() * _localTransform;
 		}
 
-		fTrans CalculateLocalTransform(fTrans const& _worldTransform) const
+		Trans CalculateLocalTransform(Trans const& _worldTransform) const
 		{
 			return CalculateWorldTransform().ToLocal(_worldTransform);
 		}
@@ -89,20 +89,20 @@ namespace Core
 	// Used by sprites
 	struct Transform2D
 	{
-		fTrans2D m_transform;
+		Trans2D m_transform;
 		Core::EntityID m_parent;
 
 		Transform2D(Core::EntityID _parent = Core::EntityID{})
 			: m_parent{ _parent }
 		{}
-		explicit Transform2D(fTrans2D const& _t, Core::EntityID _parent = Core::EntityID{})
+		explicit Transform2D(Trans2D const& _t, Core::EntityID _parent = Core::EntityID{})
 			: m_transform{ _t }
 			, m_parent{ _parent }
 		{}
 
 		// shorthand accessor
-		fTrans2D& T() { return m_transform; }
-		fTrans2D const& T() const { return m_transform; }
+		Trans2D& T() { return m_transform; }
+		Trans2D const& T() const { return m_transform; }
 
 		void DetachFromParent()
 		{
@@ -110,10 +110,10 @@ namespace Core
 			m_parent = Core::EntityID();
 		}
 
-		void SetLocalTransformFromWorldTransform(fTrans2D const& _worldTransform)
+		void SetLocalTransformFromWorldTransform(Trans2D const& _worldTransform)
 		{
 			Core::EntityID nextParent = m_parent;
-			fTrans2D finalTransform = fTrans2D();
+			Trans2D finalTransform = Trans2D();
 			while (nextParent.IsValid())
 			{
 				Transform2D const* const parentTrans = Core::GetComponent<Transform2D>(nextParent);
@@ -126,10 +126,10 @@ namespace Core
 			m_transform = finalTransform.ToLocal(_worldTransform);
 		}
 
-		fTrans2D CalculateWorldTransform() const
+		Trans2D CalculateWorldTransform() const
 		{
 			Core::EntityID nextParent = m_parent;
-			fTrans2D finalTransform = m_transform;
+			Trans2D finalTransform = m_transform;
 			while (nextParent.IsValid())
 			{
 				Transform2D const* const parentTrans = Core::GetComponent<Transform2D>(nextParent);
@@ -142,12 +142,12 @@ namespace Core
 			return finalTransform;
 		}
 
-		fTrans2D CalculateWorldTransform(fTrans2D const& _localTransform) const
+		Trans2D CalculateWorldTransform(Trans2D const& _localTransform) const
 		{
 			return CalculateWorldTransform() * _localTransform;
 		}
 
-		fTrans2D CalculateLocalTransform(fTrans2D const& _worldTransform) const
+		Trans2D CalculateLocalTransform(Trans2D const& _worldTransform) const
 		{
 			return CalculateWorldTransform().ToLocal(_worldTransform);
 		}

@@ -2,7 +2,6 @@
 
 #include "SoundSystems.h"
 #include "components.h"
-#include "SystemOrdering.h"
 #include "managers/EntityManager.h"
 #include "managers/SoundManager.h"
 
@@ -95,10 +94,10 @@ namespace Core::Sound
 		//--------------------------------------------------------------------------------
 		Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Sound::SoundEffect3D& _sfx, Core::Transform3D const& _t)
 		{
-			fTrans const worldT = _t.CalculateWorldTransform();
+			Trans const worldT = _t.CalculateWorldTransform();
 			if (_sfx.m_lastPos.has_value() && _fd.dt != 0.0f)
 			{
-				fVec3 const vel = (worldT.m_origin - *_sfx.m_lastPos) / _fd.dt;
+				Vec3 const vel = (worldT.m_origin - *_sfx.m_lastPos) / _fd.dt;
 				Core::Sound::UpdateSoundEffect3D(_sfx.m_handle, worldT.m_origin, vel);
 			}
 			else
@@ -111,10 +110,10 @@ namespace Core::Sound
 		//--------------------------------------------------------------------------------
 		Core::MakeSystem<Sys::GAME>([](Core::FrameData const& _fd, Core::Render::MainCamera3D& _cam, Core::Transform3D const& _t)
 		{
-			fTrans const worldT = _t.CalculateWorldTransform();
+			Trans const worldT = _t.CalculateWorldTransform();
 			if (_cam.m_lastPos.has_value() && _fd.dt != 0.0f)
 			{
-				fVec3 const vel = (worldT.m_origin - *_cam.m_lastPos) / _fd.dt;
+				Vec3 const vel = (worldT.m_origin - *_cam.m_lastPos) / _fd.dt;
 				Core::Sound::SetHead3DParams(worldT, vel);
 			}
 			else

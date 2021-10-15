@@ -8,8 +8,8 @@ namespace Game
 	{
 		struct MouseLook
 		{
-			float m_yaw{ 0.0f };
-			float m_pitch{ 0.0f };
+			Vec1 m_yaw{ 0.0f };
+			Vec1 m_pitch{ 0.0f };
 		};
 	}
 }

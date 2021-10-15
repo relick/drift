@@ -24,8 +24,8 @@ namespace Core
 
 			struct MouseFrame
 			{
-				fVec2 dMouseMovement{ 0.0f, 0.0f };
-				float dMouseScroll{ 0.0f };
+				Vec2 dMouseMovement{ 0.0f, 0.0f };
+				Vec1 dMouseScroll{ 0.0f };
 			};
 
 			MouseFrame thisFrame{};
@@ -225,12 +225,12 @@ namespace Core
 			return isPressed;
 		}
 
-		fVec2 GetMouseDelta()
+		Vec2 GetMouseDelta()
 		{
 			return g_inputState.thisFrame.dMouseMovement;
 		}
 
-		float GetScrollDelta()
+		Vec1 GetScrollDelta()
 		{
 			return g_inputState.thisFrame.dMouseScroll;
 		}

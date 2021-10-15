@@ -8,42 +8,43 @@
 
 namespace SoLoud
 {
-	typedef unsigned int handle;
+	// FIXME: strong typedef
+	using handle = uint32;
 }
 
 namespace Core::Sound
 {
 	struct FadeInBGM
 	{
-		float m_targetVolume{ 1.0f };
-		float m_timeToFadeIn{ 1.0f };
+		Vec1 m_targetVolume{ 1.0f };
+		Vec1 m_timeToFadeIn{ 1.0f };
 
-		float m_timePassed{ 0.0f };
+		Vec1 m_timePassed{ 0.0f };
 	};
 
 	struct FadeOutBGM
 	{
-		float m_timeToFadeOut{ 1.0f };
-		float m_startVolume{ -1.0f };
+		Vec1 m_timeToFadeOut{ 1.0f };
+		Vec1 m_startVolume{ -1.0f };
 
-		float m_timePassed{ 0.0f };
+		Vec1 m_timePassed{ 0.0f };
 	};
 
 	struct FadeChangeBGM
 	{
-		float m_timeToFade{ 1.0f };
-		float m_startVolume{ -1.0f };
-		float m_targetVolume{ 1.0f };
+		Vec1 m_timeToFade{ 1.0f };
+		Vec1 m_startVolume{ -1.0f };
+		Vec1 m_targetVolume{ 1.0f };
 		std::string m_nextBGMFilePath;
 
 		bool m_fadingOut{ true };
-		float m_timePassed{ 0.0f };
+		Vec1 m_timePassed{ 0.0f };
 	};
 
 	struct BGMDesc
 	{
 		std::string m_filePath;
-		float m_initVolume{ -1.0f };
+		Vec1 m_initVolume{ -1.0f };
 	};
 
 	struct BGM
@@ -56,7 +57,7 @@ namespace Core::Sound
 	struct SoundEffect3DDesc
 	{
 		std::string m_filePath;
-		float m_initVolume{ -1.0f };
+		Vec1 m_initVolume{ -1.0f };
 	};
 
 	struct SoundEffect3D
@@ -64,7 +65,7 @@ namespace Core::Sound
 		use_initialiser;
 
 		Resource::SoundEffectID m_soundEffect;
-		std::optional<fVec3> m_lastPos{};
+		std::optional<Vec3> m_lastPos{};
 		SoLoud::handle m_handle{ 0 };
 	};
 

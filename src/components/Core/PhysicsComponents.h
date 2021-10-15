@@ -39,15 +39,15 @@ namespace Core
 			EntityID m_physicsWorld{};
 
 			bool m_isKinematic{ false };
-			float m_mass{ 0 };
+			Vec1 m_mass{ 0 };
 			ShapeType m_shapeType{ ShapeType::Box };
-			fTrans m_startTransform{};
+			Trans m_startTransform{};
 
 			// Box
-			fVec3 m_boxHalfDimensions{};
+			Vec3 m_boxHalfDimensions{};
 
 			// Sphere
-			float m_radius{};
+			Vec1 m_radius{};
 		};
 
 		struct RigidBody
@@ -66,20 +66,20 @@ namespace Core
 			EntityID m_physicsWorld{};
 			EntityID m_viewObject{}; // local transform used for forward direction.
 
-			float m_mass{ 80 }; //kg
-			fTrans m_startTransform{};
-			float m_radius{ 0.5f };
-			float m_halfHeight{ 1.0f };
+			Vec1 m_mass{ 80 }; //kg
+			Trans m_startTransform{};
+			Vec1 m_radius{ 0.5f };
+			Vec1 m_halfHeight{ 1.0f };
 		};
 
 		struct CharacterController : public RigidBody
 		{
 			EntityID m_viewObject{};
-			float m_radius{ 0.5f };
-			float m_halfHeight{ 1.0f };
+			Vec1 m_radius{ 0.5f };
+			Vec1 m_halfHeight{ 1.0f };
 
 			bool m_onGround{ false };
-			fVec3 m_groundPoint{};
+			Vec3 m_groundPoint{};
 		};
 
 		Core::EntityID GetPrimaryWorldEntity();

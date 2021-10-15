@@ -24,7 +24,7 @@ namespace Core
 {
 	namespace Render
 	{
-		static constexpr int MAX_LIGHTS = 16;
+		static constexpr int32 MAX_LIGHTS = 16;
 
 		class LightsState
 		{
@@ -32,15 +32,15 @@ namespace Core
 			usize numLights{ 0 };
 
 		public:
-			fVec3& ambientLight{ lightData.ambient };
-			fVec3 directionalDir{};
+			Vec3& ambientLight{ lightData.ambient };
+			Vec3 directionalDir{};
 			LightSetter AddLight()
 			{
 				usize thisLightI = numLights;
 				if (numLights < MAX_LIGHTS)
 				{
 					numLights++;
-					lightData.numLights = static_cast<float>(numLights);
+					lightData.numLights = static_cast< Vec1 >(numLights);
 				}
 				else
 				{
@@ -236,9 +236,9 @@ namespace Core
 		struct ModelToDraw
 		{
 			Resource::ModelID m_model{};
-			fTrans m_transform{};
+			Trans m_transform{};
 
-			ModelToDraw(Resource::ModelID _model, fTrans const& _trans)
+			ModelToDraw(Resource::ModelID _model, Trans const& _trans)
 				: m_model{ _model }
 				, m_transform{ _trans }
 			{}
@@ -247,9 +247,9 @@ namespace Core
 		struct ModelScratchData
 		{
 			Resource::ModelData const& m_model;
-			fMat4 const m_renderMatrix;
+			Mat4 const m_renderMatrix;
 
-			ModelScratchData(Resource::ModelData const& _model, fMat4 const& _renderMatrix)
+			ModelScratchData(Resource::ModelData const& _model, Mat4 const& _renderMatrix)
 				: m_model{ _model }
 				, m_renderMatrix{ _renderMatrix }
 			{}
@@ -258,9 +258,9 @@ namespace Core
 		struct SpriteToDraw
 		{
 			Resource::SpriteID m_sprite{};
-			fTrans2D m_transform{};
+			Trans2D m_transform{};
 
-			SpriteToDraw(Resource::SpriteID _sprite, fTrans2D const& _trans)
+			SpriteToDraw(Resource::SpriteID _sprite, Trans2D const& _trans)
 				: m_sprite{ _sprite }
 				, m_transform{ _trans }
 			{}
@@ -269,9 +269,9 @@ namespace Core
 		struct SpriteScratchData
 		{
 			std::reference_wrapper<Resource::SpriteData const> m_sprite;
-			fTrans2D m_transform;
+			Trans2D m_transform;
 
-			SpriteScratchData(Resource::SpriteData const& _sprite, fTrans2D const& _transform)
+			SpriteScratchData(Resource::SpriteData const& _sprite, Trans2D const& _transform)
 				: m_sprite{ _sprite }
 				, m_transform{ _transform }
 			{}
@@ -279,14 +279,14 @@ namespace Core
 
 		struct SpriteBufferData
 		{
-			fVec3 m_position;
-			fVec2 m_scale;
-			float m_rotation;
-			fVec2 m_topLeftUV;
-			fVec2 m_UVDims;
-			fVec2 m_spriteDims;
+			Vec3 m_position;
+			Vec2 m_scale;
+			Vec1 m_rotation;
+			Vec2 m_topLeftUV;
+			Vec2 m_UVDims;
+			Vec2 m_spriteDims;
 
-			SpriteBufferData(fVec3 _position, fVec2 _scale, float _rotation, fVec2 _topLeftUV, fVec2 _uvDims, fVec2 _spriteDims)
+			SpriteBufferData(Vec3 _position, Vec2 _scale, Vec1 _rotation, Vec2 _topLeftUV, Vec2 _uvDims, Vec2 _spriteDims)
 				: m_position(_position)
 				, m_scale(_scale)
 				, m_rotation(_rotation)
@@ -372,12 +372,12 @@ namespace Core
 			// Target to screen glue
 			{
 				// in triangle-strip form
-				float rectangleWithUV[] = {
+				auto rectangleWithUV = MakeArray< Vec1 >(
 					-1.0f,  1.0f,	0, 0,
 					 1.0f,  1.0f,	1, 0,
 					-1.0f, -1.0f,	0, 1,
-					 1.0f, -1.0f,	1, 1,
-				};
+					 1.0f, -1.0f,	1, 1
+				);
 
 				sg_buffer_desc rectangleWithUVBufferDesc{
 					.type = SG_BUFFERTYPE_VERTEXBUFFER,
@@ -394,7 +394,7 @@ namespace Core
 
 			{
 				// in triangle-strip form
-				float skyboxCube[] = {
+				auto skyboxCube = MakeArray< Vec1 >(
 					 1.0f,  1.0f, -1.0f, // front-top-right
 					-1.0f,  1.0f, -1.0f, // front-top-left
 					 1.0f,  1.0f,  1.0f, // back-top-right
@@ -408,8 +408,8 @@ namespace Core
 					 1.0f, -1.0f,  1.0f, // back-bottom-right
 					-1.0f, -1.0f,  1.0f, // back-bottom-left
 					 1.0f, -1.0f, -1.0f, // front-bottom-right
-					-1.0f, -1.0f, -1.0f, // front-bottom-left
-				};
+					-1.0f, -1.0f, -1.0f // front-bottom-left
+				);
 
 				sg_buffer_desc skyboxCubeDesc{
 					.type = SG_BUFFERTYPE_VERTEXBUFFER,
@@ -421,12 +421,12 @@ namespace Core
 
 			{
 				// in triangle-strip form
-				float rectangle2DWithUV[] = {
+				auto rectangle2DWithUV = MakeArray< Vec1 >(
 					0.0f, 0.0f,		0, 0,
 					1.0f, 0.0f,		1, 0,
 					0.0f, 1.0f,		0, 1,
-					1.0f, 1.0f,		1, 1,
-				};
+					1.0f, 1.0f,		1, 1
+				);
 
 				sg_buffer_desc rectangle2DWithUVBufferDesc{
 					.type = SG_BUFFERTYPE_VERTEXBUFFER,
@@ -611,7 +611,7 @@ namespace Core
 				spritesLayoutDesc.buffers[1] = {
 					.step_func = SG_VERTEXSTEP_PER_INSTANCE,
 				};
-				static_assert(sizeof(fVec3) + sizeof(fVec2) + sizeof(float) + sizeof(fVec2) + sizeof(fVec2) + sizeof(fVec2) == sizeof(SpriteBufferData));
+				static_assert(sizeof(Vec3) + sizeof(Vec2) + sizeof(Vec1) + sizeof(Vec2) + sizeof(Vec2) + sizeof(Vec2) == sizeof(SpriteBufferData));
 
 				sg_pipeline_desc spritesDesc{
 					.shader = sg_make_shader(sprites_sg_shader_desc(sg_query_backend())),
@@ -663,9 +663,9 @@ namespace Core
 			kaAssert(!g_renderState.IsMainCameraSet(), "only one MainCamera3D allowed!");
 			g_frameScene.camera.proj = glm::perspective(glm::radians(_cam.m_povY), _rfd.renderArea.f.x / _rfd.renderArea.f.y, 0.01f, 1000.0f);
 
-			fTrans const cameraTrans = _t.CalculateWorldTransform();
+			Trans const cameraTrans = _t.CalculateWorldTransform();
 			g_frameScene.camera.pos = cameraTrans.m_origin;
-			g_frameScene.camera.view = glm::lookAt(cameraTrans.m_origin, cameraTrans.m_origin + cameraTrans.forward(), fVec3(0.0f, 1.0f, 0.0f));
+			g_frameScene.camera.view = glm::lookAt(cameraTrans.m_origin, cameraTrans.m_origin + cameraTrans.Forward(), Vec3(0.0f, 1.0f, 0.0f));
 
 			g_renderState.MainCameraSet();
 		}
@@ -703,7 +703,7 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		static fMat4 GetDirectionalLightOrthoMat(float _bounds, float _nearPlane, float _farPlane)
+		static Mat4 GetDirectionalLightOrthoMat( Vec1 _bounds, Vec1 _nearPlane, Vec1 _farPlane)
 		{
 			// d3d needs off-centre, gl needs usual.
 #if SOKOL_D3D11
@@ -714,7 +714,7 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		static fMat4 GetSpriteOrthoMat(Core::Render::FrameData const& _rfd)
+		static Mat4 GetSpriteOrthoMat(Core::Render::FrameData const& _rfd)
 		{
 			return glm::ortho(0.0f, _rfd.renderArea.f.x, _rfd.renderArea.f.y, 0.0f, -1.0f, 1.0f);
 		}
@@ -738,18 +738,18 @@ namespace Core
 			}
 
 			// RENDER_PASSES
-			fMat4 lightSpace{};
+			Mat4 lightSpace{};
 			if constexpr (g_enableDirectionalShadow)
 			{
 				g_renderState.NextPass(Pass_DirectionalLight);
 				g_renderState.SetRenderer(Renderer_DepthOnly);
 
-				fMat4 const lightProj = GetDirectionalLightOrthoMat(10.0f, 1.0f, 50.0f);
-				fVec3 const lightPos = g_frameScene.camera.pos - (g_frameScene.lights.directionalDir * 25.0f);
-				fMat4 const lightView = glm::lookAt(lightPos, lightPos + g_frameScene.lights.directionalDir, fVec3(0.0f, 1.0f, 0.0f));
+				Mat4 const lightProj = GetDirectionalLightOrthoMat(10.0f, 1.0f, 50.0f);
+				Vec3 const lightPos = g_frameScene.camera.pos - (g_frameScene.lights.directionalDir * 25.0f);
+				Mat4 const lightView = glm::lookAt(lightPos, lightPos + g_frameScene.lights.directionalDir, Vec3(0.0f, 1.0f, 0.0f));
 				lightSpace = lightProj * lightView;
 
-				auto fnLightModelVisitor = [&lightSpace](fMat4 const& _modelMatrix, Resource::ModelData const& _model)
+				auto fnLightModelVisitor = [&lightSpace](Mat4 const& _modelMatrix, Resource::ModelData const& _model)
 				{
 					depth_only_vs_params_t vs_params = {
 						.projViewModel = lightSpace * _modelMatrix,
@@ -781,7 +781,7 @@ namespace Core
 				};
 				sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_main_vs_params, SG_RANGE_REF(vs_params));
 
-				auto fnMainModelVisitor = [&lightSpace](fMat4 const& _modelMatrix, Resource::ModelData const& _model)
+				auto fnMainModelVisitor = [&lightSpace](Mat4 const& _modelMatrix, Resource::ModelData const& _model)
 				{
 					main_model_params_t model_params = {
 						.viewModel = g_frameScene.camera.view * _modelMatrix,
@@ -810,7 +810,7 @@ namespace Core
 				{
 					g_renderState.SetRenderer(Renderer_Skybox);
 					skybox_vs_params_t vs_params{
-						.untranslated_projView = g_frameScene.camera.proj * fMat4(fMat3(g_frameScene.camera.view)),
+						.untranslated_projView = g_frameScene.camera.proj * Mat4(Mat3(g_frameScene.camera.view)),
 					};
 					sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_skybox_vs_params, SG_RANGE_REF(vs_params));
 
@@ -871,7 +871,7 @@ namespace Core
 
 
 				g_frameScene.spriteBufferData.emplace_back(
-					fVec3(spriteScratch.m_transform.m_pos, spriteScratch.m_transform.m_z),
+					Vec3(spriteScratch.m_transform.m_pos, spriteScratch.m_transform.m_z),
 					spriteScratch.m_transform.m_scale,
 					spriteScratch.m_transform.m_rot.m_rads,
 					sprite.m_topLeftUV,
@@ -962,14 +962,14 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		void AddAmbientLightToScene(fVec3 const& _col)
+		void AddAmbientLightToScene(Vec3 const& _col)
 		{
 			std::scoped_lock<std::mutex> lock{ g_frameScene.lightsMutex };
 			g_frameScene.lights.ambientLight += _col;
 		}
 
 		//--------------------------------------------------------------------------------
-		void SetDirectionalLightDir(fVec3 const& _dir)
+		void SetDirectionalLightDir(Vec3 const& _dir)
 		{
 			std::scoped_lock<std::mutex> lock{ g_frameScene.lightsMutex };
 			g_frameScene.lights.directionalDir = _dir;
@@ -979,7 +979,7 @@ namespace Core
 		void AddSpriteToScene
 		(
 			Core::Resource::SpriteID _sprite,
-			fTrans2D const& _screenTrans
+			Trans2D const& _screenTrans
 		)
 		{
 			std::scoped_lock<std::mutex> lock{ g_frameScene.spritesMutex };
@@ -991,7 +991,7 @@ namespace Core
 		void AddModelToScene
 		(
 			Core::Resource::ModelID _model,
-			fTrans const& _worldTrans
+			Trans const& _worldTrans
 		)
 		{
 			std::scoped_lock<std::mutex> lock{ g_frameScene.modelsMutex };

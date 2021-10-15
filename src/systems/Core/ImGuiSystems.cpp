@@ -1,7 +1,6 @@
 ﻿#include "ImGuiSystems.h"
 
 #include "components.h"
-#include "SystemOrdering.h"
 
 #include <sokol_app.h>
 #include <sokol_gfx.h>
@@ -121,7 +120,7 @@ namespace Core
 						ImGui::Separator();
 
 						static uint64 ticks = stm_now();
-						double const timeSince = stm_sec(stm_since(ticks));
+						dVec1 const timeSince = stm_sec(stm_since(ticks));
 
 						static int fps = 0;
 						++fps;

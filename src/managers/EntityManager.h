@@ -4,12 +4,15 @@
 
 #include <ecs/ecs.h>
 #include "Entity.h"
+#include "MT_Only.h"
+#include "SystemOrdering.h"
 #include "scenes/Scene.h"
 
 #include <absl/container/flat_hash_map.h>
 
 #include <format>
 #include <memory>
+#include <type_traits>
 
 namespace Core
 {
@@ -178,17 +181,64 @@ namespace Core
 		return detail::GetEcsRuntime().get_global_component<T_Component>();
 	}
 
-	// Wrap ecs::make_system
-	template<int t_Group, typename T_SystemFn, typename T_SortFn = std::nullptr_t>
-	auto& MakeSystem(T_SystemFn _sysFn, T_SortFn _sortFn = nullptr)
+	namespace detail
 	{
-		return detail::GetEcsRuntime().make_system<ecs::opts::group<t_Group>>(_sysFn, _sortFn);
+
+	template< typename T >
+	inline constexpr bool LambdaMT_Only = false;
+
+	template< typename T_Ret, typename T_Class, typename... T_Args >
+	inline constexpr bool LambdaMT_Only< T_Ret( T_Class::* )( T_Args... ) const > = ( std::is_same_v< Core::MT_Only&, T_Args > || ... );
+
+	template< typename T >
+	inline constexpr bool FuncMT_Only = false;
+
+	template< typename T_Ret, typename... T_Args >
+	inline constexpr bool FuncMT_Only< T_Ret( T_Args... ) > = ( std::is_same_v< Core::MT_Only&, T_Args > || ... );
+
+	template< typename T_SystemFn >
+	constexpr bool AtLeastOneArgMT_Only()
+	{
+		if constexpr ( ecs::detail::type_is_function< T_SystemFn > )
+		{
+			return FuncMT_Only< T_SystemFn >;
+		}
+		else if constexpr ( ecs::detail::type_is_lambda< T_SystemFn > )
+		{
+			return LambdaMT_Only< decltype( &T_SystemFn::operator() ) >;
+		}
+		return false;
 	}
 
-	template<int t_Group, typename T_SystemFn, typename T_SortFn = std::nullptr_t>
+	}
+
+	// Wrap ecs::make_system
+	template<int32 t_Group, typename T_SystemFn, typename T_SortFn = std::nullptr_t>
+	auto& MakeSystem(T_SystemFn _sysFn, T_SortFn _sortFn = nullptr)
+	{
+		if constexpr ( Sys::c_mtOnlySysOrdering[ t_Group ] )
+		{
+			static_assert( detail::AtLeastOneArgMT_Only< T_SystemFn >(), "System tried to be added in Main Thread-only section without Core::MT_Only& parameter." );
+		}
+		else
+		{
+			static_assert( !detail::AtLeastOneArgMT_Only< T_SystemFn >(), "System had a Core::MT_Only& parameter but isn't in a Main Thread-only section." );
+		}
+		return detail::GetEcsRuntime().make_system< ecs::opts::group< t_Group > >( _sysFn, _sortFn );
+	}
+
+	template<int32 t_Group, typename T_SystemFn, typename T_SortFn = std::nullptr_t>
 	auto& MakeSerialSystem(T_SystemFn _sysFn, T_SortFn _sortFn = nullptr)
 	{
-		return detail::GetEcsRuntime().make_system<ecs::opts::group<t_Group>, ecs::opts::not_parallel>(_sysFn, _sortFn);
+		if constexpr ( Sys::c_mtOnlySysOrdering[ t_Group ] )
+		{
+			static_assert( detail::AtLeastOneArgMT_Only< T_SystemFn >(), "System tried to be added in section " );
+		}
+		else
+		{
+			static_assert( !detail::AtLeastOneArgMT_Only< T_SystemFn >(), "System had a Core::MT_Only& parameter but isn't in a Main Thread-only section." );
+		}
+		return detail::GetEcsRuntime().make_system< ecs::opts::group< t_Group >, ecs::opts::not_parallel >( _sysFn, _sortFn );
 	}
 
 

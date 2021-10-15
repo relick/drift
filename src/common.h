@@ -8,8 +8,9 @@
 // commmon headers
 #include "common/MathDefs.h"
 #include "common/Debug.h"
-#include "common/fTrans.h"
+#include "common/Transforms.h"
 #include "common/Colour.h"
+#include "common/MakeArray.h"
 
 // little extras that don't need a separate header
 template<typename T>

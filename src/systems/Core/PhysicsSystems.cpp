@@ -1,6 +1,5 @@
 ﻿#include "PhysicsSystems.h"
 
-#include "SystemOrdering.h"
 #include "components.h"
 #include "managers/InputManager.h"
 
@@ -141,18 +140,18 @@ namespace Core
 				// playerStep
 				{
 					/* Handle turning */
-					float const walkAccel = 250.0f;
-					float const maxLinearVel2 = powf(15.0f / 3.6f, 2);
+					Vec1 const walkAccel = 250.0f;
+					Vec1 const maxLinearVel2 = powf(15.0f / 3.6f, 2);
 
 					btVector3 linearVelocity = _cc.m_body->getLinearVelocity();
-					float yLinVel = linearVelocity.y();
+					Vec1 yLinVel = linearVelocity.y();
 
-					fVec3 forward = _cc.m_viewObject.IsValid() ? (Core::GetComponent<Core::Transform3D>(_cc.m_viewObject)->T().forward()) : _t.T().forward();
+					Vec3 forward = _cc.m_viewObject.IsValid() ? (Core::GetComponent<Core::Transform3D>(_cc.m_viewObject)->T().Forward()) : _t.T().Forward();
 					forward.y = 0;
-					forward = glm::normalize(forward);
-					fVec3 right = glm::normalize(glm::cross(forward, fVec3(0, 1, 0)));
-					fVec3 walkDirection(0.0, 0.0, 0.0);
-					float walkSpeed = walkAccel * _fd.dt;
+					forward = Normalise(forward);
+					Vec3 right = Normalise(glm::cross(forward, Vec3(0, 1, 0)));
+					Vec3 walkDirection(0.0, 0.0, 0.0);
+					Vec1 walkSpeed = walkAccel * _fd.dt;
 
 #if PHYSICS_DEBUG
 					if (g_imGuiData.showRBAxes)
@@ -188,7 +187,7 @@ namespace Core
 
 					if (_cc.m_onGround || yLinVel >= 0.0f)
 					{
-						fVec3 dv = walkDirection * walkSpeed;
+						Vec3 dv = walkDirection * walkSpeed;
 						linearVelocity += ConvertTobtVector3(dv);
 						btScalar speed2 = powf(linearVelocity.x(), 2) + powf(linearVelocity.z(), 2);
 						if (speed2 > maxLinearVel2)
@@ -210,9 +209,9 @@ namespace Core
 				// jump
 				if (Core::Input::PressedOnce(Core::Input::Action::Jump) && _cc.m_onGround)
 				{
-					fVec3 const up = _t.T().up();
-					float magnitude = _cc.m_body->getMass() * 8.0f;
-					fVec3 const impulse = up * magnitude;
+					Vec3 const up = _t.T().Up();
+					Vec1 magnitude = _cc.m_body->getMass() * 8.0f;
+					Vec3 const impulse = up * magnitude;
 					_cc.m_body->applyCentralImpulse(ConvertTobtVector3(impulse));
 					_cc.m_onGround = false;
 				}
@@ -250,8 +249,8 @@ namespace Core
 								btMatrix3x3 invBasis = transform.getBasis().transpose();
 								btVector3 localPoint = invBasis * (cp.m_positionWorldOnB - transform.getOrigin());
 								localPoint[1] += mShapeHalfHeight;
-								float r = localPoint.length();
-								float cosTheta = localPoint[1] / r;
+								Vec1 r = localPoint.length();
+								Vec1 cosTheta = localPoint[1] / r;
 
 								if (fabs(r - mShapeRadius) <= mRadiusThreshold && cosTheta < mMaxCosGround)
 								{
@@ -264,10 +263,10 @@ namespace Core
 
 						btRigidBody* mMe{ nullptr };
 						// Assign some values, in some way
-						float mShapeRadius{};
-						float mShapeHalfHeight{};
-						float mRadiusThreshold{};
-						float mMaxCosGround{};
+						Vec1 mShapeRadius{};
+						Vec1 mShapeHalfHeight{};
+						Vec1 mRadiusThreshold{};
+						Vec1 mMaxCosGround{};
 						bool mHaveGround{ false };
 						btVector3 mGroundPoint{};
 					};
@@ -295,7 +294,7 @@ namespace Core
 			{
 				btTransform trans;
 				_cc.m_body->getMotionState()->getWorldTransform(trans);
-				_t.SetLocalTransformFromWorldTransform(fTrans(trans));
+				_t.SetLocalTransformFromWorldTransform(Trans(trans));
 			});
 		}
 
@@ -310,7 +309,7 @@ namespace Core
 				// Can't set transforms for non-kinematic bodies.
 				if (_rb.m_body->isKinematicObject())
 				{
-					fTrans const worldTrans = _t.CalculateWorldTransform();
+					Trans const worldTrans = _t.CalculateWorldTransform();
 					_rb.m_motionState->setWorldTransform(worldTrans.GetBulletTransform());
 				}
 			});
@@ -375,16 +374,16 @@ namespace Core
 						trans = _rb.m_body->getWorldTransform();
 					}
 
-					_t.SetLocalTransformFromWorldTransform(fTrans(trans));
+					_t.SetLocalTransformFromWorldTransform(Trans(trans));
 
 #if PHYSICS_DEBUG
 					if(g_imGuiData.showRBAxes)
 					{
-						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + _t.T().forward());
+						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + _t.T().Forward());
 						
-						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + _t.T().up());
+						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + _t.T().Up());
 
-						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + _t.T().right());
+						Core::Render::Debug::DrawLine(_t.T().m_origin, _t.T().m_origin + _t.T().Right());
 					}
 #endif
 				}

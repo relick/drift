@@ -2,7 +2,6 @@
 
 #include "components.h"
 #include "systems/Core/ImGuiSystems.h"
-#include "SystemOrdering.h"
 #include "managers/EntityManager.h"
 
 #include <imgui.h>
@@ -16,16 +15,16 @@
 namespace Core::Render::Text
 {
 	static FONScontext* g_fonsContext{ nullptr };
-	static int g_fonsFontCount{ 0 };
+	static int32 g_fonsFontCount{ 0 };
 	static Resource::FontID g_defaultFont{ 0 };
 
 #if TEXT_TEST
 	struct FontTest
 	{
 		Resource::FontID fontNormal;
-		fVec2 pos{ 10, 100 };
-		fVec2 sizes{ 124.0f, 24.0f };
-		unsigned int brown = sfons_rgba(192, 128, 0, 128);
+		Vec2 pos{ 10, 100 };
+		Vec2 sizes{ 124.0f, 24.0f };
+		uint32 brown = sfons_rgba(192, 128, 0, 128);
 		bool showImguiWin = false;
 		bool showText = false;
 		bool showDebug = false;
@@ -121,9 +120,9 @@ namespace Core::Render::Text
 	bool Write
 	(
 		Resource::FontID _font,
-		fVec2 _tlPos,
+		Vec2 _tlPos,
 		char const* _text,
-		float _size,
+		Vec1 _size,
 		uint32 _col
 	)
 	{
@@ -136,7 +135,7 @@ namespace Core::Render::Text
 			return false;
 		}
 
-		fVec2 const renderAreaToContextWindow = fontState.rfd.contextWindow.f / fontState.rfd.renderArea.f;
+		Vec2 const renderAreaToContextWindow = fontState.rfd.contextWindow.f / fontState.rfd.renderArea.f;
 
 		_tlPos *= renderAreaToContextWindow;
 
@@ -150,9 +149,9 @@ namespace Core::Render::Text
 
 	bool Write
 	(
-		fVec2 _tlPos,
+		Vec2 _tlPos,
 		char const* _text,
-		float _size,
+		Vec1 _size,
 		uint32 _col
 	)
 	{

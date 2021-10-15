@@ -1,7 +1,6 @@
 #include "TextAndGLDebugSystems.h"
 
 #include "components.h"
-#include "SystemOrdering.h"
 #include "systems/Core/ImGuiSystems.h"
 #include "managers/EntityManager.h"
 #include "managers/TextManager.h"
@@ -22,10 +21,10 @@ namespace Core
 	{
 		struct LineToDraw
 		{
-			fVec3 m_start{};
-			fVec3 m_end{};
+			Vec3 m_start{};
+			Vec3 m_end{};
 
-			LineToDraw(fVec3 const& _start, fVec3 const& _end) : m_start{ _start }, m_end{ _end } {}
+			LineToDraw(Vec3 const& _start, Vec3 const& _end) : m_start{ _start }, m_end{ _end } {}
 		};
 		static absl::flat_hash_map<uint32, std::vector<LineToDraw>> g_linesToDraw{};
 		static std::mutex g_linesToDrawMutex{};
@@ -73,8 +72,8 @@ namespace Core
 					sgl_matrix_mode_modelview();
 					sgl_load_identity();
 
-					fTrans const cameraTrans = _camT.CalculateWorldTransform();
-					fMat4 const cameraMat = glm::lookAt(cameraTrans.m_origin, cameraTrans.m_origin + cameraTrans.forward(), fVec3(0.0f, 1.0f, 0.0f));
+					Trans const cameraTrans = _camT.CalculateWorldTransform();
+					Mat4 const cameraMat = glm::lookAt(cameraTrans.m_origin, cameraTrans.m_origin + cameraTrans.Forward(), Vec3(0.0f, 1.0f, 0.0f));
 					sgl_load_matrix(&cameraMat[0][0]);
 				});
 
@@ -119,8 +118,8 @@ namespace Core
 		{
 			void DrawLine
 			(
-				fVec3 const& _start,
-				fVec3 const& _end,
+				Vec3 const& _start,
+				Vec3 const& _end,
 				uint32 _col
 			)
 			{
@@ -130,9 +129,9 @@ namespace Core
 
 			void DrawLine
 			(
-				fVec3 const& _start,
-				fVec3 const& _end,
-				fVec3 const& _col
+				Vec3 const& _start,
+				Vec3 const& _end,
+				Vec3 const& _col
 			)
 			{
 				std::scoped_lock<std::mutex> lock{ g_linesToDrawMutex };

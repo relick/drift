@@ -1,7 +1,6 @@
 #include "ResourceSystems.h"
 
 #include "components.h"
-#include "SystemOrdering.h"
 
 #include "managers/EntityManager.h"
 #include "managers/ResourceManager.h"

@@ -58,7 +58,7 @@ namespace Core
 		ActionKey GetActionKey(Action _action, KeyIndex _index);
 		bool Pressed(Action _action);
 		bool PressedOnce(Action _action);
-		fVec2 GetMouseDelta();
-		float GetScrollDelta();
+		Vec2 GetMouseDelta();
+		Vec1 GetScrollDelta();
 	}
 }

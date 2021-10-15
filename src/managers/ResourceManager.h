@@ -42,10 +42,10 @@ namespace Core
 		//-------------------------------------------------
 		struct VertexData
 		{
-			fVec3 position;
-			fVec3 normal;
-			fVec2 uv{ 0.0f, 0.0f };
-			fVec3 tangent;
+			Vec3 position;
+			Vec3 normal;
+			Vec2 uv{ 0.0f, 0.0f };
+			Vec3 tangent;
 		};
 		using IndexType = uint32;
 
@@ -81,9 +81,9 @@ namespace Core
 		{
 			std::string m_path;
 			TextureID m_texture;
-			fVec2 m_dimensions;
-			fVec2 m_dimensionsUV;
-			fVec2 m_topLeftUV;
+			Vec2 m_dimensions;
+			Vec2 m_dimensionsUV;
+			Vec2 m_topLeftUV;
 		};
 
 		//-------------------------------------------------

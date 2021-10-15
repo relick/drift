@@ -7,21 +7,16 @@ namespace Core::Resource
 	using TextureID = SokolIDWrapper<sg_image, true>;
 	using TextureSampleID = SokolIDWrapper<sg_image, false>;
 
-	struct ModelIDType {};
-	using ModelID = ID<ModelIDType>;
+	using ModelID = ID<struct ModelIDType>;
 
-	struct SpriteIDType {};
-	using SpriteID = ID<SpriteIDType>;
+	using SpriteID = ID<struct SpriteIDType>;
 
 
-	struct SoundEffectIDType {};
-	using SoundEffectID = ID<SoundEffectIDType>;
+	using SoundEffectID = ID<struct SoundEffectIDType>;
 
-	struct MusicIDType {};
-	using MusicID = ID<MusicIDType>;
+	using MusicID = ID<struct MusicIDType>;
 
 
 	// underlying ID == fons ID
-	struct FontIDType {};
-	using FontID = ID<FontIDType, int>;
+	using FontID = ID<struct FontIDType, int>;
 }

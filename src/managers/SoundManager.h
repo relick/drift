@@ -4,7 +4,8 @@
 
 namespace SoLoud
 {
-	typedef unsigned int handle;
+	// FIXME: strong typedef
+	using handle = unsigned int;
 }
 
 namespace Core::Sound
@@ -13,20 +14,20 @@ namespace Core::Sound
 	void Cleanup();
 
 	// Sound effects
-	void PlaySoundEffect(Resource::SoundEffectID _soundEffect, float _volume = -1.0f); // fire and forget
-	SoLoud::handle AddSoundEffect3D(Resource::SoundEffectID _soundEffect, fVec3 const& _pos, float _volume = -1.0f); // controlled by a component
-	void UpdateSoundEffect3D(SoLoud::handle _handle, fVec3 const& _pos, fVec3 const& _vel);
-	void UpdateSoundEffect3D(SoLoud::handle _handle, fVec3 const& _pos);
+	void PlaySoundEffect(Resource::SoundEffectID _soundEffect, Vec1 _volume = -1.0f); // fire and forget
+	SoLoud::handle AddSoundEffect3D(Resource::SoundEffectID _soundEffect, Vec3 const& _pos, Vec1 _volume = -1.0f); // controlled by a component
+	void UpdateSoundEffect3D(SoLoud::handle _handle, Vec3 const& _pos, Vec3 const& _vel);
+	void UpdateSoundEffect3D(SoLoud::handle _handle, Vec3 const& _pos);
 	bool SoundEffectEnded(SoLoud::handle _handle);
 	
 	// BGM
-	void PlayBGM(Resource::MusicID _music, float _initVolume = -1.0f); // if another BGM already playing, it is replaced, if same BGM is playing, it is unpaused
+	void PlayBGM(Resource::MusicID _music, Vec1 _initVolume = -1.0f); // if another BGM already playing, it is replaced, if same BGM is playing, it is unpaused
 	void PauseBGM();
 	void EndBGM();
-	void ChangeBGMVolume(float _volume);
-	float GetBGMVolume();
+	void ChangeBGMVolume( Vec1 _volume);
+	Vec1 GetBGMVolume();
 
 	// 3D Sound
-	void SetHead3DParams(fTrans const& _t, fVec3 const& _vel);
-	void SetHead3DTransform(fTrans const& _t);
+	void SetHead3DParams(Trans const& _t, Vec3 const& _vel);
+	void SetHead3DTransform(Trans const& _t);
 }

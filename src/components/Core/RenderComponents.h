@@ -17,7 +17,7 @@ namespace Core
 			struct Target
 			{
 				iVec2 i{ 0 };
-				fVec2 f{ i };
+				Vec2 f{ i };
 			};
 			Target contextWindow{};
 			Target renderArea{};
@@ -35,11 +35,11 @@ namespace Core
 			};
 
 			Type m_type;
-			fVec3 m_colour;
-			float m_intensity;
-			fVec3 m_attenuation{ 1.0f, 0.7f, 1.8f }; // constant, linear, quadratic
-			float m_cutoffAngle{ 0.9978f }; // spotlights only
-			float m_outerCutoffAngle{ 0.953f }; // spotlights only
+			Vec3 m_colour;
+			Vec1 m_intensity;
+			Vec3 m_attenuation{ 1.0f, 0.7f, 1.8f }; // constant, linear, quadratic
+			Vec1 m_cutoffAngle{ 0.9978f }; // spotlights only
+			Vec1 m_outerCutoffAngle{ 0.953f }; // spotlights only
 
 			// position and direction defined by transform component, which is required.
 		};

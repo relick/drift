@@ -1,7 +1,6 @@
 #include "PlayerSystems.h"
 
 #include "components.h"
-#include "SystemOrdering.h"
 #include <ecs/ecs.h>
 
 #include "managers/InputManager.h"
@@ -27,7 +26,7 @@ namespace Game
 #endif
 			sapp_lock_mouse(true);
 
-			fVec2 const mouseDelta = Core::Input::GetMouseDelta();
+			Vec2 const mouseDelta = Core::Input::GetMouseDelta();
 			_p.m_pitch -= mouseDelta.y * 0.05f;
 			if (_p.m_pitch < -85.0f)
 			{
@@ -39,11 +38,11 @@ namespace Game
 			}
 			_p.m_yaw += mouseDelta.x * 0.05f;
 
-			fVec3 forward;
+			Vec3 forward;
 			forward.x = gcem::cos(glm::radians(_p.m_yaw)) * gcem::cos(glm::radians(_p.m_pitch));
 			forward.y = gcem::sin(glm::radians(_p.m_pitch));
 			forward.z = gcem::sin(glm::radians(_p.m_yaw)) * gcem::cos(glm::radians(_p.m_pitch));
-			forward = glm::normalize(forward);
+			forward = Normalise(forward);
 
 			_t.T().m_basis = RotationFromForward(forward);
 		}

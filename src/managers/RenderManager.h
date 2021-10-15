@@ -9,18 +9,18 @@ namespace Core
 	{
 		struct LightSetter
 		{
-			fVec4& Col;
-			fVec4& Pos;
-			fVec4& Att;
-			fVec4& Dir;
-			fVec4& Cut;
+			Vec4& Col;
+			Vec4& Pos;
+			Vec4& Att;
+			Vec4& Dir;
+			Vec4& Cut;
 		};
 
 		struct CameraState
 		{
-			fMat4 proj{};
-			fMat4 view{};
-			fVec3 pos{};
+			Mat4 proj{};
+			Mat4 view{};
+			Vec3 pos{};
 		};
 
 		void Init();
@@ -31,11 +31,11 @@ namespace Core
 
 		CameraState const& GetCameraState();
 
-		void AddSpriteToScene(Core::Resource::SpriteID _sprite, fTrans2D const& _screenTrans);
-		void AddModelToScene(Core::Resource::ModelID _model, fTrans const& _worldTrans);
+		void AddSpriteToScene(Core::Resource::SpriteID _sprite, Trans2D const& _screenTrans);
+		void AddModelToScene(Core::Resource::ModelID _model, Trans const& _worldTrans);
 		void AddSkyboxToScene(Core::Resource::TextureSampleID _skybox);
 		LightSetter AddLightToScene();
-		void AddAmbientLightToScene(fVec3 const& _col);
-		void SetDirectionalLightDir(fVec3 const& _dir);
+		void AddAmbientLightToScene(Vec3 const& _col);
+		void SetDirectionalLightDir(Vec3 const& _dir);
 	}
 }

@@ -17,10 +17,10 @@
 
 #include "scenes/CubeTest.h"
 
-constexpr int g_renderAreaWidth = 320;
-constexpr int g_renderAreaHeight = (g_renderAreaWidth / 4) * 3;
-constexpr int g_windowStartWidth = g_renderAreaWidth * 3;
-constexpr int g_windowStartHeight = (g_windowStartWidth / 4) * 3;
+constexpr int32 g_renderAreaWidth = 320;
+constexpr int32 g_renderAreaHeight = (g_renderAreaWidth / 4) * 3;
+constexpr int32 g_windowStartWidth = g_renderAreaWidth * 3;
+constexpr int32 g_windowStartHeight = (g_windowStartWidth / 4) * 3;
 
 void Initialise();
 void Frame();
@@ -130,9 +130,9 @@ void Frame()
 		uint64 const lappedTicks = stm_laptime(&fd.m_lastFrameTicks);
 		// stm_round_to_common_refresh_rate?
 		fd.unscaled_ddt = stm_sec(lappedTicks);
-		fd.unscaled_dt = static_cast<float>(fd.unscaled_ddt);
+		fd.unscaled_dt = static_cast< Vec1 >(fd.unscaled_ddt);
 		fd.ddt = fd.m_scale * fd.unscaled_ddt;
-		fd.dt = static_cast<float>(fd.ddt);
+		fd.dt = static_cast< Vec1 >(fd.ddt);
 
 #if DEBUG_TOOLS
 		fd.m_debug_elapsedTime += fd.unscaled_ddt;

@@ -35,9 +35,53 @@ namespace Core
 		};
 		static RecursiveMutex< ComponentChangeData > g_componentChangeData;
 
-		static absl::flat_hash_set<EntityID> g_activeEntities;
-		static absl::flat_hash_set<EntityID> g_sceneActiveEntities;
-		static std::shared_mutex g_entityMutex;
+		struct EntityData
+		{
+			absl::flat_hash_set<EntityID> m_active;
+			absl::flat_hash_set<EntityID> m_sceneActive;
+
+			bool IsActiveEntity( EntityID _entity ) const
+			{
+				return m_active.contains( _entity );
+			}
+
+			void AddActiveEntity
+			(
+				EntityID _entity,
+				bool _persistent
+			)
+			{
+				m_active.insert( _entity );
+				if ( !_persistent )
+				{
+					m_sceneActive.insert( _entity );
+				}
+
+				kaLog( std::format( "Entity {:d} was created", _entity.GetDebugValue() ) );
+			}
+
+			void RemoveActiveEntity
+			(
+				EntityID _entity
+			)
+			{
+				m_active.erase( _entity );
+				m_sceneActive.erase( _entity );
+
+				kaLog( std::format( "Entity {:d} was killed", _entity.GetDebugValue() ) );
+			}
+
+			void RemoveAllActiveEntities()
+			{
+				m_active.clear();
+				m_sceneActive.clear();
+
+				kaLog( "-- All entities killed --" );
+			}
+		};
+		using EntityDataMutex = SharedMutex< EntityData >;
+		using EntityDataWriteGuard = EntityDataMutex::WriteGuard;
+		static EntityDataMutex g_entityData;
 
 		static std::unique_ptr<Core::Scene::BaseScene> g_currentScene;
 
@@ -51,21 +95,12 @@ namespace Core
 			return compDestroyerI->second.get();
 		}
 
-		static bool IsActiveEntity_Unsafe
-		(
-			EntityID _entity
-		)
-		{
-			return g_activeEntities.contains(_entity);
-		}
-
 		static bool IsActiveEntity
 		(
 			EntityID _entity
 		)
 		{
-			std::shared_lock<std::shared_mutex> lock{ g_entityMutex };
-			return IsActiveEntity_Unsafe(_entity);
+			return g_entityData.Read()->IsActiveEntity( _entity );
 		}
 
 		static std::vector<ComponentChange>::iterator FindComponentChange
@@ -147,40 +182,13 @@ namespace Core
 			}
 		}
 
-		static void AddActiveEntity_Unsafe
-		(
-			EntityID _entity,
-			bool _persistent
-		)
-		{
-			g_activeEntities.insert(_entity);
-			if (!_persistent)
-			{
-				g_sceneActiveEntities.insert(_entity);
-			}
-
-			kaLog(std::format("Entity {:d} was created", _entity.GetDebugValue()));
-		}
-
 		static void AddActiveEntity
 		(
 			EntityID _entity,
 			bool _persistent
 		)
 		{
-			std::unique_lock<std::shared_mutex> lock{ g_entityMutex };
-			AddActiveEntity_Unsafe(_entity, _persistent);
-		}
-
-		static void RemoveActiveEntity_Unsafe
-		(
-			EntityID _entity
-		)
-		{
-			g_activeEntities.erase(_entity);
-			g_sceneActiveEntities.erase(_entity);
-
-			kaLog(std::format("Entity {:d} was killed", _entity.GetDebugValue()));
+			g_entityData.Write()->AddActiveEntity( _entity, _persistent );
 		}
 
 		static void RemoveActiveEntity
@@ -188,22 +196,12 @@ namespace Core
 			EntityID _entity
 		)
 		{
-			std::unique_lock<std::shared_mutex> lock{ g_entityMutex };
-			RemoveActiveEntity_Unsafe(_entity);
-		}
-
-		static void RemoveAllActiveEntities_Unsafe()
-		{
-			g_activeEntities.clear();
-			g_sceneActiveEntities.clear();
-
-			kaLog("-- All entities killed --");
+			g_entityData.Write()->RemoveActiveEntity( _entity );
 		}
 
 		static void RemoveAllActiveEntities()
 		{
-			std::unique_lock<std::shared_mutex> lock{ g_entityMutex };
-			RemoveAllActiveEntities_Unsafe();
+			g_entityData.Write()->RemoveAllActiveEntities();
 		}
 
 
@@ -213,21 +211,22 @@ namespace Core
 			bool _keepBetweenScenes
 		)
 		{
-			std::unique_lock<std::shared_mutex> lock{ g_entityMutex };
-			kaAssert(IsActiveEntity_Unsafe(_entity), "Tried to change persistence of inactive entity!");
+			auto entityAccess = g_entityData.Write();
+			kaAssert(entityAccess->IsActiveEntity(_entity), "Tried to change persistence of inactive entity!");
 
 			if (_keepBetweenScenes)
 			{
-				g_sceneActiveEntities.erase(_entity);
+				entityAccess->m_sceneActive.erase(_entity);
 			}
 			else
 			{
-				g_sceneActiveEntities.emplace(_entity);
+				entityAccess->m_sceneActive.emplace(_entity);
 			}
 		}
 
 		static void DestroyEntityAndComponents
 		(
+			EntityDataWriteGuard& _entityAccess,
 			EntityID _entity
 		)
 		{
@@ -240,7 +239,7 @@ namespace Core
 			// fill vector until no more children are found
 			for(usize entityToCheckI{ 0 }; entityToCheckI < entitiesToDestroy.size(); ++entityToCheckI)
 			{
-				for (auto const& entity : g_activeEntities)
+				for (auto const& entity : _entityAccess->m_active)
 				{
 					if (auto const transform = Core::GetComponent<Core::Transform3D>(entity); transform && transform->m_parent.IsValid())
 					{
@@ -254,7 +253,7 @@ namespace Core
 
 			for (auto entityI = entitiesToDestroy.rbegin(); entityI != entitiesToDestroy.rend(); ++entityI)
 			{
-				kaAssert(IsActiveEntity_Unsafe(*entityI), "tried to destroy dead entity!");
+				kaAssert(_entityAccess->IsActiveEntity(*entityI), "tried to destroy dead entity!");
 
 				auto commCompI = componentChangeAccess->m_committed.find(*entityI);
 				kaAssert(commCompI != componentChangeAccess->m_committed.end(), "tried to destroy non-existent entity");
@@ -265,33 +264,33 @@ namespace Core
 				}
 				CommitChanges();
 
-				RemoveActiveEntity_Unsafe(*entityI);
+				_entityAccess->RemoveActiveEntity(*entityI);
 			}
 		}
 
 		static void DestroyAllEntities()
 		{
-			std::unique_lock<std::shared_mutex> lock{ g_entityMutex };
+			auto entityAccess = g_entityData.Write();
 
-			while (!g_activeEntities.empty())
+			while (!entityAccess->m_active.empty())
 			{
-				auto maxI = std::max_element(g_activeEntities.begin(), g_activeEntities.end());
+				auto maxI = std::max_element(entityAccess->m_active.begin(), entityAccess->m_active.end());
 
-				DestroyEntityAndComponents(*maxI);
+				DestroyEntityAndComponents(entityAccess, *maxI);
 			}
 
-			RemoveAllActiveEntities_Unsafe();
+			entityAccess->RemoveAllActiveEntities();
 		}
 
 		static void DestroyAllSceneEntities()
 		{
-			std::unique_lock<std::shared_mutex> lock{ g_entityMutex };
+			auto entityAccess = g_entityData.Write();
 
-			while (!g_sceneActiveEntities.empty())
+			while (!entityAccess->m_sceneActive.empty())
 			{
-				auto maxI = std::max_element(g_sceneActiveEntities.begin(), g_sceneActiveEntities.end());
+				auto maxI = std::max_element(entityAccess->m_sceneActive.begin(), entityAccess->m_sceneActive.end());
 
-				DestroyEntityAndComponents(*maxI);
+				DestroyEntityAndComponents(entityAccess, *maxI);
 			}
 		}
 
@@ -332,7 +331,8 @@ namespace Core
 		EntityID _entity
 	)
 	{
-		EntityManagement::DestroyEntityAndComponents(_entity);
+		auto entityAccess = EntityManagement::g_entityData.Write();
+		EntityManagement::DestroyEntityAndComponents(entityAccess, _entity);
 	}
 
 	void DestroyAllEntities()

@@ -78,4 +78,7 @@ template< typename T >
 using Mutex = MutexBase< absl::Mutex, detail::AbslLockHelper< absl::ReaderMutexLock >, detail::AbslLockHelper< absl::WriterMutexLock >, T >;
 
 template< typename T >
+using SharedMutex = Mutex< T >; // absl::Mutex is shared by default
+
+template< typename T >
 using RecursiveMutex = MutexBase< std::recursive_mutex, std::scoped_lock< std::recursive_mutex >, std::scoped_lock< std::recursive_mutex >, T >;

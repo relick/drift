@@ -484,23 +484,25 @@ namespace Core
 				TextureData const& tex = GetTexture(texID);
 				switch (tex.m_type)
 				{
-				case TextureData::Type::Diffuse:
+					using enum TextureData::Type;
+
+				case Diffuse:
 				{
 					o_newMesh.m_bindings.fs_images[SLOT_main_mat_diffuseTex] = texID.GetValue();
 					break;
 				}
-				case TextureData::Type::Specular:
+				case Specular:
 				{
 					o_newMesh.m_bindings.fs_images[SLOT_main_mat_specularTex] = texID.GetValue();
 					break;
 				}
-				case TextureData::Type::Normal:
+				case Normal:
 				{
 					o_newMesh.m_bindings.fs_images[SLOT_main_mat_normalTex] = texID.GetValue();
 					break;
 				}
-				case TextureData::Type::General2D:
-				case TextureData::Type::Cubemap:
+				case General2D:
+				case Cubemap:
 				{
 					kaError("shouldn't have gotten this texture type in a material texture load!");
 					break;

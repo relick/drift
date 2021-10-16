@@ -17,12 +17,14 @@ namespace Core
 			{
 				switch (_light.m_type)
 				{
-				case Light::Type::Ambient:
+					using enum Light::Type;
+
+				case Ambient:
 				{
 					AddAmbientLightToScene(_light.m_colour * _light.m_intensity);
 					break;
 				}
-				case Light::Type::Directional:
+				case Directional:
 				{
 					LightSetter lightSetter = AddLightToScene();
 					lightSetter.Col = Vec4(_light.m_colour, _light.m_intensity);
@@ -35,7 +37,7 @@ namespace Core
 					SetDirectionalLightDir(worldT.Forward());
 					break;
 				}
-				case Light::Type::Point:
+				case Point:
 				{
 					LightSetter lightSetter = AddLightToScene();
 					lightSetter.Col = Vec4(_light.m_colour, _light.m_intensity);
@@ -51,7 +53,7 @@ namespace Core
 					lightSetter.Att = Vec4(_light.m_attenuation, 0.0f);
 					break;
 				}
-				case Light::Type::Spotlight:
+				case Spotlight:
 				{
 					LightSetter lightSetter = AddLightToScene();
 					lightSetter.Col = Vec4(_light.m_colour, _light.m_intensity);

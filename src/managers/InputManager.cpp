@@ -188,12 +188,14 @@ namespace Core
 			{
 				switch (data.keyType)
 				{
-				case KeyType::Keyboard:
+					using enum KeyType;
+
+				case Keyboard:
 				{
 					isPressed |= g_inputState.pressedThisFrame.keys[data.key];
 					break;
 				}
-				case KeyType::Mouse:
+				case Mouse:
 				{
 					isPressed |= g_inputState.pressedThisFrame.mouseButtons[data.key];
 					break;
@@ -210,12 +212,14 @@ namespace Core
 			{
 				switch (data.keyType)
 				{
-				case KeyType::Keyboard:
+					using enum KeyType;
+
+				case Keyboard:
 				{
 					isPressed |= g_inputState.pressedOnce.keys[data.key];
 					break;
 				}
-				case KeyType::Mouse:
+				case Mouse:
 				{
 					isPressed |= g_inputState.pressedOnce.mouseButtons[data.key];
 					break;

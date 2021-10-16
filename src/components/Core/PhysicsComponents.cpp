@@ -88,12 +88,14 @@ namespace Core
 		// Select shape
 		switch (_desc.m_shapeType)
 		{
-		case Physics::ShapeType::Box:
+			using enum Physics::ShapeType;
+
+		case Box:
 		{
 			newComponent.m_shape = new btBoxShape(ConvertTobtVector3(_desc.m_boxHalfDimensions));
 			break;
 		}
-		case Physics::ShapeType::Sphere:
+		case Sphere:
 		{
 			newComponent.m_shape = new btSphereShape(_desc.m_radius);
 			break;

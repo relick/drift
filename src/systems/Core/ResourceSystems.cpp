@@ -104,20 +104,22 @@ namespace Core::Resource
 		{
 			switch (_preload.m_preloadState)
 			{
-			case Preload::State::LoadingScreenDraw:
+				using enum Preload::State;
+
+			case LoadingScreenDraw:
 			{
 				// skip a frame so the screen isn't completely white on the first file.
 				_preload.m_preloadState = Preload::State::FillFilesList;
 				return;
 			}
-			case Preload::State::FillFilesList:
+			case FillFilesList:
 			{
 				FillFilesToLoad(_preload.m_filesToLoad);
 				_preload.m_preloadState = Preload::State::Loading;
 				// skip another frame
 				return;
 			}
-			case Preload::State::Loading:
+			case Loading:
 			{
 				break;
 			}
@@ -135,37 +137,39 @@ namespace Core::Resource
 			bool success{ false };
 			switch (_preload.m_filesToLoad[_preload.m_currentLoadingIndex].m_fileType)
 			{
-			case Preload::FileType::Model:
+				using enum Preload::FileType;
+
+			case Model:
 			{
 				ModelID modelID;
 				success = LoadModel(nextFilePath, modelID);
 				break;
 			}
-			case Preload::FileType::Texture2D:
+			case Texture2D:
 			{
 				TextureID textureID;
 				success = Load2DTexture(nextFilePath, textureID, TextureData::Type::General2D);
 				break;
 			}
-			case Preload::FileType::Cubemap:
+			case Cubemap:
 			{
 				TextureID cubemapID;
 				success = LoadCubemap(nextFilePath, cubemapID);
 				break;
 			}
-			case Preload::FileType::Sprite:
+			case Sprite:
 			{
 				SpriteID spriteID;
 				success = LoadSprite(nextFilePath, spriteID);
 				break;
 			}
-			case Preload::FileType::SFX:
+			case SFX:
 			{
 				SoundEffectID sfxID;
 				success = LoadSoundEffect(nextFilePath, sfxID);
 				break;
 			}
-			case Preload::FileType::BGM:
+			case BGM:
 			{
 				MusicID bgmID;
 				success = LoadMusic(nextFilePath, bgmID);

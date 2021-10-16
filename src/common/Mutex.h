@@ -4,6 +4,16 @@
 #include <mutex>
 #include <shared_mutex>
 
+namespace detail
+{
+// For some nonsense reason, absl locks take Mutex* instead of Mutex&. This concept switches constructor to accomodate.
+template< typename T_Mutex, typename T_Locker >
+concept LockerTakesPointer = requires( T_Mutex m ) {
+	T_Locker{ &m };
+};
+
+}
+
 template< typename T_Mutex, typename T_MutexReadLocker, typename T_Value >
 class MutexReadGuardBase
 {
@@ -13,6 +23,12 @@ public:
 
 	MutexReadGuardBase( T_Mutex& _mutex, T_Value const& _val )
 		: m_lock{ _mutex }
+		, m_value{ _val }
+	{}
+
+	MutexReadGuardBase( T_Mutex& _mutex, T_Value const& _val )
+		requires detail::LockerTakesPointer< T_Mutex, T_MutexReadLocker >
+		: m_lock{ &_mutex }
 		, m_value{ _val }
 	{}
 
@@ -32,21 +48,16 @@ public:
 		, m_value{ _val }
 	{}
 
+	MutexWriteGuardBase( T_Mutex& _mutex, T_Value& _val )
+		requires detail::LockerTakesPointer< T_Mutex, T_MutexWriteLocker >
+		: m_lock{ &_mutex }
+		, m_value{ _val }
+	{}
+
 	T_Value& operator*() { return m_value; }
 	T_Value* operator->() { return &m_value; }
 };
 
-namespace detail
-{
-// For some nonsense reason, absl locks take Mutex* instead of Mutex&. this helper just passes them through.
-template< typename T_AbslLock >
-class AbslLockHelper : public T_AbslLock
-{
-public:
-	explicit AbslLockHelper( absl::Mutex& mu ) : T_AbslLock{ &mu }
-	{}
-};
-}
 
 template< typename T_Mutex, typename T_MutexReadLocker, typename T_MutexWriteLocker, typename T_Value >
 class MutexBase
@@ -75,7 +86,7 @@ public:
 };
 
 template< typename T >
-using Mutex = MutexBase< absl::Mutex, detail::AbslLockHelper< absl::ReaderMutexLock >, detail::AbslLockHelper< absl::WriterMutexLock >, T >;
+using Mutex = MutexBase< absl::Mutex, absl::ReaderMutexLock, absl::WriterMutexLock, T >;
 
 template< typename T >
 using SharedMutex = Mutex< T >; // absl::Mutex is shared by default

@@ -116,7 +116,7 @@ namespace Core
 			detail::GetEcsRuntime().add_component(Core::detail::AccessECSID(_entity), static_cast<std::remove_const_t<T_Component>>(_component));
 		}
 
-		// Wraps ecs::remove_component, shouldn't be used directly except by specialisations of RemoveComponent
+		// Wraps ecs::remove_component, shouldn't be used directly.
 		template<detail::ValidComponent T_Component>
 		void RemoveComponent(EntityID const _entity)
 		{

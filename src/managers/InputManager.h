@@ -60,5 +60,6 @@ namespace Core
 		bool PressedOnce(Action _action);
 		Vec2 GetMouseDelta();
 		Vec1 GetScrollDelta();
+		void LockMouse( bool _lock );
 	}
 }

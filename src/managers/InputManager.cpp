@@ -2,6 +2,7 @@
 
 #include <sokol_app.h>
 
+#include <atomic>
 #include <array>
 
 namespace Core
@@ -30,6 +31,8 @@ namespace Core
 
 			MouseFrame thisFrame{};
 			MouseFrame nextFrame{};
+
+			std::atomic_int lockMouseNextFrame{ 0 };
 		};
 
 		static InputState g_inputState{};
@@ -109,6 +112,12 @@ namespace Core
 		// Run every frame
 		void Update()
 		{
+			int lockMouse = g_inputState.lockMouseNextFrame.exchange( 0, std::memory_order_relaxed );
+			if ( lockMouse != 0 )
+			{
+				sapp_lock_mouse( lockMouse > 0 );
+			}
+
 			for (usize keyI = 0; keyI < g_inputState.pressedOnce.keys.size(); ++keyI)
 			{
 				g_inputState.pressedOnce.keys[keyI] = !g_inputState.pressedThisFrame.keys[keyI] && g_inputState.pressedNextFrame.keys[keyI];
@@ -237,6 +246,14 @@ namespace Core
 		Vec1 GetScrollDelta()
 		{
 			return g_inputState.thisFrame.dMouseScroll;
+		}
+
+		void LockMouse
+		(
+			bool _lock
+		)
+		{
+			g_inputState.lockMouseNextFrame.store( _lock ? 1 : -1, std::memory_order_relaxed );
 		}
 	}
 }

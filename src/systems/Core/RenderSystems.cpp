@@ -5,8 +5,6 @@
 #include "managers/RenderManager.h"
 #include "managers/InputManager.h"
 
-#include <sokol_app.h>
-
 namespace Core
 {
 	namespace Render
@@ -115,7 +113,7 @@ namespace Core
 						_t.m_parent = _debugCamera.m_storedParent;
 						_t.T() = _debugCamera.m_storedTransform;
 						_debugCamera.m_debugCameraEnabled = false;
-						sapp_lock_mouse(true);
+						Core::Input::LockMouse( true );
 					}
 					else
 					{
@@ -144,7 +142,7 @@ namespace Core
 				{
 					if (Core::Input::Pressed(Core::Input::Action::Debug_AimCamera))
 					{
-						sapp_lock_mouse(true);
+						Core::Input::LockMouse( true );
 						Vec2 const mouseDelta = Core::Input::GetMouseDelta();
 						Vec1 const scale = 0.0005f;
 						_debugCamera.m_angle.x -= mouseDelta.y * scale;
@@ -152,7 +150,7 @@ namespace Core
 					}
 					else
 					{
-						sapp_lock_mouse(false);
+						Core::Input::LockMouse( false );
 					}
 
 					constexpr bool d_checkAxes = false;

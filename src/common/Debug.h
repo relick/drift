@@ -38,7 +38,7 @@ inline const std::thread::id g_mainThreadID = std::this_thread::get_id();
 #define kaAssert(...)
 #define kaError(message)
 #define kaLog(message)
-#define kaSameThreadAssert(...)
+#define kaMainThreadAssert(...)
 #define SOLOUD_NO_ASSERTS
 
 #endif

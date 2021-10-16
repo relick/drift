@@ -5,8 +5,6 @@
 
 #include "managers/InputManager.h"
 
-#include <sokol_app.h>
-
 namespace Game
 {
 	namespace Player
@@ -24,7 +22,7 @@ namespace Game
 				return;
 			}
 #endif
-			sapp_lock_mouse(true);
+			Core::Input::LockMouse( true );
 
 			Vec2 const mouseDelta = Core::Input::GetMouseDelta();
 			_p.m_pitch -= mouseDelta.y * 0.05f;

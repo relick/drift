@@ -96,6 +96,10 @@ target_compile_options (drift PRIVATE
 	$<$<CXX_COMPILER_ID:MSVC>:
 		/Zc:preprocessor
 		/utf-8
+		
+		$<$<BOOL:${USE_AVX}>:
+			/arch:AVX
+		>
 
 		/wd5105 # /Zc:preprocessor unfortunately makes winbase.h complain about undefined behaviour. Since this is MS's, we'll just have to put up with it.
 	>
@@ -108,12 +112,15 @@ target_compile_options (drift PRIVATE
 ## and this define stops it doing that because WHY THE HELL WOULD ANYONE DO THAT
 ## also disable the C security warnings since it's all in libraries I don't write
 target_compile_definitions (drift PRIVATE
+	GLM_FORCE_INTRINSICS # use intrinsics if available
+
 	$<$<BOOL:${USE_D3D11}>:
 		SOKOL_D3D11
 	>
 	$<$<BOOL:${USE_OPENGL330}>:
 		SOKOL_GLCORE33
 	>
+
 	$<$<CONFIG:Debug,RelWithDebInfo>:
 		DEBUG_TOOLS
 	>

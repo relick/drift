@@ -1,12 +1,10 @@
 #include "EntityManager.h"
 
 #include "components.h"
+#include "common/Mutex.h"
 
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
-
-#include <mutex>
-#include <shared_mutex>
 
 
 ecs::runtime& Core::detail::GetEcsRuntime()
@@ -30,9 +28,12 @@ namespace Core
 
 		absl::flat_hash_map<ComponentHash, std::unique_ptr<ComponentDestroyerBase>> g_destroyers{};
 
-		static absl::flat_hash_map<EntityID, std::vector<ComponentChange>> g_uncommittedComponentChanges{};
-		static absl::flat_hash_map<EntityID, std::vector<ComponentHash>> g_committedComponents{};
-		static std::recursive_mutex g_componentChangeMutex;
+		struct ComponentChangeData
+		{
+			absl::flat_hash_map<EntityID, std::vector<ComponentChange>> m_uncommittedChanges{};
+			absl::flat_hash_map<EntityID, std::vector<ComponentHash>> m_committed{};
+		};
+		static RecursiveMutex< ComponentChangeData > g_componentChangeData;
 
 		static absl::flat_hash_set<EntityID> g_activeEntities;
 		static absl::flat_hash_set<EntityID> g_sceneActiveEntities;
@@ -92,10 +93,10 @@ namespace Core
 		)
 		{
 			kaAssert(IsActiveEntity(_entity), "tried to add components to dead entity!");
-			std::scoped_lock<std::recursive_mutex> lock{ g_componentChangeMutex };
+			auto componentChangeAccess = g_componentChangeData.Write();
 			// slow assert
-			kaAssert(FindComponentChange(g_uncommittedComponentChanges[_entity], _hash) == g_uncommittedComponentChanges[_entity].end(), "do not try to add/remove the same component to an entity more than once a frame");
-			g_uncommittedComponentChanges[_entity].emplace_back(_hash, true);
+			kaAssert(FindComponentChange(componentChangeAccess->m_uncommittedChanges[_entity], _hash) == componentChangeAccess->m_uncommittedChanges[_entity].end(), "do not try to add/remove the same component to an entity more than once a frame");
+			componentChangeAccess->m_uncommittedChanges[_entity].emplace_back(_hash, true);
 		}
 
 		void RemoveComponentHash
@@ -104,20 +105,20 @@ namespace Core
 			ComponentHash _hash
 		)
 		{
-			std::scoped_lock<std::recursive_mutex> lock{ g_componentChangeMutex };
+			auto componentChangeAccess = g_componentChangeData.Write();
 
 			// slow assert
-			kaAssert(FindComponentChange(g_uncommittedComponentChanges[_entity], _hash) == g_uncommittedComponentChanges[_entity].end(), "do not try to add/remove the same component to an entity more than once a frame");
-			g_uncommittedComponentChanges[_entity].emplace_back(_hash, false);
+			kaAssert(FindComponentChange(componentChangeAccess->m_uncommittedChanges[_entity], _hash) == componentChangeAccess->m_uncommittedChanges[_entity].end(), "do not try to add/remove the same component to an entity more than once a frame");
+			componentChangeAccess->m_uncommittedChanges[_entity].emplace_back(_hash, false);
 		}
 
 		void CommitChanges()
 		{
-			std::scoped_lock<std::recursive_mutex> lock{ g_componentChangeMutex };
+			auto componentChangeAccess = g_componentChangeData.Write();
 
-			for (auto const& [entity, compChangeList] : g_uncommittedComponentChanges)
+			for (auto const& [entity, compChangeList] : componentChangeAccess->m_uncommittedChanges)
 			{
-				auto& componentList = g_committedComponents[entity];
+				auto& componentList = componentChangeAccess->m_committed[entity];
 				for (auto const& change : compChangeList)
 				{
 					if (change.m_added)
@@ -134,14 +135,14 @@ namespace Core
 					}
 				}
 			}
-			g_uncommittedComponentChanges.clear();
+			componentChangeAccess->m_uncommittedChanges.clear();
 
-			for (auto entityI = g_committedComponents.begin(); entityI != g_committedComponents.end();)
+			for (auto entityI = componentChangeAccess->m_committed.begin(); entityI != componentChangeAccess->m_committed.end();)
 			{
 				auto entityCopyI = entityI++;
 				if (entityCopyI->second.empty())
 				{
-					g_committedComponents.erase(entityCopyI);
+					componentChangeAccess->m_committed.erase(entityCopyI);
 				}
 			}
 		}
@@ -231,7 +232,7 @@ namespace Core
 		)
 		{
 			// this function is what all this effort is for.
-			std::scoped_lock<std::recursive_mutex> lock{ g_componentChangeMutex };
+			auto componentChangeAccess = g_componentChangeData.Write();
 
 			absl::InlinedVector<EntityID, 32> entitiesToDestroy;
 			entitiesToDestroy.emplace_back(_entity);
@@ -255,8 +256,8 @@ namespace Core
 			{
 				kaAssert(IsActiveEntity_Unsafe(*entityI), "tried to destroy dead entity!");
 
-				auto commCompI = g_committedComponents.find(*entityI);
-				kaAssert(commCompI != g_committedComponents.end(), "tried to destroy non-existent entity");
+				auto commCompI = componentChangeAccess->m_committed.find(*entityI);
+				kaAssert(commCompI != componentChangeAccess->m_committed.end(), "tried to destroy non-existent entity");
 
 				for (auto compHashI = commCompI->second.rbegin(); compHashI != commCompI->second.rend(); ++compHashI)
 				{

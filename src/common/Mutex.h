@@ -1,6 +1,8 @@
 #pragma once
 
 #include <absl/synchronization/mutex.h>
+#include <mutex>
+#include <shared_mutex>
 
 template< typename T_Mutex, typename T_MutexReadLocker, typename T_Value >
 class MutexReadGuardBase
@@ -74,3 +76,6 @@ public:
 
 template< typename T >
 using Mutex = MutexBase< absl::Mutex, detail::AbslLockHelper< absl::ReaderMutexLock >, detail::AbslLockHelper< absl::WriterMutexLock >, T >;
+
+template< typename T >
+using RecursiveMutex = MutexBase< std::recursive_mutex, std::scoped_lock< std::recursive_mutex >, std::scoped_lock< std::recursive_mutex >, T >;

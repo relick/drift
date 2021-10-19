@@ -232,7 +232,7 @@ namespace Core
 	{
 		if constexpr ( Sys::c_mtOnlySysOrdering[ t_Group ] )
 		{
-			static_assert( detail::AtLeastOneArgMT_Only< T_SystemFn >(), "System tried to be added in section " );
+			static_assert( detail::AtLeastOneArgMT_Only< T_SystemFn >(), "System tried to be added in Main Thread-only section without Core::MT_Only& parameter." );
 		}
 		else
 		{

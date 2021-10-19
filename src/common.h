@@ -10,6 +10,8 @@
 #include "common/Debug.h"
 #include "common/Transforms.h"
 #include "common/Colour.h"
+#include "common/Bit.h"
+//#include "common/Mutex.h" // This can be included manually where needed.
 
 // little extras that don't need a separate header
 template<typename T>

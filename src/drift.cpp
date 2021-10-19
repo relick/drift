@@ -9,13 +9,16 @@
 #include "components.h"
 #include "systems.h"
 
-#include <ecs/ecs.h>
+#include "cpuid.h"
+#include <boxer/boxer.h>
 
 // sokol
 #include <sokol_app.h>
 #include <sokol_time.h>
 
 #include "scenes/CubeTest.h"
+
+#include <format>
 
 constexpr int32 g_renderAreaWidth = 320;
 constexpr int32 g_renderAreaHeight = (g_renderAreaWidth / 4) * 3;
@@ -28,8 +31,32 @@ void Cleanup();
 void Event(sapp_event const* _event);
 void Fail(char const* _error);
 
+bool EnsureRequiredCPUFeatures(char const*& o_missingFeature)
+{
+	Setup::CpuInfo cpuInfo;
+#if __AVX__
+	if ( !cpuInfo.AVX() )
+	{
+		o_missingFeature = "AVX";
+		return false;
+	}
+#endif
+
+	return true;
+}
+
 sapp_desc sokol_main(int argc, char* argv[])
 {
+	{
+		char const* missingFeature{ nullptr };
+		if ( !EnsureRequiredCPUFeatures( missingFeature ) )
+		{
+			std::string const errorMessage = std::format( "Your computer is missing the '{:s}' feature, which is required with this build of the game.", missingFeature );
+			boxer::show( errorMessage.c_str(), "Critical Error", boxer::Style::Error, boxer::Buttons::Quit );
+			std::abort();
+		}
+	}
+
 	InitialiseLogging();
 
 	sapp_desc desc{

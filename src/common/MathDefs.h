@@ -17,6 +17,18 @@ using isize = std::ptrdiff_t;
 using usize = std::size_t;
 using wchar = wchar_t;
 
+constexpr int8 operator"" _i8( unsigned long long d ) { return ( int8 )d; }
+constexpr uint8 operator"" _u8( unsigned long long d ) { return ( uint8 )d; }
+constexpr int16 operator"" _i16( unsigned long long d ) { return ( int16 )d; }
+constexpr uint16 operator"" _u16( unsigned long long d ) { return ( uint16 )d; }
+constexpr int32 operator"" _i32( unsigned long long d ) { return ( int32 )d; }
+constexpr uint32 operator"" _u32( unsigned long long d ) { return ( uint32 )d; }
+constexpr int64 operator"" _i64( unsigned long long d ) { return ( int64 )d; }
+constexpr uint64 operator"" _u64( unsigned long long d ) { return ( uint64 )d; }
+constexpr isize operator"" _isize( unsigned long long d ) { return ( isize )d; }
+constexpr usize operator"" _usize( unsigned long long d ) { return ( usize )d; }
+
+
 #include <concepts>
 
 template< typename T >

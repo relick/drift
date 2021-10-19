@@ -28,3 +28,6 @@
 [submodule "gcem"]
 	path = gcem
 	url = https://github.com/relick/gcem.git
+[submodule "Boxer"]
+	path = Boxer
+	url = https://github.com/aaronmjacobs/Boxer.git

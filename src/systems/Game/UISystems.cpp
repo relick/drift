@@ -21,7 +21,14 @@ namespace Game::UI
 			auto const preload = Core::GetComponent<Core::Resource::Preload>(_entity);
 			if (preload == nullptr)
 			{
-				Core::Scene::NextScene<Game::Scene::CubeTestScene>();
+				if ( _loadingScreen.m_nextScene )
+				{
+					Core::Scene::NextScene( _loadingScreen.m_nextScene );
+				}
+				else
+				{
+					Core::Scene::NextScene<Game::Scene::CubeTestScene>();
+				}
 				return;
 			}
 			if (preload->m_currentLoadingIndex < preload->m_filesToLoad.size())

@@ -101,7 +101,7 @@ namespace Core
 		}
 		void CommitChanges();
 
-		void TransitionScene(std::unique_ptr<Core::Scene::BaseScene> _nextScene);
+		void TransitionScene(std::shared_ptr<Core::Scene::BaseScene> const& _nextScene);
 	}
 
 	// functions used by elements of the ECS itself and not by game code
@@ -253,7 +253,12 @@ namespace Core
 		template<detail::SceneType T_Scene>
 		void NextScene()
 		{
-			EntityManagement::TransitionScene(std::unique_ptr<BaseScene>(new T_Scene{}));
+			EntityManagement::TransitionScene(std::shared_ptr<BaseScene>(new T_Scene{}));
+		}
+
+		inline void NextScene( std::shared_ptr<BaseScene> const& _nextScene )
+		{
+			EntityManagement::TransitionScene( _nextScene );
 		}
 	}
 }

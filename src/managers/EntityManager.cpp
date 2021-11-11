@@ -83,7 +83,7 @@ namespace Core
 		using EntityDataWriteGuard = EntityDataMutex::WriteGuard;
 		static EntityDataMutex g_entityData;
 
-		static std::unique_ptr<Core::Scene::BaseScene> g_currentScene;
+		static std::shared_ptr<Core::Scene::BaseScene> g_currentScene;
 
 		static ComponentDestroyerBase const* GetDestroyer
 		(
@@ -296,7 +296,7 @@ namespace Core
 
 		void TransitionScene
 		(
-			std::unique_ptr<Core::Scene::BaseScene> _nextScene
+			std::shared_ptr<Core::Scene::BaseScene> const& _nextScene
 		)
 		{
 			DestroyAllSceneEntities();
@@ -304,7 +304,7 @@ namespace Core
 
 			if (_nextScene)
 			{
-				g_currentScene = std::move(_nextScene);
+				g_currentScene = _nextScene;
 				g_currentScene->Setup();
 			}
 		}

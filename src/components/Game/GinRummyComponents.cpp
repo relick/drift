@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <random>
+#include <format>
 
 namespace Game
 {
@@ -293,10 +294,22 @@ void AddComponent
 		bool const success = Core::Resource::LoadSprite( "assets/encrypted/sprites/ginrummy/cardback.spr", newComponent.m_cardBack );
 		kaAssert( success );
 	}
-	if ( newComponent.m_cardFront[ 0 ].IsNull() )
+
+	static constexpr std::array<char const*, 4> suitInitials{ "D", "C", "H", "S", };
+
+	for ( usize suitI = 0; suitI < 4; ++suitI )
 	{
-		bool const success = Core::Resource::LoadSprite( "assets/encrypted/sprites/ginrummy/cardfront.spr", newComponent.m_cardFront[ 0 ] );
-		kaAssert( success );
+		for ( usize faceI = 0; faceI < 13; ++faceI )
+		{
+			if ( newComponent.m_cardFront[ suitI * 13 + faceI ].IsNull() )
+			{
+				bool const success = Core::Resource::LoadSprite(
+					std::format( "assets/encrypted/sprites/ginrummy/cardfront_sprites/{:s}{:d}.spr", suitInitials[ suitI ], faceI ),
+					newComponent.m_cardFront[ suitI * 13 + faceI ]
+				);
+				kaAssert( success );
+			}
+		}
 	}
 
 	ECS::AddComponent( _entity, newComponent );

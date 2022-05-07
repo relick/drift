@@ -24,9 +24,9 @@ static void DrawMat
 	Game::GinRummy::Mat const& _mat
 )
 {
-	Trans2D fullScreenSpriteTrans; // default will cover the whole screen.
-	fullScreenSpriteTrans.m_z = 0.5f; // set to the back
-	Core::Render::AddSpriteToScene( _mat.m_matSprite, fullScreenSpriteTrans );
+	Trans2D fullScreen; // default will cover the whole screen.
+	fullScreen.m_z = -0.9f; // Put behind all cards
+	Core::Render::AddSpriteToScene( _mat.m_matSprite, fullScreen );
 }
 
 static void DrawGame
@@ -35,14 +35,65 @@ static void DrawGame
 	Game::GinRummy::GameRender& _gameRender
 )
 {
-	Trans2D left; // default will place in middle, one card
-	left.m_pos = { 25, 25 };
-	left.m_z = 0.75f;
-	Trans2D right; // default will place in middle, one card
-	right.m_pos = { 75, 25 };
-	right.m_z = 0.75f;
-	Core::Render::AddSpriteToScene( _gameRender.m_cardFront[0], left);
-	Core::Render::AddSpriteToScene( _gameRender.m_cardBack, right);
+	// Debug draw whole deck
+	if constexpr ( false )
+	{
+		bool flip = true;
+		for ( usize s = 0; s < 4; ++s )
+		{
+			Trans2D pos;
+			pos.m_pos.y = ( Vec1 )s * 60.0f;
+			for ( usize f = 0; f < 13; ++f )
+			{
+				pos.m_pos.x = ( Vec1 )f * 24.0f;
+				pos.m_z = ( Vec1 )( s * 13 + f ) / 52.0f;
+				if ( flip )
+				{
+					Core::Render::AddSpriteToScene( _gameRender.m_cardFront[ _gameData.m_deck.m_cards[ s * 13 + f ].DeckIndex() ], pos );
+				}
+				else
+				{
+					Core::Render::AddSpriteToScene( _gameRender.m_cardBack, pos );
+				}
+				flip = !flip;
+			}
+		}
+	}
+
+	constexpr Vec1 deckMaxHeight{ 10 };
+	constexpr Vec1 cardHeight = deckMaxHeight / 52.0f;
+
+	// Draw deck stack
+	{
+		Trans2D deckPos;
+		deckPos.m_pos = { 40, 88 };
+		for ( usize cardI = 0; cardI < _gameData.m_deck.Size(); ++cardI )
+		{
+			Core::Render::AddSpriteToScene( _gameRender.m_cardBack, deckPos );
+			deckPos.m_pos.y -= cardHeight;
+			deckPos.m_z += 1.0f / 52.0f;
+		}
+	}
+	
+	// Draw discard stack
+	{
+		Trans2D discardPos;
+		discardPos.m_pos = { 234, 88 };
+		for ( usize cardI = 0; cardI < _gameData.m_discard.Size(); ++cardI )
+		{
+			if ( cardI == _gameData.m_discard.Size() - 1 )
+			{
+				kaAssert( _gameData.m_discard.m_topDiscard.has_value() );
+				Core::Render::AddSpriteToScene( _gameRender.m_cardFront[ _gameData.m_discard.CheckTop().DeckIndex() ], discardPos );
+			}
+			else
+			{
+				Core::Render::AddSpriteToScene( _gameRender.m_cardFront[ 0 ], discardPos );
+				discardPos.m_pos.y -= cardHeight;
+				discardPos.m_z += 1.0f / 52.0f;
+			}
+		}
+	}
 }
 
 void Setup()

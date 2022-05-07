@@ -53,6 +53,7 @@ struct Card
 
 	bool operator==( Card const& _o ) const { return _o.m_face == m_face && _o.m_suit == m_suit; }
 	uint8 GetValue() const { return c_ginRummyFaceValues[ ( usize )m_face ]; }
+	usize DeckIndex() const { return ( usize )m_suit * ( usize )Face::Count + ( usize )m_face; } // Useful for reaching into another ordered list.
 };
 
 struct Deck
@@ -156,7 +157,7 @@ struct Mat
 
 struct GameRender
 {
-	std::array<Core::Resource::SpriteID, 1> m_cardFront;
+	std::array<Core::Resource::SpriteID, 52> m_cardFront;
 	Core::Resource::SpriteID m_cardBack;
 };
 

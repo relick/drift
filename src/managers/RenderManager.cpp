@@ -883,7 +883,7 @@ namespace Core
 						return false;
 					}*/
 
-					return bSpriteData.m_useAlpha & ( !aSpriteData.m_useAlpha | _a.m_transform.m_z < _b.m_transform.m_z );
+					return bSpriteData.m_useAlpha & ( !aSpriteData.m_useAlpha | ( _a.m_transform.m_z < _b.m_transform.m_z );
 				}
 			);
 

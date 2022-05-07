@@ -17,6 +17,7 @@
 #include <sokol_time.h>
 
 #include "scenes/CubeTest.h"
+#include "scenes/GinRummy.h"
 
 #include <format>
 
@@ -108,6 +109,7 @@ void Initialise()
 
 		Game::Player::Setup();
 		Game::UI::Setup();
+		Game::GinRummy::Setup();
 	}
 
 	// pre-scene required entity setup
@@ -141,10 +143,13 @@ void Initialise()
 	// Setup entity manager
 	// todo
 
-	// Preload assets
-	Core::EntityID const preloadEntity = Core::CreateEntity();
-	Core::AddComponent(preloadEntity, Core::Resource::Preload());
-	Core::AddComponent(preloadEntity, Game::UI::LoadingScreen());
+	// Setup scene
+	{
+		Core::EntityID const preloadEntity = Core::CreateEntity();
+		Game::UI::SceneLoadDesc startScene;
+		startScene.m_nextScene = std::make_shared<Game::Scene::GinRummy>();
+		Core::AddComponent( preloadEntity, startScene );
+	}
 
 	// Finalise initial entities
 	Core::ECS::CommitChanges();

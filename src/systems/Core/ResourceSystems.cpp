@@ -15,6 +15,7 @@ namespace Core::Resource
 {
 	static void FillFilesToLoad
 	(
+		std::string _firstResFile,
 		std::vector<Core::Resource::Preload::FileToLoad>& o_files
 	)
 	{
@@ -25,7 +26,7 @@ namespace Core::Resource
 		absl::flat_hash_set<std::string> seenOtherFiles;
 #endif
 
-		resFileLists.emplace_back("assets/preload.res");
+		resFileLists.emplace_back( std::move( _firstResFile ) );
 
 		while (!resFileLists.empty())
 		{
@@ -114,7 +115,7 @@ namespace Core::Resource
 			}
 			case FillFilesList:
 			{
-				FillFilesToLoad(_preload.m_filesToLoad);
+				FillFilesToLoad( _preload.m_firstResFile.value_or( "assets/preload.res" ), _preload.m_filesToLoad );
 				_preload.m_preloadState = Preload::State::Loading;
 				// skip another frame
 				return;

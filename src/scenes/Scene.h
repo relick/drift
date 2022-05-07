@@ -11,5 +11,6 @@ namespace Core::Scene
 		virtual ~BaseScene() {}
 
 		virtual void Setup() = 0;
+		virtual std::string GetPreloadFile() const { return "assets/preload.res"; }
 	};
 }

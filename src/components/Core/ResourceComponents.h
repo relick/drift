@@ -30,6 +30,7 @@ namespace Core::Resource
 		};
 
 		State m_preloadState{ State::LoadingScreenDraw };
+		std::optional<std::string> m_firstResFile;
 		std::vector<FileToLoad> m_filesToLoad;
 		usize m_currentLoadingIndex{ 0 };
 	};

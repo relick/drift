@@ -91,3 +91,10 @@ constexpr T Normalise(T const& _t)
 {
 	return glm::normalize( _t );
 }
+
+// d3d needs off-centre orthographic projection, gl needs normalised.
+#if SOKOL_D3D11
+#define PLATFORM_GLM_ORTHO glm::orthoRH_ZO
+#else
+#define PLATFORM_GLM_ORTHO glm::orthoRH_NO
+#endif

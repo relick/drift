@@ -167,7 +167,7 @@ struct Transform2DBase
 	Rot2D m_rot;
 	Vec2 m_pos;
 	Vec2 m_scale;
-	T m_z; // -1 to 1
+	T m_z; // -1 far to 1 near
 
 
 	Transform2DBase< T > operator*( Transform2DBase< T > const& _t ) const

@@ -702,18 +702,14 @@ namespace Core
 		//--------------------------------------------------------------------------------
 		static Mat4 GetDirectionalLightOrthoMat( Vec1 _bounds, Vec1 _nearPlane, Vec1 _farPlane)
 		{
-			// d3d needs off-centre, gl needs usual.
-#if SOKOL_D3D11
-			return glm::orthoRH_ZO(-_bounds, _bounds, -_bounds, _bounds, _nearPlane, _farPlane);
-#else
-			return glm::orthoRH_NO(-_bounds, _bounds, -_bounds, _bounds, _nearPlane, _farPlane);
-#endif	
+			return PLATFORM_GLM_ORTHO(-_bounds, _bounds, -_bounds, _bounds, _nearPlane, _farPlane);
 		}
 
 		//--------------------------------------------------------------------------------
 		static Mat4 GetSpriteOrthoMat(Core::Render::FrameData const& _rfd)
 		{
-			return glm::ortho(0.0f, _rfd.renderArea.f.x, _rfd.renderArea.f.y, 0.0f, -1.0f, 1.0f);
+			// For reasons unclear to me, -1 is near and 1 is far but things closer to 1 are drawn on top of things closer to -1
+			return PLATFORM_GLM_ORTHO(0.0f, _rfd.renderArea.f.x, _rfd.renderArea.f.y, 0.0f, -1.0f, 1.0f);
 		}
 
 		constexpr bool g_enableDirectionalShadow = true;
@@ -855,6 +851,41 @@ namespace Core
 			{
 				return _a.m_sprite.get().m_texture < _b.m_sprite.get().m_texture;
 			});
+
+			// Order alpha sprites by Z
+			std::stable_sort( g_frameScene.spriteScratchData.begin(), g_frameScene.spriteScratchData.end(),
+				[]( auto const& _a, auto const& _b ) -> bool
+				{
+					auto const& aSpriteData = _a.m_sprite.get();
+					auto const& bSpriteData = _b.m_sprite.get();
+					// Explanation:
+					// a and b both alpha (sort by z)
+					// a alpha, b not (a after b)
+					// b alpha, a not (b after a)
+					// a and b not alpha (maintain position)
+					/*if ( bSpriteData.m_useAlpha )
+					{
+						if ( aSpriteData.m_useAlpha )
+						{
+							return _a.m_transform.m_z < _b.m_transform.m_z;
+						}
+						else
+						{
+							return true;
+						}
+					}
+					else if ( aSpriteData.m_useAlpha )
+					{
+						return false;
+					}
+					else
+					{
+						return false;
+					}*/
+
+					return bSpriteData.m_useAlpha & ( !aSpriteData.m_useAlpha | _a.m_transform.m_z < _b.m_transform.m_z );
+				}
+			);
 
 			// For each texture, set up buffer and binding and draw sprites
 			Resource::TextureID currentTexture;

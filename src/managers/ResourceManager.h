@@ -84,6 +84,7 @@ namespace Core
 			Vec2 m_dimensions;
 			Vec2 m_dimensionsUV;
 			Vec2 m_topLeftUV;
+			bool m_useAlpha{ false };
 		};
 
 		//-------------------------------------------------

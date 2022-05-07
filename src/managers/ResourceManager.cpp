@@ -773,6 +773,15 @@ namespace Core
 				kaError("sprite file missing top-left UV");
 				return false;
 			}
+			
+			// line 4: alpha
+			if ( std::getline( spriteFile, line ) )
+			{
+				if ( line == "alpha" )
+				{
+					newSprite.m_useAlpha = true;
+				}
+			}
 
 			newSprite.m_dimensionsUV = newSprite.m_dimensions;
 			newSprite.m_dimensionsUV.x /= textureWidth;

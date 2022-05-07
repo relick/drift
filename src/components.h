@@ -19,3 +19,4 @@
 // Game
 #include "components/Game/PlayerComponents.h"
 #include "components/Game/UIComponents.h"
+#include "components/Game/GinRummyComponents.h"

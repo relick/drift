@@ -50,7 +50,7 @@ Card Discard::CheckTop
 )	const
 {
 	kaAssert( m_topDiscard.has_value() );
-	return m_topDiscard.value();
+	return *m_topDiscard;
 }
 
 void Discard::Add
@@ -66,7 +66,7 @@ void Discard::Add
 Card Discard::PickUpTop()
 {
 	kaAssert( m_topDiscard.has_value() );
-	Card const top = m_topDiscard.value();
+	Card const top = *m_topDiscard;
 	m_topDiscard = m_secondDiscard;
 	m_discardPileSize--;
 	return top;
@@ -172,7 +172,7 @@ std::vector<Card> Hand::GetJunk
 
 	if ( m_drawnCard.has_value() )
 	{
-		junk.push_back( m_drawnCard.value() );
+		junk.push_back( *m_drawnCard );
 	}
 
 	for ( std::vector<Card> const& l : _matches )

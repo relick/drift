@@ -88,7 +88,7 @@ struct Hand
 	std::array<Card, 10> m_cards;
 	std::optional<Card> m_drawnCard;
 	
-	bool MatchesDrawnCard( Card const& _other ) const { return m_drawnCard.has_value() && m_drawnCard.value() == _other; }
+	bool MatchesDrawnCard( Card const& _other ) const { return m_drawnCard.has_value() && *m_drawnCard == _other; }
 
 	std::vector<Card> GetBestJunkCards( bool _includeDrawn ) const;
 
@@ -135,19 +135,28 @@ enum class RoundState : uint8
 
 	Knock,
 	MakeCombinations,
+
+	End,
 };
 
 struct GameData
 {
 	GameState m_gameState{ GameState::PreGame };
 
-	Player m_p1;
-	Player m_p2;
+	std::array< Player, 2 > m_players;
+	bool m_aiIsDealer{ true };
+	bool m_aiIsKnocker{ false };
 
 	RoundState m_roundState;
 
 	Deck m_deck;
 	Discard m_discard;
+
+	bool m_animating{ false };
+	Vec1 m_animatingTime{ 0.0f };
+
+	void Animate() { m_animating = true; m_animatingTime = 0.0f; }
+	bool Ready() const { return !m_animating; }
 };
 
 struct Mat
@@ -159,6 +168,20 @@ struct GameRender
 {
 	std::array<Core::Resource::SpriteID, 52> m_cardFront;
 	Core::Resource::SpriteID m_cardBack;
+	usize m_highlightedPlayerCard{ ~0u };
+
+	struct HeldCard
+	{
+		Vec2 m_grabPoint;
+		usize m_cardI;
+	};
+
+	std::optional< HeldCard > m_holdingCard;
+};
+
+struct PlayerInteraction
+{
+	Vec2 m_initialHoldingCardPos;
 };
 
 }

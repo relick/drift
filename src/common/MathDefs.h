@@ -92,6 +92,12 @@ constexpr T Normalise(T const& _t)
 	return glm::normalize( _t );
 }
 
+template< typename T >
+constexpr T Lerp( T const& _a, T const& _b, Vec1 const& _t )
+{
+	return glm::lerp( _a, _b, _t );
+}
+
 // d3d needs off-centre orthographic projection, gl needs normalised.
 #if SOKOL_D3D11
 #define PLATFORM_GLM_ORTHO glm::orthoRH_ZO

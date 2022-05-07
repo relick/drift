@@ -27,6 +27,8 @@ namespace Core
 			Debug_LowerCamera,
 			Debug_EnableCamera,
 
+			GinRummy_Select,
+
 			Count,
 		};
 
@@ -49,7 +51,7 @@ namespace Core
 			usize key{ 0 /* keycode invalid */ };
 		};
 
-		void Setup();
+		void Setup( int32 _renderAreaWidth, int32 _renderAreaHeight );
 		void Update();
 		void Event(sapp_event const* _event);
 
@@ -60,6 +62,7 @@ namespace Core
 		bool PressedOnce(Action _action);
 		Vec2 GetMouseDelta();
 		Vec1 GetScrollDelta();
+		Vec2 GetMousePos(); // Render area position
 		void LockMouse( bool _lock );
 	}
 }

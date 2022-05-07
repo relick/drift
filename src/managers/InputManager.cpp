@@ -27,6 +27,8 @@ namespace Core
 			{
 				Vec2 dMouseMovement{ 0.0f, 0.0f };
 				Vec1 dMouseScroll{ 0.0f };
+				Vec2 mouseLoc{ 0.0f, 0.0f };
+				Vec2 mouseLocRTRelative{ 0.0f, 0.0f };
 			};
 
 			MouseFrame thisFrame{};
@@ -36,11 +38,18 @@ namespace Core
 		};
 
 		static InputState g_inputState{};
+		static Vec2 g_renderArea;
 
 		static std::array<std::array<ActionKey, static_cast<usize>(KeyIndex::Count)>, static_cast<usize>(Action::Count)> g_actions;
 
-		void Setup()
+		void Setup
+		(
+			int32 _renderAreaWidth,
+			int32 _renderAreaHeight
+		)
 		{
+			g_renderArea = Vec2{ ( Vec1 )_renderAreaWidth, ( Vec1 )_renderAreaHeight };
+
 			// TODO: serialise
 			// Defaults
 			g_actions[static_cast<usize>(Action::Quit)][0].keyType = KeyType::Keyboard;
@@ -107,6 +116,8 @@ namespace Core
 			g_actions[static_cast<usize>(Action::Debug_EnableCamera)][0].keyType = KeyType::Keyboard;
 			g_actions[static_cast<usize>(Action::Debug_EnableCamera)][0].key = SAPP_KEYCODE_KP_ENTER;
 
+			g_actions[ static_cast< usize >( Action::GinRummy_Select ) ][ 0 ].keyType = KeyType::Mouse;
+			g_actions[ static_cast< usize >( Action::GinRummy_Select ) ][ 0 ].key = SAPP_MOUSEBUTTON_LEFT;
 		}
 
 		// Run every frame
@@ -130,6 +141,8 @@ namespace Core
 
 			g_inputState.thisFrame = g_inputState.nextFrame;
 			g_inputState.nextFrame = InputState::MouseFrame{};
+			g_inputState.nextFrame.mouseLoc = g_inputState.thisFrame.mouseLoc;
+			g_inputState.nextFrame.mouseLocRTRelative = g_inputState.thisFrame.mouseLocRTRelative;
 		}
 
 		// Receive events from sapp
@@ -162,8 +175,9 @@ namespace Core
 			// analogue movement
 			case SAPP_EVENTTYPE_MOUSE_MOVE:
 			{
-				g_inputState.nextFrame.dMouseMovement.x += _event->mouse_dx;
-				g_inputState.nextFrame.dMouseMovement.y += _event->mouse_dy;
+				g_inputState.nextFrame.dMouseMovement += Vec2{ _event->mouse_dx, _event->mouse_dy };
+				g_inputState.nextFrame.mouseLoc = Vec2{ _event->mouse_x, _event->mouse_y };
+				g_inputState.nextFrame.mouseLocRTRelative = g_renderArea * g_inputState.nextFrame.mouseLoc / Vec2{ sapp_width(), sapp_height() };
 				break;
 			}
 			case SAPP_EVENTTYPE_MOUSE_SCROLL:
@@ -246,6 +260,11 @@ namespace Core
 		Vec1 GetScrollDelta()
 		{
 			return g_inputState.thisFrame.dMouseScroll;
+		}
+
+		Vec2 GetMousePos()
+		{
+			return g_inputState.thisFrame.mouseLocRTRelative;
 		}
 
 		void LockMouse

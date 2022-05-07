@@ -100,7 +100,7 @@ void Initialise()
 		Core::Resource::Setup();
 		Core::Sound::Setup();
 		Core::Physics::Setup();
-		Core::Input::Setup();
+		Core::Input::Setup(g_renderAreaWidth, g_renderAreaHeight);
 	}
 
 	// game setup

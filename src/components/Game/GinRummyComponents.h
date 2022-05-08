@@ -7,6 +7,7 @@
 
 #include <array>
 #include <optional>
+#include <variant>
 
 namespace Game
 {
@@ -127,11 +128,12 @@ enum class RoundState : uint8
 {
 	Deal,
 
-	NonDealerChoice,
-	DealerChoice,
+	AIChoice,
+	AIDiscard,
+	AITurn,
 
-	NonDealerTurn,
-	DealerTurn,
+	PlayerChoice,
+	PlayerTurn,
 
 	Knock,
 	MakeCombinations,
@@ -139,12 +141,49 @@ enum class RoundState : uint8
 	End,
 };
 
+struct AnimDeal
+{
+	// Special animation that handles itself
+	Vec1 m_animatingTime{ 0.0f };
+};
+
+struct AnimMoveCard
+{
+	Vec1 m_animatingTime{ 0.0f };
+	Vec2 m_start;
+	Vec2 m_end;
+
+	std::optional<Card> m_cardValue;
+	std::array<bool, 2> m_hideDrawn{ false };
+	bool m_hideTopDiscard{ false };
+	bool m_hideTopDeck{ false };
+};
+
+struct AnimAIDelay
+{
+	// A little time for pondering
+	Vec1 m_animatingTime{ 0.0f };
+};
+
+enum AnimOptions : usize
+{
+	eAnimDeal,
+	eAnimMoveCard,
+	eAnimAIDelay,
+};
+
+using Animation = std::variant<
+	AnimDeal,
+	AnimMoveCard,
+	AnimAIDelay
+>;
+
 struct GameData
 {
 	GameState m_gameState{ GameState::PreGame };
 
 	std::array< Player, 2 > m_players;
-	bool m_aiIsDealer{ true };
+	bool m_aiIsDealer{ false };
 	bool m_aiIsKnocker{ false };
 
 	RoundState m_roundState;
@@ -152,11 +191,10 @@ struct GameData
 	Deck m_deck;
 	Discard m_discard;
 
-	bool m_animating{ false };
-	Vec1 m_animatingTime{ 0.0f };
+	std::vector<Animation> m_animQueue;
 
-	void Animate() { m_animating = true; m_animatingTime = 0.0f; }
-	bool Ready() const { return !m_animating; }
+	void QueueAnim(Animation&& _a) { m_animQueue.emplace_back( std::move( _a ) ); }
+	bool Ready() const { return m_animQueue.empty(); }
 };
 
 struct Mat

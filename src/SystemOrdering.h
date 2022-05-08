@@ -23,6 +23,7 @@ X( FRAME_START, AnyThread ) \
 		/* Game section - can be parallel */ \
 	X( GAME_START, AnyThread ) \
 		X( GAME, AnyThread ) \
+		X( GAME2, AnyThread ) \
 		X( RENDER, MainThread ) /* = GAME, */ /* todo can't do this, must run on main thread... */ /* run bulk of the render code during the GAME section. */ \
 		X( RENDER_PASS_END, MainThread ) \
 		\

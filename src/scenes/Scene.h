@@ -2,6 +2,8 @@
 
 #include "common.h"
 
+#include <string>
+
 namespace Core::Scene
 {
 	// Interface class for setting up scenes and switching between them

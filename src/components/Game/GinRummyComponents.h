@@ -96,13 +96,15 @@ struct Hand
 	std::vector<Card> GetJunk
 	(
 		std::vector<std::vector<Card>> const& _matches,
-		std::vector<std::vector<Card>> const& _splitRuns
+		std::vector<std::vector<Card>> const& _splitRuns,
+		bool _includeDrawn
 	)	const;
 
 	std::pair<uint32, std::vector<Card>> GetBestJunkCards_TestCombos
 	(
 		std::vector<std::vector<Card>> _matches,
 		std::vector<std::vector<Card>> const& _splitRuns,
+		bool _includeDrawn,
 		usize _matchesN
 	)	const;
 
@@ -130,7 +132,8 @@ enum class RoundState : uint8
 
 	AIChoice,
 	AIDiscard,
-	AITurn,
+	AITurn1,
+	AITurn2,
 
 	PlayerChoice,
 	PlayerTurn,
@@ -207,6 +210,8 @@ struct GameRender
 	std::array<Core::Resource::SpriteID, 52> m_cardFront;
 	Core::Resource::SpriteID m_cardBack;
 	usize m_highlightedPlayerCard{ ~0u };
+	std::optional<uint32> m_playerHandValue;
+	std::optional<uint32> m_playerFullHandValue;
 
 	struct HeldCard
 	{

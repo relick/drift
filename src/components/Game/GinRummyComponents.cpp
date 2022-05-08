@@ -124,8 +124,8 @@ std::vector<Card> Hand::GetBestJunkCards
 				if ( run.size() >= 3 )
 				{
 					runs.push_back( run );
-					run.clear();
 				}
+				run.clear();
 				runStarted = false;
 			}
 		}
@@ -143,7 +143,7 @@ std::vector<Card> Hand::GetBestJunkCards
 	if ( matches.empty() || runs.empty() )
 	{
 		// All matches or all runs means no overlaps.
-		return GetJunk( matches, runs );
+		return GetJunk( matches, runs, _includeDrawn );
 	}
 
 	// Split runs into overlapping groups of 3.
@@ -158,19 +158,20 @@ std::vector<Card> Hand::GetBestJunkCards
 		}
 	}
 
-	return GetBestJunkCards_TestCombos( matches, splitRuns, 0 ).second;
+	return GetBestJunkCards_TestCombos( matches, splitRuns, _includeDrawn, 0 ).second;
 }
 
 std::vector<Card> Hand::GetJunk
 (
 	std::vector<std::vector<Card>> const& _matches,
-	std::vector<std::vector<Card>> const& _splitRuns
+	std::vector<std::vector<Card>> const& _splitRuns,
+	bool _includeDrawn
 )	const
 {
 	std::vector<Card> junk{ m_cards.begin(), m_cards.end() };
 	std::vector<Card> allMatches;
 
-	if ( m_drawnCard.has_value() )
+	if ( _includeDrawn && m_drawnCard.has_value() )
 	{
 		junk.push_back( *m_drawnCard );
 	}
@@ -212,22 +213,23 @@ std::pair<uint32, std::vector<Card>> Hand::GetBestJunkCards_TestCombos
 (
 	std::vector<std::vector<Card>> _matches,
 	std::vector<std::vector<Card>> const& _splitRuns,
+	bool _includeDrawn,
 	usize _matchesN
 )	const
 {
 	if ( _matchesN >= _matches.size() )
 	{
-		auto junk = GetJunk( _matches, _splitRuns );
+		auto junk = GetJunk( _matches, _splitRuns, _includeDrawn );
 		return { CalculateValue( junk ), junk };
 	}
 	else
 	{
-		auto include = GetBestJunkCards_TestCombos( _matches, _splitRuns, _matchesN + 1 );
+		auto include = GetBestJunkCards_TestCombos( _matches, _splitRuns, _includeDrawn, _matchesN + 1 );
 
 		_matches.erase( _matches.begin() + _matchesN );
-		auto exclude = GetBestJunkCards_TestCombos( _matches, _splitRuns, _matchesN );
+		auto exclude = GetBestJunkCards_TestCombos( _matches, _splitRuns, _includeDrawn, _matchesN );
 
-		if ( include.first > exclude.first )
+		if ( include.first < exclude.first )
 		{
 			return include;
 		}

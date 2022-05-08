@@ -5,6 +5,7 @@
 
 #include "managers/RenderManager.h"
 #include "managers/InputManager.h"
+#include "managers/TextManager.h"
 
 namespace Game
 {
@@ -15,12 +16,23 @@ static const Vec2 c_cardSize{ 46.0f, 64.0f };
 static constexpr Vec1 c_pileMaxHeight{ 16.0f };
 static constexpr Vec1 c_pileCardHeight{ c_pileMaxHeight / 52.0f };
 static constexpr Vec1 c_handCardSeparation{ 20.0f };
+
 static const Vec2 c_deckStart{ 40.0f, 88.0f };
 static const Vec2 c_discardStart{ 234.0f, 88.0f };
+
 static const Vec2 c_playerStartLoc{ 40.0f, 170.0f };
 static const Vec2 c_playerDrawnLoc = c_playerStartLoc + Vec2{ 10.5f * c_handCardSeparation, 0.0f };
+static const Vec2 c_handValueTextPos = Vec2{ 5.0f, c_playerStartLoc.y + 15.0f };
+
 static const Vec2 c_aiStartLoc{ 234.0f, 6.0f };
 static const Vec2 c_aiDrawnLoc = c_aiStartLoc - Vec2{ 10.5f * c_handCardSeparation, 0.0f };
+
+static const Rect2D c_passBox{ Vec2{c_discardStart.x - 50, 156}, Vec2{c_discardStart.x, 166} };
+static const Rect2D c_takeBox{ Vec2{c_discardStart.x, 156}, Vec2{c_discardStart.x + 50, 166} };
+static const Rect2D c_drawBox{ Vec2{c_deckStart.x, 156}, Vec2{c_deckStart.x + 50, 166} };
+static const Rect2D c_knockBox{ Vec2{135, 156}, Vec2{185, 166} };
+static const Rect2D c_discardDropBox{ Vec2{221, 84}, Vec2{293, 156} };
+
 static constexpr Vec1 c_animSpeed{ 6.0f };
 
 static void MakeAIDiscard
@@ -95,6 +107,13 @@ static bool MakeAIChoice
 	return false;
 }
 
+static Vec2 GetDeckTop
+(
+	Game::GinRummy::GameData const& _gameData
+)
+{
+	return c_deckStart - Vec2{ 0, ( Vec1 )_gameData.m_deck.Size() * c_pileCardHeight };
+}
 static Vec2 GetDiscardTop
 (
 	Game::GinRummy::GameData const& _gameData
@@ -179,14 +198,37 @@ static bool ProcessRound
 
 		break;
 	}
-	case RoundState::AITurn:
+	case RoundState::AITurn1:
 	{
 		bool const madeChoice = MakeAIChoice( _gameData );
 		if ( !madeChoice )
 		{
 			_gameData.m_players[ 1 ].m_hand.m_drawnCard = _gameData.m_deck.Draw();
 		}
-		bool const bigGin = _gameData.m_players[ 1 ].m_hand.CalculateValue( true ) == 0;
+
+		_gameData.m_roundState = RoundState::AITurn2;
+
+		AnimMoveCard anim;
+		anim.m_start = madeChoice ? GetDiscardTop( _gameData ) : GetDeckTop( _gameData );
+		anim.m_end = c_aiDrawnLoc;
+		anim.m_hideDrawn[ 1 ] = true;
+		_gameData.QueueAnim( std::move( anim ) );
+		_gameData.QueueAnim( AnimAIDelay{} );
+		break;
+	}
+	case RoundState::AITurn2:
+	{
+		// todo proper game ending but just play for now
+		MakeAIDiscard( _gameData );
+		_gameData.m_roundState = RoundState::PlayerTurn;
+
+		AnimMoveCard anim;
+		anim.m_start = c_aiDrawnLoc;
+		anim.m_end = GetDiscardTop( _gameData );
+		anim.m_hideTopDiscard = true;
+		_gameData.QueueAnim( std::move( anim ) );
+
+		/*bool const bigGin = _gameData.m_players[1].m_hand.CalculateValue(true) == 0;
 		if ( bigGin )
 		{
 			_gameData.m_aiIsKnocker = true;
@@ -205,7 +247,7 @@ static bool ProcessRound
 			{
 				_gameData.m_roundState = RoundState::PlayerTurn;
 			}
-		}
+		}*/
 		break;
 	}
 
@@ -316,13 +358,17 @@ static void DrawDeck
 		deckPos.m_pos = c_deckStart;
 		for ( usize cardI = 0; cardI < _gameData.m_deck.Size(); ++cardI )
 		{
-			if ( _hideTopCard && cardI == _gameData.m_deck.Size() - 1 )
+			if ( cardI == _gameData.m_deck.Size() - 1 )
 			{
-				break;
+				if ( _hideTopCard )
+				{
+					break;
+				}
+				deckPos.m_pos = glm::floor( deckPos.m_pos );
 			}
 			Core::Render::AddSpriteToScene( _gameRender.m_cardBack, deckPos );
 			deckPos.m_pos.y -= c_pileCardHeight;
-			deckPos.m_z += 1.0f / 52.0f;
+			deckPos.m_z += 1.0f / 108.0f;
 		}
 	}
 }
@@ -348,14 +394,21 @@ static void DrawDiscard
 					break;
 				}
 				kaAssert( _gameData.m_discard.m_topDiscard.has_value() );
+				discardPos.m_pos = glm::floor( discardPos.m_pos );
 				Core::Render::AddSpriteToScene( _gameRender.m_cardFront[ _gameData.m_discard.CheckTop().DeckIndex() ], discardPos );
+			}
+			else if ( cardI == _gameData.m_discard.Size() - 2 )
+			{
+				kaAssert( _gameData.m_discard.m_secondDiscard.has_value() );
+				discardPos.m_pos = glm::floor( discardPos.m_pos );
+				Core::Render::AddSpriteToScene( _gameRender.m_cardFront[ _gameData.m_discard.m_secondDiscard->DeckIndex() ], discardPos );
 			}
 			else
 			{
 				Core::Render::AddSpriteToScene( _gameRender.m_cardFront[ 0 ], discardPos );
-				discardPos.m_pos.y -= c_pileCardHeight;
-				discardPos.m_z += 1.0f / 52.0f;
 			}
+			discardPos.m_pos.y -= c_pileCardHeight;
+			discardPos.m_z += 1.0f / 108.0f;
 		}
 	}
 }
@@ -368,8 +421,12 @@ static void DrawPlayerHand
 	bool _hideDrawnCard = false
 )
 {
+	_gameRender.m_playerHandValue = _gameData.m_players[ 0 ].m_hand.CalculateValue( false );
+	_gameRender.m_playerFullHandValue = _gameData.m_players[ 0 ].m_hand.CalculateValue( true );
+
 	Trans2D cardPos;
 	cardPos.m_pos = c_playerStartLoc;
+	cardPos.m_z = 0.5f;
 	for ( usize cardI = 0; cardI < 10; ++cardI )
 	{
 		if ( _gameRender.m_holdingCard.has_value() )
@@ -379,7 +436,7 @@ static void DrawPlayerHand
 				Trans2D heldCardTrans;
 				heldCardTrans.m_pos = glm::floor( Core::Input::GetMousePos() - _gameRender.m_holdingCard->m_grabPoint );
 				heldCardTrans.m_z = cardPos.m_z;
-				cardPos.m_z += 1.0f / 52.0f;
+				cardPos.m_z += 1.0f / 108.0f;
 				Core::Render::AddSpriteToScene( _gameRender.m_cardFront[ _gameData.m_players[ 0 ].m_hand.m_cards[ cardI ].DeckIndex() ], heldCardTrans );
 				cardPos.m_pos.x += c_handCardSeparation;
 				continue;
@@ -393,11 +450,23 @@ static void DrawPlayerHand
 		Core::Render::AddSpriteToScene( _gameRender.m_cardFront[ _gameData.m_players[ 0 ].m_hand.m_cards[ cardI ].DeckIndex() ], cardPos );
 		cardPos.m_pos.x += c_handCardSeparation;
 		cardPos.m_pos.y = c_playerStartLoc.y;
-		cardPos.m_z += 1.0f / 52.0f;
+		cardPos.m_z += 1.0f / 108.0f;
 	}
 
 	if ( !_hideDrawnCard && _gameData.m_players[ 0 ].m_hand.m_drawnCard.has_value() )
 	{
+		if ( _gameRender.m_holdingCard.has_value() )
+		{
+			if ( 10 == _gameRender.m_holdingCard->m_cardI )
+			{
+				Trans2D heldCardTrans;
+				heldCardTrans.m_pos = glm::floor( Core::Input::GetMousePos() - _gameRender.m_holdingCard->m_grabPoint );
+				heldCardTrans.m_z = cardPos.m_z;
+				Core::Render::AddSpriteToScene( _gameRender.m_cardFront[ _gameData.m_players[ 0 ].m_hand.m_drawnCard->DeckIndex() ], heldCardTrans );
+				return;
+			}
+		}
+
 		cardPos.m_pos = c_playerDrawnLoc;
 		Core::Render::AddSpriteToScene( _gameRender.m_cardFront[ _gameData.m_players[ 0 ].m_hand.m_drawnCard->DeckIndex() ], cardPos );
 	}
@@ -417,7 +486,7 @@ static void DrawAIHand
 	{
 		Core::Render::AddSpriteToScene( _gameRender.m_cardBack, cardPos );
 		cardPos.m_pos.x -= c_handCardSeparation;
-		cardPos.m_z += 1.0f / 52.0f;
+		cardPos.m_z += 1.0f / 108.0f;
 	}
 
 	if ( !_hideDrawnCard && _gameData.m_players[ 1 ].m_hand.m_drawnCard.has_value() )
@@ -434,6 +503,9 @@ static void DrawGame
 	Game::GinRummy::GameRender& _gameRender
 )
 {
+	_gameRender.m_playerHandValue = std::nullopt;
+	_gameRender.m_playerFullHandValue = std::nullopt;
+
 	// Debug draw whole deck
 	if constexpr ( false )
 	{
@@ -621,6 +693,46 @@ static void DrawGame
 	}
 }
 
+static void DrawText
+(
+	Core::MT_Only& _mt,
+	Core::FrameData const& _fd,
+	Game::GinRummy::GameData const& _gameData,
+	Game::GinRummy::GameRender const& _gameRender
+)
+{
+	if ( _gameRender.m_playerFullHandValue.has_value() )
+	{
+		Core::Render::Text::Write( c_handValueTextPos + Vec2{ 0, 10.0f }, "VALUE", 10.0f, Colour::black );
+		Core::Render::Text::Write( c_handValueTextPos + Vec2{ 0, 20.0f }, std::format( "{:d}", *_gameRender.m_playerFullHandValue ).c_str(), 10.0f, Colour::black );
+	}
+
+	if ( _gameData.m_roundState == RoundState::PlayerChoice )
+	{
+		if ( !_gameData.m_players[ 0 ].m_hand.m_drawnCard.has_value() )
+		{
+			Core::Render::Text::Write( c_passBox.m_min + Vec2{ 0, 10.0f }, "PASS", 10.0f, Colour::black );
+			Core::Render::Text::Write( c_takeBox.m_min + Vec2{ 0, 10.0f }, "TAKE", 10.0f, Colour::black );
+		}
+	}
+
+	if ( _gameData.m_roundState == RoundState::PlayerTurn )
+	{
+		if ( _gameData.m_players[ 0 ].m_hand.m_drawnCard.has_value() )
+		{
+			if ( _gameRender.m_playerHandValue.value_or( ~0u ) <= 10 || _gameRender.m_playerFullHandValue.value_or( ~0u ) == 0 )
+			{
+				Core::Render::Text::Write( c_knockBox.m_min + Vec2{ 0, 10.0f }, "KNOCK", 10.0f, Colour::black );
+			}
+		}
+		else
+		{
+			Core::Render::Text::Write( c_drawBox.m_min + Vec2{ 0, 10.0f }, "DRAW", 10.0f, Colour::black );
+			Core::Render::Text::Write( c_takeBox.m_min + Vec2{ 0, 10.0f }, "TAKE", 10.0f, Colour::black );
+		}
+	}
+}
+
 static void HandleInteraction
 (
 	Game::GinRummy::GameData& _gameData,
@@ -628,24 +740,55 @@ static void HandleInteraction
 	Game::GinRummy::PlayerInteraction& _interaction
 )
 {
+	Vec2 const mousePos = Core::Input::GetMousePos();
 	if ( _gameData.m_gameState == GameState::Round )
 	{
 		// Allow rearranging if in turn phases
 		if ( _gameData.m_roundState == RoundState::PlayerChoice || _gameData.m_roundState == RoundState::PlayerTurn )
 		{
+			bool const selectHeld = Core::Input::Pressed( Core::Input::Action::GinRummy_Select );
+			bool highlighted = false;
+
 			Rect2D cardBox;
+			if ( _gameData.m_players[ 0 ].m_hand.m_drawnCard.has_value() )
+			{
+				cardBox.m_min = c_playerDrawnLoc;
+				cardBox.m_max = cardBox.m_min + c_cardSize;
+
+				if ( 10 == _gameRender.m_highlightedPlayerCard )
+				{
+					cardBox.m_min.y = c_playerDrawnLoc.y - 10;
+				}
+				if ( cardBox.Contains( mousePos ) )
+				{
+					if ( !highlighted )
+					{
+						_gameRender.m_highlightedPlayerCard = 10;
+						highlighted = true;
+					}
+					if ( selectHeld )
+					{
+						if ( !_gameRender.m_holdingCard.has_value() )
+						{
+							_interaction.m_initialHoldingCardPos = mousePos;
+							_gameRender.m_holdingCard = GameRender::HeldCard{
+								mousePos - cardBox.m_min,
+								10,
+							};
+						}
+					}
+				}
+			}
+
 			cardBox.m_min = c_playerStartLoc + Vec2{ 9 * c_handCardSeparation, 0 };
 			cardBox.m_max = cardBox.m_min + c_cardSize;
 
-			bool const selectHeld = Core::Input::Pressed( Core::Input::Action::GinRummy_Select );
-
-			bool highlighted = false;
 			for ( usize cardIN = 10; cardIN > 0; --cardIN )
 			{
 				usize cardI = cardIN - 1;
 				if ( selectHeld && _gameRender.m_holdingCard.has_value() && cardI == _gameRender.m_holdingCard->m_cardI )
 				{
-					Vec2 const distDragged = Core::Input::GetMousePos() - _interaction.m_initialHoldingCardPos;
+					Vec2 const distDragged = mousePos - _interaction.m_initialHoldingCardPos;
 					if ( distDragged.x > c_handCardSeparation && cardI < 9 )
 					{
 						std::swap( _gameData.m_players[ 0 ].m_hand.m_cards[ cardI ], _gameData.m_players[ 0 ].m_hand.m_cards[ cardI + 1 ] );
@@ -664,7 +807,7 @@ static void HandleInteraction
 				{
 					cardBox.m_min.y = c_playerStartLoc.y - 10;
 				}
-				if ( cardBox.Contains( Core::Input::GetMousePos() ) )
+				if ( cardBox.Contains( mousePos ) )
 				{
 					if ( !highlighted )
 					{
@@ -675,9 +818,9 @@ static void HandleInteraction
 					{
 						if ( !_gameRender.m_holdingCard.has_value() )
 						{
-							_interaction.m_initialHoldingCardPos = Core::Input::GetMousePos();
+							_interaction.m_initialHoldingCardPos = mousePos;
 							_gameRender.m_holdingCard = GameRender::HeldCard{
-								Core::Input::GetMousePos() - cardBox.m_min,
+								mousePos - cardBox.m_min,
 								cardI,
 							};
 						}
@@ -690,6 +833,23 @@ static void HandleInteraction
 
 			if ( !selectHeld )
 			{
+				if ( _gameRender.m_holdingCard.has_value() && _gameData.m_players[0].m_hand.m_drawnCard.has_value() && c_discardDropBox.Contains(mousePos) )
+				{
+					if ( _gameRender.m_holdingCard->m_cardI == 10 )
+					{
+						_gameData.m_discard.Add( *_gameData.m_players[ 0 ].m_hand.m_drawnCard );
+					}
+					else
+					{
+						_gameData.m_discard.Add( _gameData.m_players[ 0 ].m_hand.m_cards[ _gameRender.m_holdingCard->m_cardI ] );
+						_gameData.m_players[ 0 ].m_hand.m_cards[ _gameRender.m_holdingCard->m_cardI ] = *_gameData.m_players[ 0 ].m_hand.m_drawnCard;
+					}
+					_gameData.m_players[ 0 ].m_hand.m_drawnCard = std::nullopt;
+
+					_gameData.m_roundState = RoundState::AITurn1;
+					_gameData.QueueAnim( AnimAIDelay{} );
+				}
+
 				_gameRender.m_holdingCard = std::nullopt;
 			}
 
@@ -698,16 +858,76 @@ static void HandleInteraction
 				_gameRender.m_highlightedPlayerCard = ~0u;
 			}
 		}
+
+		if ( _gameData.m_roundState == RoundState::PlayerChoice )
+		{
+			if ( !_gameData.m_players[ 0 ].m_hand.m_drawnCard.has_value() )
+			{
+				bool const selected = Core::Input::PressedOnce( Core::Input::Action::GinRummy_Select );
+
+				if ( c_passBox.Contains( mousePos ) && selected )
+				{
+					_gameData.m_roundState = _gameData.m_aiIsDealer ? RoundState::AIChoice : RoundState::AITurn1;
+					_gameData.QueueAnim( AnimAIDelay{} );
+				}
+
+				if ( c_takeBox.Contains( mousePos ) && selected )
+				{
+					_gameData.m_players[ 0 ].m_hand.m_drawnCard = _gameData.m_discard.PickUpTop();
+				}
+			}
+		}
+
+		if ( _gameData.m_roundState == RoundState::PlayerTurn )
+		{
+			bool const selected = Core::Input::PressedOnce( Core::Input::Action::GinRummy_Select );
+			if ( _gameData.m_players[ 0 ].m_hand.m_drawnCard.has_value() )
+			{
+				if ( _gameRender.m_playerHandValue.value_or( ~0u ) <= 10 || _gameRender.m_playerFullHandValue.value_or( ~0u ) == 0 )
+				{
+					if ( c_knockBox.Contains( mousePos ) && selected )
+					{
+						_gameData.m_aiIsKnocker = false;
+						_gameData.m_roundState = RoundState::Knock;
+					}
+				}
+			}
+			else
+			{
+				if ( c_drawBox.Contains( mousePos ) && selected )
+				{
+					AnimMoveCard anim;
+					anim.m_start = GetDeckTop( _gameData );
+					anim.m_end = c_playerDrawnLoc;
+					anim.m_hideDrawn[ 0 ] = true;
+					_gameData.QueueAnim( std::move( anim ) );
+
+					_gameData.m_players[ 0 ].m_hand.m_drawnCard = _gameData.m_deck.Draw();
+				}
+
+				if ( c_takeBox.Contains( mousePos ) && selected )
+				{
+					AnimMoveCard anim;
+					anim.m_start = GetDiscardTop( _gameData );
+					anim.m_end = c_playerDrawnLoc;
+					anim.m_hideDrawn[ 0 ] = true;
+					_gameData.QueueAnim( std::move( anim ) );
+
+					_gameData.m_players[ 0 ].m_hand.m_drawnCard = _gameData.m_discard.PickUpTop();
+				}
+			}
+		}
 	}
 }
 
 void Setup()
 {
 	Core::MakeSystem<Sys::GAME>( GameSystem );
-	Core::MakeSystem<Sys::GAME>( HandleInteraction );
+	Core::MakeSystem<Sys::GAME2>( HandleInteraction );
 
 	Core::MakeSystem<Sys::RENDER_QUEUE>( DrawMat );
 	Core::MakeSystem<Sys::RENDER_QUEUE>( DrawGame );
+	Core::MakeSystem<Sys::TEXT>( DrawText );
 }
 
 }

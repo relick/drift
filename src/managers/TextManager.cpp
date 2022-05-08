@@ -157,4 +157,36 @@ namespace Core::Render::Text
 	{
 		return Write(g_defaultFont, _tlPos, _text, _size, _col);
 	}
+
+	float GetWidth
+	(
+		Resource::FontID _font,
+		char const* _text,
+		Vec1 _size
+	)
+	{
+		if ( !g_fonsContext )
+		{
+			return false;
+		}
+		if ( _font.GetValue() >= g_fonsFontCount )
+		{
+			return false;
+		}
+
+		Vec2 const renderAreaToContextWindow = fontState.rfd.contextWindow.f / fontState.rfd.renderArea.f;
+
+		fonsSetFont( g_fonsContext, _font.GetValue() );
+		fonsSetSize( g_fonsContext, _size* renderAreaToContextWindow.y );
+		return fonsTextBounds( g_fonsContext, 0, 0, _text, nullptr, nullptr );
+	}
+
+	float GetWidth
+	(
+		char const* _text,
+		Vec1 _size
+	)
+	{
+		return GetWidth( g_defaultFont, _text, _size );
+	}
 }

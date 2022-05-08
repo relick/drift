@@ -33,6 +33,7 @@ namespace Colour
 		else if constexpr (_component == Component::A) { return static_cast<uint8>((_rgba >> detail::aShift) & componentMax); }
 	}
 
+	constexpr uint32 black = RGBA( 0, 0, 0 );
 	constexpr uint32 white = RGBA(componentMax, componentMax, componentMax);
 	constexpr uint32 red = RGBA(componentMax, 0, 0);
 	constexpr uint32 green = RGBA(0, componentMax, 0);

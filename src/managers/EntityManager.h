@@ -194,7 +194,7 @@ namespace Core
 	inline constexpr bool FuncMT_Only = false;
 
 	template< typename T_Ret, typename... T_Args >
-	inline constexpr bool FuncMT_Only< T_Ret( T_Args... ) > = ( std::is_same_v< Core::MT_Only&, T_Args > || ... );
+	inline constexpr bool FuncMT_Only< T_Ret( * )( T_Args... ) > = ( std::is_same_v< Core::MT_Only&, T_Args > || ... );
 
 	template< typename T_SystemFn >
 	constexpr bool AtLeastOneArgMT_Only()

@@ -24,4 +24,8 @@ namespace Core::Render::Text
 
 	bool Write(Resource::FontID _font, Vec2 _tlPos, char const* _text, Vec1 _size = 16.0f, uint32 _col = Colour::green);
 	bool Write(Vec2 _tlPos, char const* _text, Vec1 _size = 16.0f, uint32 _col = Colour::white);
+
+	// Probably slow
+	float GetWidth( Resource::FontID _font, char const* _text, Vec1 _size = 16.0f );
+	float GetWidth( char const* _text, Vec1 _size = 16.0f );
 }

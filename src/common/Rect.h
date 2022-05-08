@@ -21,6 +21,8 @@ struct Rect2DBase
 			;
 	}
 
+	Vec2 Mid() const { return ( m_min + m_max ) / T( 2 ); }
+
 	Rect2DBase() = default;
 	Rect2DBase( Vec2 const& _min, Vec2 const& _max )
 		: m_min( _min )

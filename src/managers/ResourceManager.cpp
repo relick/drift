@@ -1,5 +1,7 @@
 #include "ResourceManager.h"
 
+#include "common/StaticVector.h"
+
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -24,7 +26,7 @@ static absl::flat_hash_map<Core::Resource::TextureID, Core::Resource::TextureDat
 static absl::flat_hash_map<Core::Resource::ModelID, Core::Resource::ModelData> g_models;
 
 static Core::Resource::SpriteID::ValueType g_nextSpriteID = 0;
-static absl::flat_hash_map<Core::Resource::SpriteID, Core::Resource::SpriteData> g_sprites;
+static StaticVector<Core::Resource::SpriteID, Core::Resource::SpriteData> g_sprites;
 
 constexpr usize g_maxSoundEffects = 128;
 constexpr usize g_maxMusic = 32;
@@ -95,14 +97,13 @@ namespace Core
 
 		//--------------------------------------------------------------------------------
 		static ModelID NewModelID() { return g_nextModelID++; }
-		static SpriteID NewSpriteID() { return g_nextSpriteID++; }
 		static SoundEffectID NewSoundEffectID() { kaAssert(g_nextSoundEffectID < g_maxSoundEffects, "ran out of sound effects"); return g_nextSoundEffectID++; }
 		static MusicID NewMusicID() { kaAssert(g_nextMusicID < g_maxMusic, "ran out of music"); return g_nextMusicID++; }
 
 		//--------------------------------------------------------------------------------
 		TextureData const& GetTexture(TextureID _texture) { return g_textures.at(_texture); }
 		ModelData const& GetModel(ModelID _model) { return g_models.at(_model); }
-		SpriteData const& GetSprite(SpriteID _sprite) { return g_sprites.at(_sprite); }
+		SpriteData const& GetSprite(SpriteID _sprite) { return g_sprites[ _sprite ]; }
 		SoundEffectData& GetSoundEffect(SoundEffectID _soundEffect) { return g_soundEffects[_soundEffect.GetValue()]; }
 		MusicData& GetMusic(MusicID _music) { return g_music[_music.GetValue()]; }
 
@@ -715,8 +716,8 @@ namespace Core
 
 			std::string const directory = _path.substr(0, _path.find_last_of('/') + 1);
 
-			o_spriteID = NewSpriteID();
-			SpriteData& newSprite = g_sprites[o_spriteID];
+			o_spriteID = g_sprites.Emplace();
+			SpriteData& newSprite = g_sprites[ o_spriteID ];
 			newSprite.m_path = _path;
 
 			std::string line;

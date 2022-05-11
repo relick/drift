@@ -296,7 +296,7 @@ namespace Core
 			{}
 		};
 
-		constexpr usize g_maxSpritesPerFrame = 128;
+		constexpr usize g_maxSpritesPerFrame = 262'144;
 
 		struct FrameScene
 		{

@@ -928,6 +928,39 @@ void Setup()
 	Core::MakeSystem<Sys::RENDER_QUEUE>( DrawMat );
 	Core::MakeSystem<Sys::RENDER_QUEUE>( DrawGame );
 	Core::MakeSystem<Sys::TEXT>( DrawText );
+
+	Core::MakeSystem<Sys::RENDER_QUEUE>( 
+		[]
+		(
+			Core::FrameData const& _fd,
+			Core::Render::FrameData const& _rfd,
+			Cardie& _cardie
+		)
+		{
+			_cardie.m_trans.m_pos += 200.0f * _fd.dt * _cardie.m_dir;
+			if ( _cardie.m_trans.m_pos.x <= 0 )
+			{
+				_cardie.m_trans.m_pos.x = 0;
+				_cardie.m_dir.x = -_cardie.m_dir.x;
+			}
+			if ( _cardie.m_trans.m_pos.x >= _rfd.renderArea.f.x )
+			{
+				_cardie.m_trans.m_pos.x = _rfd.renderArea.f.x;
+				_cardie.m_dir.x = -_cardie.m_dir.x;
+			}
+			if ( _cardie.m_trans.m_pos.y <= 0 )
+			{
+				_cardie.m_trans.m_pos.y = 0;
+				_cardie.m_dir.y = -_cardie.m_dir.y;
+			}
+			if ( _cardie.m_trans.m_pos.y >= _rfd.renderArea.f.y )
+			{
+				_cardie.m_trans.m_pos.y = _rfd.renderArea.f.y;
+				_cardie.m_dir.y = -_cardie.m_dir.y;
+			}
+			Core::Render::AddSpriteToScene( _cardie.m_sprite, _cardie.m_trans );
+		}
+	);
 }
 
 }

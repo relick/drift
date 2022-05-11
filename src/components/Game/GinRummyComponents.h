@@ -227,6 +227,14 @@ struct PlayerInteraction
 	Vec2 m_initialHoldingCardPos;
 };
 
+// Hehe
+struct Cardie
+{
+	Core::Resource::SpriteID m_sprite;
+	Trans2D m_trans;
+	Vec2 m_dir;
+};
+
 }
 }
 

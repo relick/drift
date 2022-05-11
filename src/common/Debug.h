@@ -2,7 +2,9 @@
 
 // asserts, errors, logs
 
-#if DEBUG_TOOLS
+#define ENABLE_DEBUG_MESSAGES DEBUG_TOOLS
+
+#if ENABLE_DEBUG_MESSAGES
 #include <cassert>
 
 #if _MSC_VER

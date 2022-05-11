@@ -6,7 +6,7 @@
 
 #include <format>
 
-#if _MSC_VER && DEBUG_TOOLS
+#if _MSC_VER && ENABLE_DEBUG_MESSAGES
 #include <Windows.h>
 class VSCoutFix
 	: public std::stringbuf
@@ -23,7 +23,7 @@ public:
 static VSCoutFix g_VSCoutFix;
 #endif
 
-#if DEBUG_TOOLS
+#if ENABLE_DEBUG_MESSAGES
 void kaLog(std::string const& _message)
 {
 	Core::FrameData const& fd = Core::GetGlobalComponent<Core::FrameData>();
@@ -36,7 +36,7 @@ void kaLog(std::string const& _message)
 
 void InitialiseLogging()
 {
-#if _MSC_VER && DEBUG_TOOLS
+#if _MSC_VER && ENABLE_DEBUG_MESSAGES
 	std::cout.rdbuf(&g_VSCoutFix);
 #endif
 }

@@ -57,7 +57,9 @@ namespace Core
 					m_sceneActive.insert( _entity );
 				}
 
+#if ENTITY_LOGGING_ENABLED
 				kaLog( std::format( "Entity {:d} was created", _entity.GetDebugValue() ) );
+#endif
 			}
 
 			void RemoveActiveEntity
@@ -68,7 +70,9 @@ namespace Core
 				m_active.erase( _entity );
 				m_sceneActive.erase( _entity );
 
+#if ENTITY_LOGGING_ENABLED
 				kaLog( std::format( "Entity {:d} was killed", _entity.GetDebugValue() ) );
+#endif
 			}
 
 			void RemoveAllActiveEntities()
@@ -76,7 +80,9 @@ namespace Core
 				m_active.clear();
 				m_sceneActive.clear();
 
+#if ENTITY_LOGGING_ENABLED
 				kaLog( "-- All entities killed --" );
+#endif
 			}
 		};
 		using EntityDataMutex = SharedMutex< EntityData >;

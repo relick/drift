@@ -14,6 +14,8 @@
 #include <memory>
 #include <type_traits>
 
+#define ENTITY_LOGGING_ENABLED 0
+
 namespace Core
 {
 	namespace detail
@@ -89,7 +91,9 @@ namespace Core
 			EnsureDestroyer<T_Component>(hash);
 			AddComponentHash(_entity, hash);
 
+#if ENTITY_LOGGING_ENABLED
 			kaLog(std::format("Entity {:d} requested component {:s} to be added", _entity.GetDebugValue(), typeid(T_Component).name()));
+#endif
 		}
 		template<detail::ValidComponent T_Component>
 		void ComponentRemoved(EntityID _entity)
@@ -97,7 +101,9 @@ namespace Core
 			ComponentHash const hash = GetComponentHash<T_Component>();
 			RemoveComponentHash(_entity, hash);
 
+#if ENTITY_LOGGING_ENABLED
 			kaLog(std::format("Entity {:d} requested component {:s} to be removed", _entity.GetDebugValue(), typeid(T_Component).name()));
+#endif
 		}
 		void CommitChanges();
 

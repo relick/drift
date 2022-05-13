@@ -130,7 +130,7 @@ public:
 		kaAssert( m_active[ slot ] == Free );
 
 		m_active[ slot ] = Active;
-		::new ( &m_data[ slot ] ) T_Value( std::forward<Args>( _args )... );
+		std::construct_at( reinterpret_cast< T_Value* >( &m_data[ slot ] ), std::forward<Args>( _args )... );
 
 		return _pos;
 	}
@@ -146,7 +146,7 @@ public:
 			m_active.emplace_back();
 		}
 		m_active[ nextSlot ] = Active;
-		::new ( &m_data[ nextSlot ] ) T_Value( std::forward<Args>( _args )... );
+		std::construct_at( reinterpret_cast< T_Value* >( &m_data[ nextSlot ] ), std::forward<Args>( _args )... );
 
 		return T_ID::FromIndex( nextSlot + m_offset );
 	}

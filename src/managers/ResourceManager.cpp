@@ -26,13 +26,8 @@ static StaticVector<Core::Resource::ModelID, Core::Resource::ModelData> g_models
 static Core::Resource::SpriteID::ValueType g_nextSpriteID = 0;
 static StaticVector<Core::Resource::SpriteID, Core::Resource::SpriteData> g_sprites;
 
-constexpr usize g_maxSoundEffects = 128;
-constexpr usize g_maxMusic = 32;
-
-static Core::Resource::SoundEffectID::ValueType g_nextSoundEffectID = 0;
-static Core::Resource::MusicID::ValueType g_nextMusicID = 0;
-static std::array<Core::Resource::SoundEffectData, g_maxSoundEffects> g_soundEffects;
-static std::array<Core::Resource::MusicData, g_maxMusic> g_music;
+static StaticVector<Core::Resource::SoundEffectID, Core::Resource::SoundEffectData> g_soundEffects;
+static StaticVector<Core::Resource::MusicID, Core::Resource::MusicData> g_music;
 
 namespace
 {
@@ -94,15 +89,11 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		static SoundEffectID NewSoundEffectID() { kaAssert( g_nextSoundEffectID < g_maxSoundEffects, "ran out of sound effects" ); return SoundEffectID( g_nextSoundEffectID++ ); }
-		static MusicID NewMusicID() { kaAssert( g_nextMusicID < g_maxMusic, "ran out of music" ); return MusicID( g_nextMusicID++ ); }
-
-		//--------------------------------------------------------------------------------
 		TextureData const& GetTexture(TextureID _texture) { return g_textures[ _texture ]; }
 		ModelData const& GetModel(ModelID _model) { return g_models[ _model ]; }
 		SpriteData const& GetSprite(SpriteID _sprite) { return g_sprites[ _sprite ]; }
-		SoundEffectData& GetSoundEffect(SoundEffectID _soundEffect) { return g_soundEffects[_soundEffect.GetValue()]; }
-		MusicData& GetMusic(MusicID _music) { return g_music[_music.GetValue()]; }
+		SoundEffectData& GetSoundEffect( SoundEffectID _soundEffect ) { return g_soundEffects[ _soundEffect ]; }
+		MusicData& GetMusic( MusicID _music ) { return g_music[ _music ]; }
 
 
 		//--------------------------------------------------------------------------------
@@ -801,17 +792,17 @@ namespace Core
 			SoundEffectID& o_soundEffectID
 		)
 		{
-			for (SoundEffectID::ValueType i = 0; i < g_nextSoundEffectID; ++i)
+			for ( auto const& [soundEffectID, soundEffect] : g_soundEffects )
 			{
-				if (g_soundEffects[i].m_path == _path)
+				if (soundEffect.m_path == _path)
 				{
-					o_soundEffectID = SoundEffectID( i );
+					o_soundEffectID = soundEffectID;
 					return true;
 				}
 			}
 
-			o_soundEffectID = NewSoundEffectID();
-			SoundEffectData& newSoundEffect = g_soundEffects[o_soundEffectID.GetValue()];
+			o_soundEffectID = g_soundEffects.Emplace();
+			SoundEffectData& newSoundEffect = g_soundEffects[ o_soundEffectID ];
 			if (newSoundEffect.m_sound.load(_path.c_str()) == SoLoud::SO_NO_ERROR)
 			{
 				newSoundEffect.m_path = _path;
@@ -829,17 +820,17 @@ namespace Core
 			MusicID& o_musicID
 		)
 		{
-			for (MusicID::ValueType i = 0; i < g_nextMusicID; ++i)
+			for ( auto const& [musicID, music] : g_music )
 			{
-				if (g_music[i].m_path == _path)
+				if (music.m_path == _path)
 				{
-					o_musicID = MusicID( i );
+					o_musicID = musicID;
 					return true;
 				}
 			}
 
-			o_musicID = NewMusicID();
-			MusicData& newMusic = g_music[o_musicID.GetValue()];
+			o_musicID = g_music.Emplace();
+			MusicData& newMusic = g_music[ o_musicID ];
 			if (newMusic.m_music.load(_path.c_str()) == SoLoud::SO_NO_ERROR)
 			{
 				newMusic.m_path = _path;

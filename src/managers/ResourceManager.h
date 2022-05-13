@@ -19,6 +19,107 @@ struct aiMesh;
 // structs
 namespace Core
 {
+	namespace Sound
+	{
+		// Create non-copyable/movable versions of SoLoud::Wav and SoLoud::WavStream in order to store them in containers.
+
+		struct SoundEffect final : public SoLoud::Wav
+		{
+			SoundEffect( SoundEffect const& ) = delete;
+			SoundEffect& operator=( SoundEffect const& ) = delete;
+			SoundEffect( SoLoud::Wav const& ) = delete;
+			SoundEffect& operator=( SoLoud::Wav const& ) = delete;
+
+			SoundEffect( SoundEffect&& _o )
+			{
+				*this = std::move( _o );
+			}
+
+			SoundEffect& operator=( SoundEffect&& _o )
+			{
+				// SoLoud::Wav
+				mData = _o.mData;
+				mSampleCount = _o.mSampleCount;
+
+				// SoLoud::AudioSource
+				mFlags = _o.mFlags;
+				mBaseSamplerate = _o.mBaseSamplerate;
+				mVolume = _o.mVolume;
+				mChannels = _o.mChannels;
+				mAudioSourceID = _o.mAudioSourceID;
+				m3dMinDistance = _o.m3dMinDistance;
+				m3dMaxDistance = _o.m3dMaxDistance;
+				m3dAttenuationRolloff = _o.m3dAttenuationRolloff;
+				m3dAttenuationModel = _o.m3dAttenuationModel;
+				m3dDopplerFactor = _o.m3dDopplerFactor;
+				// Filter pointer
+				std::memcpy( mFilter, _o.mFilter, sizeof( mFilter ) );
+				mSoloud = _o.mSoloud;
+				mCollider = _o.mCollider;
+				mAttenuator = _o.mAttenuator;
+				mColliderData = _o.mColliderData;
+				mLoopPoint = _o.mLoopPoint;
+
+				// Assume that the only things we need to change are the destructor relevant stuff
+				// i.e. allocated data and soloud reference for stopping the sound.
+				_o.mData = nullptr;
+				_o.mSoloud = nullptr;
+			}
+
+			SoundEffect() = default;
+		};
+
+		struct Music final : public SoLoud::WavStream
+		{
+			Music( Music const& ) = delete;
+			Music& operator=( Music const& ) = delete;
+			Music( SoLoud::WavStream const& ) = delete;
+			Music& operator=( SoLoud::WavStream const& ) = delete;
+
+			Music( Music&& _o )
+			{
+				*this = std::move( _o );
+			}
+
+			Music& operator=( Music&& _o )
+			{
+				// SoLoud::WavStream
+				mFiletype = _o.mFiletype;
+				mFilename = _o.mFilename;
+				mMemFile = _o.mMemFile;
+				mStreamFile = _o.mStreamFile;
+				mSampleCount = _o.mSampleCount;
+
+				// SoLoud::AudioSource
+				mFlags = _o.mFlags;
+				mBaseSamplerate = _o.mBaseSamplerate;
+				mVolume = _o.mVolume;
+				mChannels = _o.mChannels;
+				mAudioSourceID = _o.mAudioSourceID;
+				m3dMinDistance = _o.m3dMinDistance;
+				m3dMaxDistance = _o.m3dMaxDistance;
+				m3dAttenuationRolloff = _o.m3dAttenuationRolloff;
+				m3dAttenuationModel = _o.m3dAttenuationModel;
+				m3dDopplerFactor = _o.m3dDopplerFactor;
+				// Filter pointer
+				std::memcpy( mFilter, _o.mFilter, sizeof( mFilter ) );
+				mSoloud = _o.mSoloud;
+				mCollider = _o.mCollider;
+				mAttenuator = _o.mAttenuator;
+				mColliderData = _o.mColliderData;
+				mLoopPoint = _o.mLoopPoint;
+
+				// Assume that the only things we need to change are the destructor relevant stuff
+				// i.e. allocated data and soloud reference for stopping the sound.
+				_o.mFilename = nullptr;
+				_o.mMemFile = nullptr;
+				_o.mSoloud = nullptr;
+			}
+
+			Music() = default;
+		};
+	}
+
 	namespace Resource
 	{
 		//-------------------------------------------------
@@ -91,13 +192,13 @@ namespace Core
 		struct SoundEffectData
 		{
 			std::string m_path;
-			SoLoud::Wav m_sound;
+			Sound::SoundEffect m_sound;
 		};
 
 		struct MusicData
 		{
 			std::string m_path;
-			SoLoud::WavStream m_music;
+			Sound::Music m_music;
 		};
 	}
 }

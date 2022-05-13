@@ -25,7 +25,7 @@ void GinRummy::Setup()
 		Core::AddComponent( mat, Core::Render::SpriteDesc{ "assets/encrypted/sprites/ginrummy/mat.spr", fullScreen } );
 	}
 
-	std::array<Core::Resource::SpriteID, 53> cardieSprites;
+	/*std::array<Core::Resource::SpriteID, 53> cardieSprites;
 
 	static constexpr std::array<char const*, 4> suitInitials{ "D", "C", "H", "S", };
 
@@ -68,6 +68,6 @@ void GinRummy::Setup()
 		Core::AddComponent( cardieEntity, cardie );
 		Core::AddComponent( cardieEntity, trans );
 		Core::AddComponent( cardieEntity, sprite );
-	}
+	}*/
 }
 }

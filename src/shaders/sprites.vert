@@ -22,6 +22,12 @@ out vec2 UV;
 
 void main()
 {
+    if (aSpriteFlags != 0)
+    {
+       gl_Position = vec4(2.0, 0.0, 0.0, 1.0);
+       return;
+    }
+
     SpriteFlags = aSpriteFlags;
     UV = aTopLeftUV + (aUV * aUVDims);
 

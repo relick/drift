@@ -9,10 +9,5 @@ out vec4 FragColour;
 
 void main()
 {
-    if (SpriteFlags != 0)
-    {
-       discard;
-    }
-
 	FragColour = texture(textureAtlas, UV);
 }

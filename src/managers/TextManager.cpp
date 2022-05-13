@@ -43,7 +43,7 @@ namespace Core::Render::Text
 
 #if TEXT_TEST
 		// Add font to stash.
-		g_fsTest.fontNormal = fonsAddFont(g_fonsContext, "roboto", "assets/encrypted/fonts/MS Gothic.ttf");
+		g_fsTest.fontNormal = Resource::FontID( fonsAddFont( g_fonsContext, "roboto", "assets/encrypted/fonts/MS Gothic.ttf" ) );
 		g_fonsFontCount++;
 		g_defaultFont = g_fsTest.fontNormal;
 #endif

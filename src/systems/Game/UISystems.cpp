@@ -43,11 +43,5 @@ namespace Game::UI
 		{
 			Core::Render::Text::Write(Vec2{ 10, 200 }, std::format("{:d}/{:d} loaded - {:s}", _ls.m_currentlyLoaded, _ls.m_totalToLoad, _ls.m_nextLoadedFilename).c_str(), 10.0f);
 		});
-
-		Core::MakeSystem<Sys::RENDER_QUEUE>([](Game::UI::LoadingScreen& _loadingScreen)
-		{
-			Trans2D fullScreenSpriteTrans; // default will cover the whole screen.
-			Core::Render::AddSpriteToScene(_loadingScreen.m_fullScreenSprite, fullScreenSpriteTrans);
-		});
 	}
 }

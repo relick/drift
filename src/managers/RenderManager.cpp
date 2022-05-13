@@ -3,6 +3,7 @@
 #include "managers/ResourceManager.h"
 
 #include "common/Mutex.h"
+#include "common/StaticVector.h"
 #include "systems.h"
 #include "components.h"
 #include "shaders/main.h"
@@ -285,6 +286,7 @@ namespace Core
 			Vec2 m_topLeftUV;
 			Vec2 m_UVDims;
 			Vec2 m_spriteDims;
+			uint32 m_flags;
 
 			SpriteBufferData(Vec3 _position, Vec2 _scale, Vec1 _rotation, Vec2 _topLeftUV, Vec2 _uvDims, Vec2 _spriteDims)
 				: m_position(_position)
@@ -293,10 +295,153 @@ namespace Core
 				, m_topLeftUV(_topLeftUV)
 				, m_UVDims(_uvDims)
 				, m_spriteDims(_spriteDims)
+				, m_flags(0u)
 			{}
 		};
 
-		constexpr usize g_maxSpritesPerFrame = 262'144;
+		constexpr usize g_maxFreeSpritesPerFrame = 128;
+		constexpr usize g_maxSceneSpritesPerFrame = 262'144;
+
+		struct SpriteSceneData
+		{
+			struct SpriteData
+			{
+				Resource::SpriteID m_sprite;
+				usize m_pos;
+			};
+
+			struct NonBufferData
+			{
+				SpriteSceneID m_id;
+				Resource::TextureID m_texture;
+				bool m_useAlpha{ false };
+			};
+
+			struct DrawCall
+			{
+				int vertexOffset;
+				usize count;
+				Resource::TextureID texture;
+			};
+
+			StaticVector<SpriteSceneID, SpriteData> sceneSpriteMapping;
+			std::vector<NonBufferData> ordering;
+			std::vector<SpriteBufferData> spriteBuffer;
+			std::vector<DrawCall> drawCallList;
+			bool m_callListDirty{ false };
+
+			SpriteSceneID Add( Resource::SpriteID _sprite, Trans2D const& _screenTrans )
+			{
+				SpriteSceneID const sceneSprite = sceneSpriteMapping.Emplace( _sprite, ordering.size() );
+				Resource::SpriteData const& spriteData = Core::Resource::GetSprite( _sprite );
+				ordering.emplace_back( sceneSprite, spriteData.m_texture, spriteData.m_useAlpha );
+				spriteBuffer.emplace_back(
+					Vec3( _screenTrans.m_pos, _screenTrans.m_z ),
+					_screenTrans.m_scale,
+					_screenTrans.m_rot.m_rads,
+					spriteData.m_topLeftUV,
+					spriteData.m_dimensionsUV,
+					spriteData.m_dimensions
+				);
+
+				Reorder( sceneSprite );
+
+				m_callListDirty = true;
+
+				kaAssert( ordering.size() < g_maxSceneSpritesPerFrame );
+
+				return sceneSprite;
+			}
+
+			void Erase( SpriteSceneID _sprite )
+			{
+				usize pos = FindSprite( _sprite );
+				ordering.erase( ordering.begin() + pos );
+				spriteBuffer.erase( spriteBuffer.begin() + pos );
+				sceneSpriteMapping.Erase( _sprite );
+			}
+
+			usize FindSprite( SpriteSceneID _sprite ) const
+			{
+				return sceneSpriteMapping[ _sprite ].m_pos;
+			}
+
+			void Reorder( SpriteSceneID _sprite )
+			{
+				usize curPos = FindSprite( _sprite );
+
+				auto isLess = [this]( usize _a, usize _b )
+				{
+					bool const lessTexture = ordering[ _a ].m_texture < ordering[ _b ].m_texture;
+					bool const lessZ = spriteBuffer[ _a ].m_position.z < spriteBuffer[ _b ].m_position.z;
+					bool const equalAlpha = ordering[ _a ].m_useAlpha == ordering[ _b ].m_useAlpha;
+					return ( !equalAlpha && ordering[ _b ].m_useAlpha ) || ( equalAlpha && ( ( ordering[ _b ].m_useAlpha && lessZ ) || lessTexture ) );
+				};
+
+				while ( curPos > 0u )
+				{
+					usize prevPos = curPos - 1u;
+					if ( isLess( prevPos, curPos ) )
+					{
+						break;
+					}
+					std::swap( sceneSpriteMapping[ ordering[ prevPos ].m_id ].m_pos, sceneSpriteMapping[ ordering[ curPos ].m_id ].m_pos );
+					std::swap( ordering[ prevPos ], ordering[ curPos ] );
+					std::swap( spriteBuffer[ prevPos ], spriteBuffer[ curPos ] );
+					curPos--;
+					m_callListDirty = true;
+				}
+
+				while ( curPos < ordering.size() - 1u )
+				{
+					usize nextPos = curPos + 1u;
+					if ( isLess( curPos, nextPos ) )
+					{
+						break;
+					}
+					std::swap( sceneSpriteMapping[ ordering[ curPos ].m_id ].m_pos, sceneSpriteMapping[ ordering[ nextPos ].m_id ].m_pos );
+					std::swap( ordering[ curPos ], ordering[ nextPos ] );
+					std::swap( spriteBuffer[ curPos ], spriteBuffer[ nextPos ] );
+					curPos++;
+					m_callListDirty = true;
+				}
+
+			}
+
+			void RegenerateDrawCallList()
+			{
+				drawCallList.clear();
+
+				Resource::TextureID currentTexture;
+				usize firstSpriteWithTextureI = 0;
+				for ( usize spriteI{ 0 }; spriteI < spriteBuffer.size(); ++spriteI )
+				{
+					if ( currentTexture != ordering[ spriteI ].m_texture )
+					{
+						if ( spriteI != 0 )
+						{
+							drawCallList.emplace_back(
+								( int )( sizeof( SpriteBufferData ) * firstSpriteWithTextureI ),
+								spriteI - firstSpriteWithTextureI,
+								currentTexture
+							);
+						}
+
+						currentTexture = ordering[ spriteI ].m_texture;
+						firstSpriteWithTextureI = spriteI;
+					}
+				}
+
+				// final draw
+				drawCallList.emplace_back(
+					( int )( sizeof( SpriteBufferData ) * firstSpriteWithTextureI ),
+					spriteBuffer.size() - firstSpriteWithTextureI,
+					currentTexture
+				);
+
+				m_callListDirty = false;
+			}
+		};
 
 		struct FrameScene
 		{
@@ -308,8 +453,13 @@ namespace Core
 			Mutex< std::vector<SpriteToDraw> > sprites;
 			std::vector<SpriteScratchData> spriteScratchData;
 			std::vector<SpriteBufferData> spriteBufferData;
+
+			SpriteSceneData sceneSpriteData;
+
 			sg_bindings spriteBinds{};
 			sg_buffer spriteBuffer{};
+			sg_bindings sceneSpriteBinds{};
+			sg_buffer sceneSpriteBuffer{};
 			Resource::TextureSampleID skybox{};
 			sg_bindings skyboxBinds{};
 		};
@@ -383,7 +533,7 @@ namespace Core
 				};
 				sg_bindings binds{};
 				binds.vertex_buffers[0] = sg_make_buffer(rectangleWithUVBufferDesc);
-				binds.fs_images[SLOT_render_target_to_screen_tex] = io_state.Pass(Pass_MainTarget)->GetColourImage(0).GetValue();
+				binds.fs_images[SLOT_render_target_to_screen_tex] = io_state.Pass(Pass_MainTarget)->GetColourImage(0).GetSokolID();
 				io_state.PassGlue(PassGlue_MainTarget_To_Screen) = PassGlue{ binds, 4 };
 				io_state.PassGlue(PassGlue_MainTarget_To_Screen)->AddValidPass(Pass_RenderToScreen);
 				io_state.PassGlue(PassGlue_MainTarget_To_Screen)->AddValidRenderer(Renderer_TargetToScreen);
@@ -433,13 +583,26 @@ namespace Core
 				g_frameScene.spriteBinds.vertex_buffers[0] = sg_make_buffer(rectangle2DWithUVBufferDesc);
 
 				sg_buffer_desc spriteBufferDesc{
-					.size = sizeof(SpriteBufferData) * g_maxSpritesPerFrame,
+					.size = sizeof(SpriteBufferData) * g_maxFreeSpritesPerFrame,
 					.type = SG_BUFFERTYPE_VERTEXBUFFER,
 					.usage = SG_USAGE_STREAM,
 					.label = "sprite-buffer",
 				};
 				g_frameScene.spriteBuffer = sg_make_buffer(spriteBufferDesc);
 				g_frameScene.spriteBinds.vertex_buffers[1] = g_frameScene.spriteBuffer;
+			}
+
+			{
+				g_frameScene.sceneSpriteBinds.vertex_buffers[ 0 ] = g_frameScene.spriteBinds.vertex_buffers[ 0 ];
+
+				sg_buffer_desc spriteBufferDesc{
+					.size = sizeof( SpriteBufferData ) * g_maxSceneSpritesPerFrame,
+					.type = SG_BUFFERTYPE_VERTEXBUFFER,
+					.usage = SG_USAGE_STREAM,
+					.label = "scene-sprite-buffer",
+				};
+				g_frameScene.sceneSpriteBuffer = sg_make_buffer( spriteBufferDesc );
+				g_frameScene.sceneSpriteBinds.vertex_buffers[ 1 ] = g_frameScene.sceneSpriteBuffer;
 			}
 		}
 
@@ -602,13 +765,17 @@ namespace Core
 					.buffer_index = 1,
 					.format = SG_VERTEXFORMAT_FLOAT2,
 				};
+				spritesLayoutDesc.attrs[ATTR_sprites_vs_aSpriteFlags] = {
+					.buffer_index = 1,
+					.format = SG_VERTEXFORMAT_UBYTE4,
+				};
 				spritesLayoutDesc.buffers[0] = {
 					.step_func = SG_VERTEXSTEP_PER_VERTEX,
 				};
 				spritesLayoutDesc.buffers[1] = {
 					.step_func = SG_VERTEXSTEP_PER_INSTANCE,
 				};
-				static_assert(sizeof(Vec3) + sizeof(Vec2) + sizeof(Vec1) + sizeof(Vec2) + sizeof(Vec2) + sizeof(Vec2) == sizeof(SpriteBufferData));
+				static_assert(sizeof(Vec3) + sizeof(Vec2) + sizeof(Vec1) + sizeof(Vec2) + sizeof(Vec2) + sizeof(Vec2) + sizeof(uint32) == sizeof(SpriteBufferData) );
 
 				sg_pipeline_desc spritesDesc{
 					.shader = sg_make_shader(sprites_sg_shader_desc(sg_query_backend())),
@@ -690,13 +857,23 @@ namespace Core
 		{
 			// fill and draw buffer
 			g_frameScene.spriteBinds.vertex_buffer_offsets[1] = sg_append_buffer(g_frameScene.spriteBuffer, SG_RANGE_VEC(g_frameScene.spriteBufferData));
-			g_frameScene.spriteBinds.fs_images[SLOT_sprites_textureAtlas] = _texture.GetValue();
+			g_frameScene.spriteBinds.fs_images[SLOT_sprites_textureAtlas] = _texture.GetSokolID();
 
 			g_renderState.SetBinding(g_frameScene.spriteBinds, 4);
-			kaAssert(g_frameScene.spriteBufferData.size() <= INT_MAX); // which it should be anyway if it's less than max sprites.
 			g_renderState.Draw(static_cast<int>(g_frameScene.spriteBufferData.size()));
 
 			g_frameScene.spriteBufferData.clear();
+		}
+
+		//--------------------------------------------------------------------------------
+		static void RenderSceneSpriteBuffer( int _vertexOffset, usize _size, Resource::TextureID _texture )
+		{
+			// fill and draw buffer
+			g_frameScene.sceneSpriteBinds.vertex_buffer_offsets[ 1 ] = _vertexOffset;
+			g_frameScene.sceneSpriteBinds.fs_images[ SLOT_sprites_textureAtlas ] = _texture.GetSokolID();
+
+			g_renderState.SetBinding( g_frameScene.sceneSpriteBinds, 4 );
+			g_renderState.Draw( static_cast< int >( _size ) );
 		}
 
 		//--------------------------------------------------------------------------------
@@ -792,7 +969,7 @@ namespace Core
 				auto fnMainMeshVisitor = [](Resource::MeshData const& _mesh)
 				{
 					sg_bindings addShadowBinds = _mesh.m_bindings;
-					addShadowBinds.fs_images[SLOT_main_directionalShadowMap] = g_frameScene.directionalShadowMap.GetValue();
+					addShadowBinds.fs_images[SLOT_main_directionalShadowMap] = g_frameScene.directionalShadowMap.GetSokolID();
 					g_renderState.SetBinding(addShadowBinds, _mesh.NumToDraw());
 					sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_main_material, SG_RANGE_REF(_mesh.m_material));
 				};
@@ -816,7 +993,7 @@ namespace Core
 					};
 					sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_skybox_fs_params, SG_RANGE_REF(fs_params));
 
-					g_frameScene.skyboxBinds.fs_images[SLOT_skybox_skybox] = g_frameScene.skybox.GetValue();
+					g_frameScene.skyboxBinds.fs_images[SLOT_skybox_skybox] = g_frameScene.skybox.GetSokolID();
 
 					g_renderState.SetBinding(g_frameScene.skyboxBinds, 14);
 					g_renderState.Draw();
@@ -846,46 +1023,40 @@ namespace Core
 				g_frameScene.spriteScratchData.emplace_back( Resource::GetSprite( std.m_sprite ), std.m_transform );
 			}
 
-			// Order by texture
+			// Alpha and texture sort
 			std::sort(g_frameScene.spriteScratchData.begin(), g_frameScene.spriteScratchData.end(), [](auto const& _a, auto const& _b) -> bool
 			{
-				return _a.m_sprite.get().m_texture < _b.m_sprite.get().m_texture;
-			});
-
-			// Order alpha sprites by Z
-			std::stable_sort( g_frameScene.spriteScratchData.begin(), g_frameScene.spriteScratchData.end(),
-				[]( auto const& _a, auto const& _b ) -> bool
+				auto const& aSpriteData = _a.m_sprite.get();
+				auto const& bSpriteData = _b.m_sprite.get();
+				// Explanation:
+				// a and b both alpha - sort by Z, then sort by texture (lessZ || lessTex)
+				// a alpha, b not - a must be above b (false)
+				// b alpha, a not - b must be above a (true)
+				// a and b not alpha - sort by texture (lessTex)
+				/*if ( bSpriteData.m_useAlpha )
 				{
-					auto const& aSpriteData = _a.m_sprite.get();
-					auto const& bSpriteData = _b.m_sprite.get();
-					// Explanation:
-					// a and b both alpha (sort by z)
-					// a alpha, b not (a after b)
-					// b alpha, a not (b after a)
-					// a and b not alpha (maintain position)
-					/*if ( bSpriteData.m_useAlpha )
+					if ( aSpriteData.m_useAlpha )
 					{
-						if ( aSpriteData.m_useAlpha )
-						{
-							return _a.m_transform.m_z < _b.m_transform.m_z;
-						}
-						else
-						{
-							return true;
-						}
-					}
-					else if ( aSpriteData.m_useAlpha )
-					{
-						return false;
+						return _a.m_transform.m_z < _b.m_transform.m_z || aSpriteData.m_texture < bSpriteData.m_texture;
 					}
 					else
 					{
-						return false;
-					}*/
-
-					return bSpriteData.m_useAlpha & ( !aSpriteData.m_useAlpha | ( _a.m_transform.m_z < _b.m_transform.m_z ) );
+						return true;
+					}
 				}
-			);
+				else if ( aSpriteData.m_useAlpha )
+				{
+					return false;
+				}
+				else
+				{
+					return aSpriteData.m_texture < bSpriteData.m_texture;
+				}*/
+				bool const lessTexture = aSpriteData.m_texture < bSpriteData.m_texture;
+				bool const lessZ = _a.m_transform.m_z < _b.m_transform.m_z;
+				bool const equalAlpha = aSpriteData.m_useAlpha == bSpriteData.m_useAlpha;
+				return ( !equalAlpha && bSpriteData.m_useAlpha ) || ( equalAlpha && ( ( bSpriteData.m_useAlpha && lessZ ) || lessTexture ) );
+			});
 
 			// For each texture, set up buffer and binding and draw sprites
 			Resource::TextureID currentTexture;
@@ -918,6 +1089,21 @@ namespace Core
 			if (!g_frameScene.spriteBufferData.empty())
 			{
 				RenderSpriteBuffer(currentTexture);
+			}
+
+			if ( !g_frameScene.sceneSpriteData.spriteBuffer.empty() )
+			{
+				sg_update_buffer( g_frameScene.sceneSpriteBuffer, SG_RANGE_VEC( g_frameScene.sceneSpriteData.spriteBuffer ) );
+				if ( g_frameScene.sceneSpriteData.m_callListDirty )
+				{
+					g_frameScene.sceneSpriteData.RegenerateDrawCallList();
+				}
+
+				for ( SpriteSceneData::DrawCall const& call : g_frameScene.sceneSpriteData.drawCallList )
+				{
+					RenderSceneSpriteBuffer( call.vertexOffset, call.count, call.texture );
+				}
+
 			}
 		}
 
@@ -989,13 +1175,13 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		LightSetter AddLightToScene()
+		LightSetter AddLightThisFrame()
 		{
 			return g_frameScene.lights.Write()->AddLight();
 		}
 
 		//--------------------------------------------------------------------------------
-		void AddAmbientLightToScene(Vec3 const& _col)
+		void AddAmbientLightThisFrame(Vec3 const& _col)
 		{
 			g_frameScene.lights.Write()->ambientLight += _col;
 		}
@@ -1007,7 +1193,44 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		void AddSpriteToScene
+		SpriteSceneID AddSpriteToScene
+		(
+			Core::Resource::SpriteID _sprite,
+			Trans2D const& _screenTrans
+		)
+		{
+			return g_frameScene.sceneSpriteData.Add( _sprite, _screenTrans );
+		}
+
+		//--------------------------------------------------------------------------------
+		void UpdateSpriteInScene
+		(
+			SpriteSceneID _sprite,
+			Trans2D const& _screenTrans
+		)
+		{
+			SpriteBufferData& sbData = g_frameScene.sceneSpriteData.spriteBuffer[ g_frameScene.sceneSpriteData.FindSprite( _sprite ) ];
+			Vec1 const prevZ = sbData.m_position.z;
+			sbData.m_position = Vec3( _screenTrans.m_pos, _screenTrans.m_z );
+			sbData.m_scale = _screenTrans.m_scale;
+			sbData.m_rotation = _screenTrans.m_rot.m_rads;
+			if ( prevZ != _screenTrans.m_z )
+			{
+				g_frameScene.sceneSpriteData.Reorder( _sprite );
+			}
+		}
+
+		//--------------------------------------------------------------------------------
+		void RemoveSpriteFromScene
+		(
+			SpriteSceneID _sprite
+		)
+		{
+			g_frameScene.sceneSpriteData.Erase( _sprite );
+		}
+
+		//--------------------------------------------------------------------------------
+		void DrawSpriteThisFrame
 		(
 			Core::Resource::SpriteID _sprite,
 			Trans2D const& _screenTrans
@@ -1015,11 +1238,11 @@ namespace Core
 		{
 			auto spritesAccess = g_frameScene.sprites.Write();
 			spritesAccess->emplace_back(_sprite, _screenTrans);
-			kaAssert( spritesAccess->size() < g_maxSpritesPerFrame );
+			kaAssert( spritesAccess->size() < g_maxFreeSpritesPerFrame );
 		}
 
 		//--------------------------------------------------------------------------------
-		void AddModelToScene
+		void DrawModelThisFrame
 		(
 			Core::Resource::ModelID _model,
 			Trans const& _worldTrans
@@ -1029,7 +1252,7 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		void AddSkyboxToScene
+		void DrawSkyboxThisFrame
 		(
 			Core::Resource::TextureSampleID _skybox
 		)

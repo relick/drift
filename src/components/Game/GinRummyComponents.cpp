@@ -1,6 +1,7 @@
 #include "GinRummyComponents.h"
 
 #include "managers/ResourceManager.h"
+#include "managers/RenderManager.h"
 
 #include <algorithm>
 #include <random>
@@ -266,23 +267,6 @@ uint32 Hand::CalculateValue
 
 namespace Core
 {
-template<>
-void AddComponent
-(
-	EntityID const _entity,
-	Game::GinRummy::Mat const& _component
-)
-{
-	Game::GinRummy::Mat newComponent = _component;
-	if ( newComponent.m_matSprite.IsNull() )
-	{
-		bool const success = Core::Resource::LoadSprite( "assets/encrypted/sprites/ginrummy/mat.spr", newComponent.m_matSprite );
-		kaAssert( success );
-	}
-
-	ECS::AddComponent( _entity, newComponent );
-}
-
 template<>
 void AddComponent
 (

@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include "components.h"
+#include "RenderIDs.h"
 
 namespace Core
 {
@@ -31,11 +32,16 @@ namespace Core
 
 		CameraState const& GetCameraState();
 
-		void AddSpriteToScene(Core::Resource::SpriteID _sprite, Trans2D const& _screenTrans);
-		void AddModelToScene(Core::Resource::ModelID _model, Trans const& _worldTrans);
-		void AddSkyboxToScene(Core::Resource::TextureSampleID _skybox);
-		LightSetter AddLightToScene();
-		void AddAmbientLightToScene(Vec3 const& _col);
+		[[nodiscard]] SpriteSceneID AddSpriteToScene( Core::Resource::SpriteID _sprite, Trans2D const& _screenTrans );
+		void UpdateSpriteInScene( SpriteSceneID _sprite, Trans2D const& _screenTrans );
+		void RemoveSpriteFromScene( SpriteSceneID _sprite );
+
+		// Functions for adding graphics just this frame. The more this is done, the slower things are :)
+		void DrawSpriteThisFrame( Core::Resource::SpriteID _sprite, Trans2D const& _screenTrans );
+		void DrawModelThisFrame(Core::Resource::ModelID _model, Trans const& _worldTrans);
+		void DrawSkyboxThisFrame(Core::Resource::TextureSampleID _skybox);
+		LightSetter AddLightThisFrame();
+		void AddAmbientLightThisFrame(Vec3 const& _col);
 		void SetDirectionalLightDir(Vec3 const& _dir);
 	}
 }

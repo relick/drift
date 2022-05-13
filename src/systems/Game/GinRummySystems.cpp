@@ -334,16 +334,6 @@ static void GameSystem
 	}
 }
 
-static void DrawMat
-(
-	Game::GinRummy::Mat const& _mat
-)
-{
-	Trans2D fullScreen; // default will cover the whole screen.
-	fullScreen.m_z = -0.9f; // Put behind all cards
-	Core::Render::AddSpriteToScene( _mat.m_matSprite, fullScreen );
-}
-
 static void DrawDeck
 (
 	Core::FrameData const& _fd,
@@ -366,7 +356,7 @@ static void DrawDeck
 				}
 				deckPos.m_pos = glm::floor( deckPos.m_pos );
 			}
-			Core::Render::AddSpriteToScene( _gameRender.m_cardBack, deckPos );
+			Core::Render::DrawSpriteThisFrame( _gameRender.m_cardBack, deckPos );
 			deckPos.m_pos.y -= c_pileCardHeight;
 			deckPos.m_z += 1.0f / 108.0f;
 		}
@@ -395,17 +385,17 @@ static void DrawDiscard
 				}
 				kaAssert( _gameData.m_discard.m_topDiscard.has_value() );
 				discardPos.m_pos = glm::floor( discardPos.m_pos );
-				Core::Render::AddSpriteToScene( _gameRender.m_cardFront[ _gameData.m_discard.CheckTop().DeckIndex() ], discardPos );
+				Core::Render::DrawSpriteThisFrame( _gameRender.m_cardFront[ _gameData.m_discard.CheckTop().DeckIndex() ], discardPos );
 			}
 			else if ( cardI == _gameData.m_discard.Size() - 2 )
 			{
 				kaAssert( _gameData.m_discard.m_secondDiscard.has_value() );
 				discardPos.m_pos = glm::floor( discardPos.m_pos );
-				Core::Render::AddSpriteToScene( _gameRender.m_cardFront[ _gameData.m_discard.m_secondDiscard->DeckIndex() ], discardPos );
+				Core::Render::DrawSpriteThisFrame( _gameRender.m_cardFront[ _gameData.m_discard.m_secondDiscard->DeckIndex() ], discardPos );
 			}
 			else
 			{
-				Core::Render::AddSpriteToScene( _gameRender.m_cardFront[ 0 ], discardPos );
+				Core::Render::DrawSpriteThisFrame( _gameRender.m_cardFront[ 0 ], discardPos );
 			}
 			discardPos.m_pos.y -= c_pileCardHeight;
 			discardPos.m_z += 1.0f / 108.0f;
@@ -437,7 +427,7 @@ static void DrawPlayerHand
 				heldCardTrans.m_pos = glm::floor( Core::Input::GetMousePos() - _gameRender.m_holdingCard->m_grabPoint );
 				heldCardTrans.m_z = cardPos.m_z;
 				cardPos.m_z += 1.0f / 108.0f;
-				Core::Render::AddSpriteToScene( _gameRender.m_cardFront[ _gameData.m_players[ 0 ].m_hand.m_cards[ cardI ].DeckIndex() ], heldCardTrans );
+				Core::Render::DrawSpriteThisFrame( _gameRender.m_cardFront[ _gameData.m_players[ 0 ].m_hand.m_cards[ cardI ].DeckIndex() ], heldCardTrans );
 				cardPos.m_pos.x += c_handCardSeparation;
 				continue;
 			}
@@ -447,7 +437,7 @@ static void DrawPlayerHand
 		{
 			cardPos.m_pos.y = c_playerStartLoc.y - 10;
 		}
-		Core::Render::AddSpriteToScene( _gameRender.m_cardFront[ _gameData.m_players[ 0 ].m_hand.m_cards[ cardI ].DeckIndex() ], cardPos );
+		Core::Render::DrawSpriteThisFrame( _gameRender.m_cardFront[ _gameData.m_players[ 0 ].m_hand.m_cards[ cardI ].DeckIndex() ], cardPos );
 		cardPos.m_pos.x += c_handCardSeparation;
 		cardPos.m_pos.y = c_playerStartLoc.y;
 		cardPos.m_z += 1.0f / 108.0f;
@@ -462,13 +452,13 @@ static void DrawPlayerHand
 				Trans2D heldCardTrans;
 				heldCardTrans.m_pos = glm::floor( Core::Input::GetMousePos() - _gameRender.m_holdingCard->m_grabPoint );
 				heldCardTrans.m_z = cardPos.m_z;
-				Core::Render::AddSpriteToScene( _gameRender.m_cardFront[ _gameData.m_players[ 0 ].m_hand.m_drawnCard->DeckIndex() ], heldCardTrans );
+				Core::Render::DrawSpriteThisFrame( _gameRender.m_cardFront[ _gameData.m_players[ 0 ].m_hand.m_drawnCard->DeckIndex() ], heldCardTrans );
 				return;
 			}
 		}
 
 		cardPos.m_pos = c_playerDrawnLoc;
-		Core::Render::AddSpriteToScene( _gameRender.m_cardFront[ _gameData.m_players[ 0 ].m_hand.m_drawnCard->DeckIndex() ], cardPos );
+		Core::Render::DrawSpriteThisFrame( _gameRender.m_cardFront[ _gameData.m_players[ 0 ].m_hand.m_drawnCard->DeckIndex() ], cardPos );
 	}
 }
 
@@ -484,7 +474,7 @@ static void DrawAIHand
 	cardPos.m_pos = c_aiStartLoc;
 	for ( usize cardI = 0; cardI < 10; ++cardI )
 	{
-		Core::Render::AddSpriteToScene( _gameRender.m_cardBack, cardPos );
+		Core::Render::DrawSpriteThisFrame( _gameRender.m_cardBack, cardPos );
 		cardPos.m_pos.x -= c_handCardSeparation;
 		cardPos.m_z += 1.0f / 108.0f;
 	}
@@ -492,7 +482,7 @@ static void DrawAIHand
 	if ( !_hideDrawnCard && _gameData.m_players[ 1 ].m_hand.m_drawnCard.has_value() )
 	{
 		cardPos.m_pos = c_aiDrawnLoc;
-		Core::Render::AddSpriteToScene( _gameRender.m_cardBack, cardPos );
+		Core::Render::DrawSpriteThisFrame( _gameRender.m_cardBack, cardPos );
 	}
 }
 
@@ -520,11 +510,11 @@ static void DrawGame
 				pos.m_z = ( Vec1 )( s * 13 + f ) / 52.0f;
 				if ( flip )
 				{
-					Core::Render::AddSpriteToScene( _gameRender.m_cardFront[ _gameData.m_deck.m_cards[ s * 13 + f ].DeckIndex() ], pos );
+					Core::Render::DrawSpriteThisFrame( _gameRender.m_cardFront[ _gameData.m_deck.m_cards[ s * 13 + f ].DeckIndex() ], pos );
 				}
 				else
 				{
-					Core::Render::AddSpriteToScene( _gameRender.m_cardBack, pos );
+					Core::Render::DrawSpriteThisFrame( _gameRender.m_cardBack, pos );
 				}
 				flip = !flip;
 			}
@@ -577,12 +567,12 @@ static void DrawGame
 							Trans2D cardTrans;
 							cardTrans.m_pos = cardPos;
 							cardTrans.m_z = 1.0f;
-							Core::Render::AddSpriteToScene( _gameRender.m_cardBack, cardTrans );
+							Core::Render::DrawSpriteThisFrame( _gameRender.m_cardBack, cardTrans );
 							break;
 						}
 						else
 						{
-							Core::Render::AddSpriteToScene( _gameRender.m_cardBack, nextCardAI ? targetTransAI : targetTransP );
+							Core::Render::DrawSpriteThisFrame( _gameRender.m_cardBack, nextCardAI ? targetTransAI : targetTransP );
 						}
 
 						if ( nextCardAI )
@@ -611,7 +601,7 @@ static void DrawGame
 
 						Vec1 const diff = anim.m_animatingTime - 20.0f;
 						targetTrans.m_pos = glm::floor( Lerp( topDeckPos, targetTrans.m_pos, diff ) );
-						Core::Render::AddSpriteToScene( _gameRender.m_cardBack, targetTrans );
+						Core::Render::DrawSpriteThisFrame( _gameRender.m_cardBack, targetTrans );
 					}
 
 					{
@@ -620,7 +610,7 @@ static void DrawGame
 						deckPos.m_pos = c_deckStart;
 						for ( usize cardI = 0; cardI < deckSize; ++cardI )
 						{
-							Core::Render::AddSpriteToScene( _gameRender.m_cardBack, deckPos );
+							Core::Render::DrawSpriteThisFrame( _gameRender.m_cardBack, deckPos );
 							deckPos.m_pos.y -= c_pileCardHeight;
 							deckPos.m_z += 1.0f / 108.0f;
 						}
@@ -644,11 +634,11 @@ static void DrawGame
 					cardPos.m_z = 1.0f;
 					if ( anim.m_cardValue.has_value() )
 					{
-						Core::Render::AddSpriteToScene( _gameRender.m_cardFront[ anim.m_cardValue->DeckIndex() ], cardPos );
+						Core::Render::DrawSpriteThisFrame( _gameRender.m_cardFront[ anim.m_cardValue->DeckIndex() ], cardPos );
 					}
 					else
 					{
-						Core::Render::AddSpriteToScene( _gameRender.m_cardBack, cardPos );
+						Core::Render::DrawSpriteThisFrame( _gameRender.m_cardBack, cardPos );
 					}
 
 					DrawDeck( _fd, _gameData, _gameRender, anim.m_hideTopDeck );
@@ -925,40 +915,39 @@ void Setup()
 	Core::MakeSystem<Sys::GAME>( GameSystem );
 	Core::MakeSystem<Sys::GAME2>( HandleInteraction );
 
-	Core::MakeSystem<Sys::RENDER_QUEUE>( DrawMat );
 	Core::MakeSystem<Sys::RENDER_QUEUE>( DrawGame );
 	Core::MakeSystem<Sys::TEXT>( DrawText );
 
-	Core::MakeSystem<Sys::RENDER_QUEUE>( 
+	Core::MakeSystem<Sys::GAME>(
 		[]
 		(
 			Core::FrameData const& _fd,
 			Core::Render::FrameData const& _rfd,
-			Cardie& _cardie
+			Cardie& _cardie,
+			Core::Transform2D& _trans
 		)
 		{
-			_cardie.m_trans.m_pos += 200.0f * _fd.dt * _cardie.m_dir;
-			if ( _cardie.m_trans.m_pos.x <= 0 )
+			_trans.T().m_pos += 200.0f * _fd.dt * _cardie.m_dir;
+			if ( _trans.T().m_pos.x <= 0 )
 			{
-				_cardie.m_trans.m_pos.x = 0;
+				_trans.T().m_pos.x = 0;
 				_cardie.m_dir.x = -_cardie.m_dir.x;
 			}
-			if ( _cardie.m_trans.m_pos.x >= _rfd.renderArea.f.x )
+			if ( _trans.T().m_pos.x >= _rfd.renderArea.f.x )
 			{
-				_cardie.m_trans.m_pos.x = _rfd.renderArea.f.x;
+				_trans.T().m_pos.x = _rfd.renderArea.f.x;
 				_cardie.m_dir.x = -_cardie.m_dir.x;
 			}
-			if ( _cardie.m_trans.m_pos.y <= 0 )
+			if ( _trans.T().m_pos.y <= 0 )
 			{
-				_cardie.m_trans.m_pos.y = 0;
+				_trans.T().m_pos.y = 0;
 				_cardie.m_dir.y = -_cardie.m_dir.y;
 			}
-			if ( _cardie.m_trans.m_pos.y >= _rfd.renderArea.f.y )
+			if ( _trans.T().m_pos.y >= _rfd.renderArea.f.y )
 			{
-				_cardie.m_trans.m_pos.y = _rfd.renderArea.f.y;
+				_trans.T().m_pos.y = _rfd.renderArea.f.y;
 				_cardie.m_dir.y = -_cardie.m_dir.y;
 			}
-			Core::Render::AddSpriteToScene( _cardie.m_sprite, _cardie.m_trans );
 		}
 	);
 }

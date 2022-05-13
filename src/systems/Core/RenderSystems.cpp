@@ -19,12 +19,12 @@ namespace Core
 
 				case Ambient:
 				{
-					AddAmbientLightToScene(_light.m_colour * _light.m_intensity);
+					AddAmbientLightThisFrame(_light.m_colour * _light.m_intensity);
 					break;
 				}
 				case Directional:
 				{
-					LightSetter lightSetter = AddLightToScene();
+					LightSetter lightSetter = AddLightThisFrame();
 					lightSetter.Col = Vec4(_light.m_colour, _light.m_intensity);
 
 					Trans const worldT = _t.CalculateWorldTransform();
@@ -37,7 +37,7 @@ namespace Core
 				}
 				case Point:
 				{
-					LightSetter lightSetter = AddLightToScene();
+					LightSetter lightSetter = AddLightThisFrame();
 					lightSetter.Col = Vec4(_light.m_colour, _light.m_intensity);
 
 					Trans const worldT = _t.CalculateWorldTransform();
@@ -53,7 +53,7 @@ namespace Core
 				}
 				case Spotlight:
 				{
-					LightSetter lightSetter = AddLightToScene();
+					LightSetter lightSetter = AddLightThisFrame();
 					lightSetter.Col = Vec4(_light.m_colour, _light.m_intensity);
 
 					Trans const worldT = _t.CalculateWorldTransform();
@@ -77,18 +77,18 @@ namespace Core
 			{
 				if (_model.m_drawDefaultPass)
 				{
-					AddModelToScene(_model.m_modelID, _t.CalculateWorldTransform());
+					DrawModelThisFrame(_model.m_modelID, _t.CalculateWorldTransform());
 				}
 			});
 
 			Core::MakeSystem<Sys::RENDER_QUEUE>([](Core::Render::Skybox const& _skybox)
 			{
-				AddSkyboxToScene(_skybox.m_cubemapID);
+				DrawSkyboxThisFrame(_skybox.m_cubemapID);
 			});
 
 			Core::MakeSystem<Sys::RENDER_QUEUE>([](Core::Render::Sprite const& _sprite, Core::Transform2D const& _t)
 			{
-				AddSpriteToScene(_sprite.m_spriteID, _t.CalculateWorldTransform());
+				UpdateSpriteInScene( _sprite.m_spriteSceneID, _t.CalculateWorldTransform() );
 			});
 
 

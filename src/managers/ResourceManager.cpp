@@ -18,12 +18,10 @@
 
 #include "shaders/main.h"
 
-static Core::Resource::ModelID::ValueType g_nextModelID = 0;
-
 static Core::Resource::TextureSampleID g_defaultTextureID{}; // used for missing textures
 static Core::Resource::TextureSampleID g_defaultNormalTextureID{}; // used for missing normal textures
-static absl::flat_hash_map<Core::Resource::TextureID, Core::Resource::TextureData> g_textures;
-static absl::flat_hash_map<Core::Resource::ModelID, Core::Resource::ModelData> g_models;
+static StaticVector<Core::Resource::TextureID, Core::Resource::TextureData> g_textures;
+static StaticVector<Core::Resource::ModelID, Core::Resource::ModelData> g_models;
 
 static Core::Resource::SpriteID::ValueType g_nextSpriteID = 0;
 static StaticVector<Core::Resource::SpriteID, Core::Resource::SpriteData> g_sprites;
@@ -96,13 +94,12 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		static ModelID NewModelID() { return g_nextModelID++; }
-		static SoundEffectID NewSoundEffectID() { kaAssert(g_nextSoundEffectID < g_maxSoundEffects, "ran out of sound effects"); return g_nextSoundEffectID++; }
-		static MusicID NewMusicID() { kaAssert(g_nextMusicID < g_maxMusic, "ran out of music"); return g_nextMusicID++; }
+		static SoundEffectID NewSoundEffectID() { kaAssert( g_nextSoundEffectID < g_maxSoundEffects, "ran out of sound effects" ); return SoundEffectID( g_nextSoundEffectID++ ); }
+		static MusicID NewMusicID() { kaAssert( g_nextMusicID < g_maxMusic, "ran out of music" ); return MusicID( g_nextMusicID++ ); }
 
 		//--------------------------------------------------------------------------------
-		TextureData const& GetTexture(TextureID _texture) { return g_textures.at(_texture); }
-		ModelData const& GetModel(ModelID _model) { return g_models.at(_model); }
+		TextureData const& GetTexture(TextureID _texture) { return g_textures[ _texture ]; }
+		ModelData const& GetModel(ModelID _model) { return g_models[ _model ]; }
 		SpriteData const& GetSprite(SpriteID _sprite) { return g_sprites[ _sprite ]; }
 		SoundEffectData& GetSoundEffect(SoundEffectID _soundEffect) { return g_soundEffects[_soundEffect.GetValue()]; }
 		MusicData& GetMusic(MusicID _music) { return g_music[_music.GetValue()]; }
@@ -309,7 +306,7 @@ namespace Core
 				return false;
 			}
 
-			o_textureID = imageID;
+			o_textureID = g_textures.Insert(imageID);
 			TextureData& newTextureData = g_textures[o_textureID];
 			newTextureData.m_path = _path;
 			newTextureData.m_type = _type;
@@ -477,9 +474,9 @@ namespace Core
 			}
 
 			// now finalise by making texture bindings
-			o_newMesh.m_bindings.fs_images[SLOT_main_mat_diffuseTex] = g_defaultTextureID.GetValue();
-			o_newMesh.m_bindings.fs_images[SLOT_main_mat_specularTex] = g_defaultTextureID.GetValue();
-			o_newMesh.m_bindings.fs_images[SLOT_main_mat_normalTex] = g_defaultNormalTextureID.GetValue();
+			o_newMesh.m_bindings.fs_images[SLOT_main_mat_diffuseTex] = g_defaultTextureID.GetSokolID();
+			o_newMesh.m_bindings.fs_images[SLOT_main_mat_specularTex] = g_defaultTextureID.GetSokolID();
+			o_newMesh.m_bindings.fs_images[SLOT_main_mat_normalTex] = g_defaultNormalTextureID.GetSokolID();
 			for (TextureID const& texID : o_newMesh.m_textures)
 			{
 				TextureData const& tex = GetTexture(texID);
@@ -489,17 +486,17 @@ namespace Core
 
 				case Diffuse:
 				{
-					o_newMesh.m_bindings.fs_images[SLOT_main_mat_diffuseTex] = texID.GetValue();
+					o_newMesh.m_bindings.fs_images[SLOT_main_mat_diffuseTex] = texID.GetSokolID();
 					break;
 				}
 				case Specular:
 				{
-					o_newMesh.m_bindings.fs_images[SLOT_main_mat_specularTex] = texID.GetValue();
+					o_newMesh.m_bindings.fs_images[SLOT_main_mat_specularTex] = texID.GetSokolID();
 					break;
 				}
 				case Normal:
 				{
-					o_newMesh.m_bindings.fs_images[SLOT_main_mat_normalTex] = texID.GetValue();
+					o_newMesh.m_bindings.fs_images[SLOT_main_mat_normalTex] = texID.GetSokolID();
 					break;
 				}
 				case General2D:
@@ -570,7 +567,7 @@ namespace Core
 			}
 			std::string const directory = _path.substr(0, _path.find_last_of('/'));
 
-			o_modelID = NewModelID();
+			o_modelID = g_models.Emplace();
 			ModelData& newModel = g_models[o_modelID];
 			ModelLoadData loadData;
 			newModel.m_path = _path;
@@ -677,7 +674,7 @@ namespace Core
 			sg_image newImageID{};
 			if (LoadCubemapFromFile(_cubemapPath, newImageID))
 			{
-				o_cubemapID = newImageID;
+				o_cubemapID = g_textures.Insert(newImageID);
 				TextureData& newTexData = g_textures[o_cubemapID];
 				newTexData.m_type = TextureData::Type::Cubemap;
 				newTexData.m_path = _cubemapPath;
@@ -808,7 +805,7 @@ namespace Core
 			{
 				if (g_soundEffects[i].m_path == _path)
 				{
-					o_soundEffectID = i;
+					o_soundEffectID = SoundEffectID( i );
 					return true;
 				}
 			}
@@ -836,7 +833,7 @@ namespace Core
 			{
 				if (g_music[i].m_path == _path)
 				{
-					o_musicID = i;
+					o_musicID = MusicID( i );
 					return true;
 				}
 			}

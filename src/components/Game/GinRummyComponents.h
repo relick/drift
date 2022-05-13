@@ -200,11 +200,6 @@ struct GameData
 	bool Ready() const { return m_animQueue.empty(); }
 };
 
-struct Mat
-{
-	Core::Resource::SpriteID m_matSprite;
-};
-
 struct GameRender
 {
 	std::array<Core::Resource::SpriteID, 52> m_cardFront;
@@ -230,8 +225,6 @@ struct PlayerInteraction
 // Hehe
 struct Cardie
 {
-	Core::Resource::SpriteID m_sprite;
-	Trans2D m_trans;
 	Vec2 m_dir;
 };
 
@@ -240,8 +233,6 @@ struct Cardie
 
 namespace Core
 {
-template<>
-void AddComponent( EntityID const _entity, Game::GinRummy::Mat const& _component );
 template<>
 void AddComponent( EntityID const _entity, Game::GinRummy::GameRender const& _component );
 }

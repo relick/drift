@@ -14,10 +14,15 @@ namespace Core
 		using ValueType = T_Value;
 
 	private:
-		static constexpr ValueType null_id{ static_cast<ValueType>(-1) };
+		static constexpr ValueType null_id{ static_cast< ValueType >( -1 ) };
 		ValueType m_id{ null_id };
 
 	public:
+		static ID<T_IDType, T_Value> FromIndex( usize i )
+		{
+			return ID<T_IDType, T_Value>{ ValueType( i ) };
+		}
+
 		ValueType GetValue() const { return m_id; }
 		bool IsValid() const { return m_id != null_id; }
 		bool IsNull() const { return m_id == null_id; }
@@ -25,7 +30,7 @@ namespace Core
 		bool operator<(ID<T_IDType, ValueType> const& _b) const { return m_id < _b.m_id; }
 
 		ID() = default;
-		ID(ValueType _idvalue) : m_id{ _idvalue } {}
+		explicit ID(ValueType _idvalue) : m_id{ _idvalue } {}
 		ID& operator=(ID<T_IDType, ValueType> const& _b) { m_id = _b.m_id; return *this; }
 	};
 
@@ -46,28 +51,34 @@ namespace Core
 	{
 	public:
 		using SokolCoreType = decltype(T_SokolIDValue::id);
-		using ValueType = T_SokolIDValue;
+		using SokolIDType = T_SokolIDValue;
 		static constexpr bool s_trackedByGame = t_trackedByGame;
 
 	private:
-		static constexpr ValueType null_id{ static_cast<SokolCoreType>(SG_INVALID_ID) };
-		ValueType m_id{ null_id };
+		static constexpr SokolIDType null_id{ static_cast<SokolCoreType>(SG_INVALID_ID) };
+		SokolIDType m_id{ null_id };
 
 	public:
-		ValueType GetValue() const { return m_id; }
+		static SokolIDWrapper<T_SokolIDValue, t_trackedByGame> FromIndex( usize i )
+		{
+			return SokolIDWrapper<T_SokolIDValue, t_trackedByGame>{ SokolIDType{ SokolCoreType( i ) } };
+		}
+
+		SokolCoreType GetValue() const { return m_id.id; }
+		SokolIDType GetSokolID() const { return m_id; }
 		bool IsValid() const { return m_id.id != null_id.id; }
 		bool IsNull() const { return m_id.id == null_id.id; }
 		template<bool t_otherTrackedByGame>
-		bool operator==(SokolIDWrapper<ValueType, t_otherTrackedByGame> const& _b) const { return m_id.id == _b.m_id.id; }
+		bool operator==(SokolIDWrapper<SokolIDType, t_otherTrackedByGame> const& _b) const { return m_id.id == _b.m_id.id; }
 		template<bool t_otherTrackedByGame>
-		bool operator<(SokolIDWrapper<ValueType, t_otherTrackedByGame> const& _b) const { return m_id.id < _b.m_id.id; }
+		bool operator<(SokolIDWrapper<SokolIDType, t_otherTrackedByGame> const& _b) const { return m_id.id < _b.m_id.id; }
 
 		SokolIDWrapper() = default;
-		SokolIDWrapper(ValueType _idvalue) : m_id{ _idvalue } {}
-		template<detail::AssignableSokolID<ValueType, t_trackedByGame> T_ID>
-		SokolIDWrapper(T_ID const& _b) : m_id{ _b.GetValue().id } {}
-		template<detail::AssignableSokolID<ValueType, t_trackedByGame> T_ID>
-		SokolIDWrapper& operator=(T_ID const& _b) { m_id.id = _b.GetValue().id; return *this; }
+		SokolIDWrapper(SokolIDType _idvalue) : m_id{ _idvalue } {}
+		template<detail::AssignableSokolID<SokolIDType, t_trackedByGame> T_ID>
+		SokolIDWrapper(T_ID const& _b) : m_id{ _b.GetValue() } {}
+		template<detail::AssignableSokolID<SokolIDType, t_trackedByGame> T_ID>
+		SokolIDWrapper& operator=(T_ID const& _b) { m_id.id = _b.GetValue(); return *this; }
 	};
 }
 
@@ -87,7 +98,7 @@ namespace std
 	{
 		std::size_t operator()(Core::SokolIDWrapper<T_SokolIDValue, true> const& _k) const
 		{
-			return hash<typename Core::SokolIDWrapper<T_SokolIDValue, true>::SokolCoreType>()(_k.GetValue().id);
+			return hash<typename Core::SokolIDWrapper<T_SokolIDValue, true>::SokolCoreType>()(_k.GetValue());
 		}
 	};
 }

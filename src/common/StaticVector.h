@@ -33,13 +33,13 @@ public:
 
 	std::pair<T_ID, T_Value&> operator*()
 	{
-		T_ID const id{ typename T_ID::ValueType( m_pos ) };
+		T_ID const id = T_ID::FromIndex( m_pos + m_vec.m_offset );
 		return { id, m_vec[ id ] };
 	}
 
 	std::pair<T_ID, T_Value const&> operator*() const
 	{
-		T_ID const id{ typename T_ID::ValueType( m_pos ) };
+		T_ID const id = T_ID::FromIndex( m_pos + m_vec.m_offset );
 		return { id, m_vec[ id ] };
 	}
 
@@ -55,13 +55,13 @@ public:
 
 	StaticVectorIterator< T_ID, T_Value >& operator++()
 	{
-		m_pos = m_vec.FindNextActiveSlot( m_pos - 1u );
+		m_pos = m_vec.FindNextActiveSlot( m_pos + 1u );
 		return *this;
 	}
 	StaticVectorIterator< T_ID, T_Value > operator++( int )
 	{
 		StaticVectorIterator< T_ID, T_Value > temp = *this;
-		m_pos = m_vec.FindNextActiveSlot( m_pos - 1u );
+		m_pos = m_vec.FindNextActiveSlot( m_pos + 1u );
 		return temp;
 	}
 
@@ -93,6 +93,7 @@ class StaticVector
 
 	std::vector<RawData> m_data;
 	std::vector<uint8> m_active;
+	usize m_offset{ 0 };
 
 public:
 	StaticVector()
@@ -110,6 +111,31 @@ public:
 	}
 
 	template<typename... Args>
+	T_ID Insert( T_ID _pos, Args&&... _args )
+	{
+		if ( m_data.empty() )
+		{
+			m_offset = _pos.GetValue();
+		}
+
+		kaAssert( m_offset <= _pos.GetValue() );
+
+		usize const slot = _pos.GetValue() - m_offset;
+		if ( slot >= m_active.size() )
+		{
+			m_data.resize( slot + 1u );
+			m_active.resize( slot + 1u );
+		}
+
+		kaAssert( m_active[ slot ] == Free );
+
+		m_active[ slot ] = Active;
+		::new ( &m_data[ slot ] ) T_Value( std::forward<Args>( _args )... );
+
+		return _pos;
+	}
+
+	template<typename... Args>
 	T_ID Emplace( Args&&... _args )
 	{
 		usize const nextSlot = FindFirstFreeSlot();
@@ -122,29 +148,29 @@ public:
 		m_active[ nextSlot ] = Active;
 		::new ( &m_data[ nextSlot ] ) T_Value( std::forward<Args>( _args )... );
 
-		return T_ID{ typename T_ID::ValueType( nextSlot ) };
+		return T_ID::FromIndex( nextSlot + m_offset );
 	}
 
 	T_Value& operator[]( T_ID _id )
 	{
-		kaAssert( _id.GetValue() < m_active.size() );
-		kaAssert( m_active[ _id.GetValue() ] == Active );
-		return *std::launder( reinterpret_cast< T_Value* >( &m_data[ _id.GetValue() ] ) );
+		kaAssert( _id.GetValue() - m_offset < m_active.size() );
+		kaAssert( m_active[ _id.GetValue() - m_offset ] == Active );
+		return *std::launder( reinterpret_cast< T_Value* >( &m_data[ _id.GetValue() - m_offset ] ) );
 	}
 
 	T_Value const& operator[]( T_ID _id ) const
 	{
-		kaAssert( _id.GetValue() < m_active.size() );
-		kaAssert( m_active[ _id.GetValue() ] == Active );
-		return *std::launder( reinterpret_cast< T_Value const* >( &m_data[ _id.GetValue() ] ) );
+		kaAssert( _id.GetValue() - m_offset < m_active.size() );
+		kaAssert( m_active[ _id.GetValue() - m_offset ] == Active );
+		return *std::launder( reinterpret_cast< T_Value const* >( &m_data[ _id.GetValue() - m_offset ] ) );
 	}
 
 	void Erase( T_ID _id )
 	{
-		kaAssert( _id.GetValue() < m_active.size() );
-		kaAssert( m_active[ _id.GetValue() ] == Active );
-		std::destroy_at( std::launder( reinterpret_cast< T_Value* >( &m_data[ _id.GetValue() ] ) ) );
-		m_active[ _id.GetValue() ] = Free;
+		kaAssert( _id.GetValue() - m_offset < m_active.size() );
+		kaAssert( m_active[ _id.GetValue() - m_offset ] == Active );
+		std::destroy_at( std::launder( reinterpret_cast< T_Value* >( &m_data[ _id.GetValue() - m_offset ] ) ) );
+		m_active[ _id.GetValue() - m_offset ] = Free;
 	}
 
 	Iter begin()

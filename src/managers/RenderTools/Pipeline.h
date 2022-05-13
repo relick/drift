@@ -86,7 +86,7 @@ namespace Core::Render
 #endif
 				m_depthTarget = sg_make_image(depthTargetDesc);
 
-				passDesc.depth_stencil_attachment = { .image = m_depthTarget->GetValue(), .mip_level = 0 };
+				passDesc.depth_stencil_attachment = { .image = m_depthTarget->GetSokolID(), .mip_level = 0 };
 			}
 
 			kaAssert(_numCol <= 4, "More than 4 colour buffers requested, instantiating only 4.");
@@ -104,7 +104,7 @@ namespace Core::Render
 #endif
 				m_colTargets[i] = sg_make_image(colTargetDesc);
 
-				passDesc.color_attachments[i] = { .image = m_colTargets[i]->GetValue(), .mip_level = 0 };
+				passDesc.color_attachments[i] = { .image = m_colTargets[i]->GetSokolID(), .mip_level = 0 };
 			}
 
 			m_valid = _depthDetail.use_depth || _numCol > 0;

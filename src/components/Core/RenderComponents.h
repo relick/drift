@@ -3,8 +3,10 @@
 #include "common.h"
 #include "managers/EntityManager.h"
 #include "managers/ResourceIDs.h"
+#include "managers/RenderIDs.h"
 
 #include <ecs/flags.h>
+#include <variant>
 
 namespace Core
 {
@@ -71,7 +73,9 @@ namespace Core
 
 		struct SpriteDesc
 		{
-			std::string m_filePath;
+			using SpriteInit = std::variant< std::string, Resource::SpriteID >;
+			SpriteInit m_spriteInit;
+			Trans2D m_initTrans;
 		};
 
 		struct Sprite
@@ -79,6 +83,7 @@ namespace Core
 			use_initialiser;
 
 			Resource::SpriteID m_spriteID;
+			Render::SpriteSceneID m_spriteSceneID;
 		};
 
 	}
@@ -92,4 +97,6 @@ namespace Core
 	template<>
 	void AddComponent(EntityID const _entity, Render::SpriteDesc const& _desc);
 
+	template<>
+	void CleanupComponent<Render::Sprite>( EntityID const _entity );
 }

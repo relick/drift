@@ -1,6 +1,7 @@
 #include "RenderComponents.h"
 
 #include "managers/ResourceManager.h"
+#include "managers/RenderManager.h"
 
 namespace Core
 {
@@ -39,13 +40,33 @@ namespace Core
 	{
 		Render::Sprite newComponent{};
 
-		bool const loaded = Core::Resource::LoadSprite(_desc.m_filePath, newComponent.m_spriteID);
+		bool loaded = true;
+		if ( std::string const* filePath = std::get_if<std::string>( &_desc.m_spriteInit ); filePath != nullptr )
+		{
+			loaded = Core::Resource::LoadSprite( *filePath, newComponent.m_spriteID );
+			kaAssert( loaded, "couldn't load sprite, not adding component" );
+		}
+		else
+		{
+			newComponent.m_spriteID = std::get<Resource::SpriteID>( _desc.m_spriteInit );
+		}
 
-		kaAssert(loaded, "couldn't load model, not adding component");
 		if (loaded)
 		{
+			// Add to render manager
+			newComponent.m_spriteSceneID = Core::Render::AddSpriteToScene( newComponent.m_spriteID, _desc.m_initTrans );
+			
 			// Add to ecs
 			Core::ECS::AddComponent(_entity, newComponent);
 		}
+	}
+
+	template<>
+	void CleanupComponent<Render::Sprite>( EntityID const _entity )
+	{
+		Render::Sprite* const oldComponent = Core::GetComponent<Render::Sprite>(_entity);
+		kaAssert( oldComponent );
+
+		Core::Render::RemoveSpriteFromScene( oldComponent->m_spriteSceneID );
 	}
 }

@@ -34,7 +34,6 @@ namespace Core
 			{
 #if IMGUI_DEBUG_ENABLED
 				simgui_desc_t simguiDesc{};
-				simguiDesc.dpi_scale = sapp_dpi_scale();
 				simguiDesc.ini_filename = "ImGuiSettings.ini";
 				simguiDesc.no_default_font = true;
 				simgui_setup(&simguiDesc);
@@ -70,7 +69,14 @@ namespace Core
 
 				Core::MakeSystem<Sys::FRAME_START>([](Core::FrameData const& _fd, Core::Render::FrameData const& _rfd)
 				{
-					simgui_new_frame(_rfd.contextWindow.i.x, _rfd.contextWindow.i.y, _fd.unscaled_ddt > 0.0 ? _fd.unscaled_ddt : DBL_EPSILON);
+					simgui_new_frame(
+						{
+							.width = _rfd.contextWindow.i.x,
+							.height = _rfd.contextWindow.i.y,
+							.delta_time = _fd.unscaled_ddt > 0.0 ? _fd.unscaled_ddt : DBL_EPSILON,
+							.dpi_scale = sapp_dpi_scale() // TODO: need to fix?
+						}
+					);
 				});
 
 				Core::MakeSystem<Sys::IMGUI>([](Core::MT_Only&, Core::FrameData const& _fd, Core::Render::FrameData const& _rfd)

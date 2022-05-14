@@ -1,0 +1,2 @@
+#define GLSL_CONSTANT const
+#define GLSL_UINT32 uint

@@ -1,0 +1,1 @@
+GLSL_CONSTANT GLSL_UINT32 SpriteFlag_Hidden = 0x1u << 0u;

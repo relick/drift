@@ -30,3 +30,7 @@ constexpr void SafeDelete(T*& _obj)
 // component helpers
 #define use_initialiser struct _initialiser_only {}
 #define not_a_component struct _not_a_component {}
+
+// GLSL header cross-usage
+#define GLSL_CONSTANT inline constexpr
+#define GLSL_UINT32 uint32

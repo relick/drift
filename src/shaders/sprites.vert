@@ -22,7 +22,7 @@ out vec2 UV;
 
 void main()
 {
-    if (aSpriteFlags != 0u)
+    if ((aSpriteFlags & SpriteFlag_Hidden) != 0u)
     {
        gl_Position = vec4(2.0, 0.0, 0.0, 1.0);
        return;

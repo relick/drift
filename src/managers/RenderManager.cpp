@@ -11,6 +11,7 @@
 #include "shaders/depth_only.h"
 #include "shaders/skybox.h"
 #include "shaders/sprites.h"
+#include "shaders/sprites_constants.glslh"
 
 #include "RenderTools/Pipeline.h"
 

@@ -1217,6 +1217,8 @@ namespace Core
 			sbData.m_rotation = _screenTrans.m_rot.m_rads;
 			if ( prevZ != _screenTrans.m_z )
 			{
+				// TODO: this is not thread safe
+
 				g_frameScene.sceneSpriteData.Reorder( _sprite );
 			}
 		}

@@ -46,7 +46,7 @@ void GinRummy::Setup()
 		kaAssert( success );
 	}
 
-	usize const N = 262'140;
+	usize const N = 200'000;
 
 	std::random_device rd;
 	std::mt19937 rng{ rd() };

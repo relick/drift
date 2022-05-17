@@ -2,6 +2,7 @@
 
 #include "managers/ResourceManager.h"
 #include "managers/RenderManager.h"
+#include "shaders/sprites_constants.glslh"
 
 #include <algorithm>
 #include <random>
@@ -50,8 +51,8 @@ Card Discard::CheckTop
 (
 )	const
 {
-	kaAssert( m_topDiscard.has_value() );
-	return *m_topDiscard;
+	kaAssert( !m_discards.empty() );
+	return m_discards.back();
 }
 
 void Discard::Add
@@ -59,17 +60,14 @@ void Discard::Add
 	Card _card
 )
 {
-	m_discardPileSize++;
-	m_secondDiscard = m_topDiscard;
-	m_topDiscard = _card;
+	m_discards.push_back( _card );
 }
 
 Card Discard::PickUpTop()
 {
-	kaAssert( m_topDiscard.has_value() );
-	Card const top = *m_topDiscard;
-	m_topDiscard = m_secondDiscard;
-	m_discardPileSize--;
+	kaAssert( !m_discards.empty() );
+	Card const top = m_discards.back();
+	m_discards.pop_back();
 	return top;
 }
 
@@ -275,27 +273,32 @@ void AddComponent
 )
 {
 	Game::GinRummy::GameRender newComponent = _component;
-	if ( newComponent.m_cardBack.IsNull() )
+	Core::Resource::SpriteID cardBack;
 	{
-		bool const success = Core::Resource::LoadSprite( "assets/encrypted/sprites/ginrummy/cardback.spr", newComponent.m_cardBack );
+		bool const success = Core::Resource::LoadSprite( "assets/encrypted/sprites/ginrummy/cardback.spr", cardBack );
 		kaAssert( success );
 	}
 
 	static constexpr std::array<char const*, 4> suitInitials{ "D", "C", "H", "S", };
+	absl::InlinedVector<Core::Resource::SpriteID, 52> cardFronts;
+	cardFronts.resize( 52 );
 
 	for ( usize suitI = 0; suitI < 4; ++suitI )
 	{
 		for ( usize faceI = 0; faceI < 13; ++faceI )
 		{
-			if ( newComponent.m_cardFront[ suitI * 13 + faceI ].IsNull() )
-			{
-				bool const success = Core::Resource::LoadSprite(
-					std::format( "assets/encrypted/sprites/ginrummy/cardfront_sprites/{:s}{:d}.spr", suitInitials[ suitI ], faceI ),
-					newComponent.m_cardFront[ suitI * 13 + faceI ]
-				);
-				kaAssert( success );
-			}
+			bool const success = Core::Resource::LoadSprite(
+				std::format( "assets/encrypted/sprites/ginrummy/cardfront_sprites/{:s}{:d}.spr", suitInitials[ suitI ], faceI ),
+				cardFronts[ suitI * 13 + faceI ]
+			);
+			kaAssert( success );
 		}
+	}
+
+	for ( usize cardI = 0; cardI < 52; ++cardI )
+	{
+		newComponent.m_cards[ cardI ].m_cardFront = Core::Render::AddSpriteToScene( cardFronts[ cardI ], Trans2D(), SpriteFlag_Hidden );
+		newComponent.m_cards[ cardI ].m_cardBack = Core::Render::AddSpriteToScene( cardBack, Trans2D(), SpriteFlag_Hidden );
 	}
 
 	ECS::AddComponent( _entity, newComponent );

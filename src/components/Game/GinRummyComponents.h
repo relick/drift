@@ -3,6 +3,7 @@
 #include "common.h"
 
 #include "managers/ResourceIDs.h"
+#include "managers/RenderIDs.h"
 #include "managers/EntityManager.h"
 
 #include <array>
@@ -73,11 +74,9 @@ struct Deck
 struct Discard
 {
 	// Only top 2 are relevant, the rest are in an inaccessible pit
-	std::optional<Card> m_topDiscard;
-	std::optional<Card> m_secondDiscard;
-	usize m_discardPileSize{ 0 };
+	std::vector<Card> m_discards;
 
-	usize Size() const { return m_discardPileSize; }
+	usize Size() const { return m_discards.size(); }
 	Card CheckTop() const;
 
 	void Add( Card _card );
@@ -156,7 +155,8 @@ struct AnimMoveCard
 	Vec2 m_start;
 	Vec2 m_end;
 
-	std::optional<Card> m_cardValue;
+	Card m_cardValue;
+	bool m_showFront{ false };
 	std::array<bool, 2> m_hideDrawn{ false };
 	bool m_hideTopDiscard{ false };
 	bool m_hideTopDeck{ false };
@@ -202,8 +202,16 @@ struct GameData
 
 struct GameRender
 {
-	std::array<Core::Resource::SpriteID, 52> m_cardFront;
-	Core::Resource::SpriteID m_cardBack;
+	struct CardRender
+	{
+		Core::Render::SpriteSceneID m_cardFront;
+		Core::Render::SpriteSceneID m_cardBack;
+		bool m_showCard{ false };
+		bool m_showFront{ false };
+		Trans2D m_trans;
+	};
+
+	std::array<CardRender, 52> m_cards;
 	usize m_highlightedPlayerCard{ ~0u };
 	std::optional<uint32> m_playerHandValue;
 	std::optional<uint32> m_playerFullHandValue;

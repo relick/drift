@@ -6,6 +6,7 @@
 #include "managers/RenderManager.h"
 #include "managers/InputManager.h"
 #include "managers/TextManager.h"
+#include "shaders/sprites_constants.glslh"
 
 namespace Game
 {
@@ -175,6 +176,8 @@ static bool ProcessRound
 			anim.m_start = GetDiscardTop( _gameData );
 			anim.m_end = c_aiDrawnLoc;
 			anim.m_hideDrawn[ 1 ] = true;
+			anim.m_cardValue = *_gameData.m_players[ 1 ].m_hand.m_drawnCard;
+			
 			_gameData.QueueAnim( std::move( anim ) );
 			_gameData.QueueAnim( AnimAIDelay{} );
 		}
@@ -194,6 +197,8 @@ static bool ProcessRound
 		anim.m_start = c_aiDrawnLoc;
 		anim.m_end = GetDiscardTop( _gameData );
 		anim.m_hideTopDiscard = true;
+		anim.m_cardValue = _gameData.m_discard.CheckTop();
+
 		_gameData.QueueAnim( std::move( anim ) );
 
 		break;
@@ -212,6 +217,8 @@ static bool ProcessRound
 		anim.m_start = madeChoice ? GetDiscardTop( _gameData ) : GetDeckTop( _gameData );
 		anim.m_end = c_aiDrawnLoc;
 		anim.m_hideDrawn[ 1 ] = true;
+		anim.m_cardValue = *_gameData.m_players[ 1 ].m_hand.m_drawnCard;
+
 		_gameData.QueueAnim( std::move( anim ) );
 		_gameData.QueueAnim( AnimAIDelay{} );
 		break;
@@ -226,6 +233,8 @@ static bool ProcessRound
 		anim.m_start = c_aiDrawnLoc;
 		anim.m_end = GetDiscardTop( _gameData );
 		anim.m_hideTopDiscard = true;
+		anim.m_cardValue = _gameData.m_discard.CheckTop();
+
 		_gameData.QueueAnim( std::move( anim ) );
 
 		/*bool const bigGin = _gameData.m_players[1].m_hand.CalculateValue(true) == 0;
@@ -337,7 +346,7 @@ static void GameSystem
 static void DrawDeck
 (
 	Core::FrameData const& _fd,
-	Game::GinRummy::GameData& _gameData,
+	Game::GinRummy::GameData const& _gameData,
 	Game::GinRummy::GameRender& _gameRender,
 	bool _hideTopCard = false
 )
@@ -356,7 +365,12 @@ static void DrawDeck
 				}
 				deckPos.m_pos = glm::floor( deckPos.m_pos );
 			}
-			Core::Render::DrawSpriteThisFrame( _gameRender.m_cardBack, deckPos );
+
+			GameRender::CardRender& card = _gameRender.m_cards[ _gameData.m_deck.m_cards[ cardI ].DeckIndex() ];
+			card.m_showCard = true;
+			card.m_showFront = false;
+			card.m_trans = deckPos;
+
 			deckPos.m_pos.y -= c_pileCardHeight;
 			deckPos.m_z += 1.0f / 108.0f;
 		}
@@ -366,7 +380,7 @@ static void DrawDeck
 static void DrawDiscard
 (
 	Core::FrameData const& _fd,
-	Game::GinRummy::GameData& _gameData,
+	Game::GinRummy::GameData const& _gameData,
 	Game::GinRummy::GameRender& _gameRender,
 	bool _hideTopCard = false
 )
@@ -383,19 +397,28 @@ static void DrawDiscard
 				{
 					break;
 				}
-				kaAssert( _gameData.m_discard.m_topDiscard.has_value() );
 				discardPos.m_pos = glm::floor( discardPos.m_pos );
-				Core::Render::DrawSpriteThisFrame( _gameRender.m_cardFront[ _gameData.m_discard.CheckTop().DeckIndex() ], discardPos );
+
+				GameRender::CardRender& card = _gameRender.m_cards[ _gameData.m_discard.CheckTop().DeckIndex() ];
+				card.m_showCard = true;
+				card.m_showFront = true;
+				card.m_trans = discardPos;
 			}
 			else if ( cardI == _gameData.m_discard.Size() - 2 )
 			{
-				kaAssert( _gameData.m_discard.m_secondDiscard.has_value() );
 				discardPos.m_pos = glm::floor( discardPos.m_pos );
-				Core::Render::DrawSpriteThisFrame( _gameRender.m_cardFront[ _gameData.m_discard.m_secondDiscard->DeckIndex() ], discardPos );
+
+				GameRender::CardRender& card = _gameRender.m_cards[ _gameData.m_discard.m_discards[ cardI ].DeckIndex() ];
+				card.m_showCard = true;
+				card.m_showFront = true;
+				card.m_trans = discardPos;
 			}
 			else
 			{
-				Core::Render::DrawSpriteThisFrame( _gameRender.m_cardFront[ 0 ], discardPos );
+				GameRender::CardRender& card = _gameRender.m_cards[ _gameData.m_discard.m_discards[ cardI ].DeckIndex() ];
+				card.m_showCard = true;
+				card.m_showFront = true;
+				card.m_trans = discardPos;
 			}
 			discardPos.m_pos.y -= c_pileCardHeight;
 			discardPos.m_z += 1.0f / 108.0f;
@@ -406,7 +429,7 @@ static void DrawDiscard
 static void DrawPlayerHand
 (
 	Core::FrameData const& _fd,
-	Game::GinRummy::GameData& _gameData,
+	Game::GinRummy::GameData const& _gameData,
 	Game::GinRummy::GameRender& _gameRender,
 	bool _hideDrawnCard = false
 )
@@ -427,8 +450,13 @@ static void DrawPlayerHand
 				heldCardTrans.m_pos = glm::floor( Core::Input::GetMousePos() - _gameRender.m_holdingCard->m_grabPoint );
 				heldCardTrans.m_z = cardPos.m_z;
 				cardPos.m_z += 1.0f / 108.0f;
-				Core::Render::DrawSpriteThisFrame( _gameRender.m_cardFront[ _gameData.m_players[ 0 ].m_hand.m_cards[ cardI ].DeckIndex() ], heldCardTrans );
 				cardPos.m_pos.x += c_handCardSeparation;
+
+				GameRender::CardRender& card = _gameRender.m_cards[ _gameData.m_players[ 0 ].m_hand.m_cards[ cardI ].DeckIndex() ];
+				card.m_showCard = true;
+				card.m_showFront = true;
+				card.m_trans = heldCardTrans;
+
 				continue;
 			}
 		}
@@ -437,7 +465,11 @@ static void DrawPlayerHand
 		{
 			cardPos.m_pos.y = c_playerStartLoc.y - 10;
 		}
-		Core::Render::DrawSpriteThisFrame( _gameRender.m_cardFront[ _gameData.m_players[ 0 ].m_hand.m_cards[ cardI ].DeckIndex() ], cardPos );
+		GameRender::CardRender& card = _gameRender.m_cards[ _gameData.m_players[ 0 ].m_hand.m_cards[ cardI ].DeckIndex() ];
+		card.m_showCard = true;
+		card.m_showFront = true;
+		card.m_trans = cardPos;
+
 		cardPos.m_pos.x += c_handCardSeparation;
 		cardPos.m_pos.y = c_playerStartLoc.y;
 		cardPos.m_z += 1.0f / 108.0f;
@@ -452,20 +484,28 @@ static void DrawPlayerHand
 				Trans2D heldCardTrans;
 				heldCardTrans.m_pos = glm::floor( Core::Input::GetMousePos() - _gameRender.m_holdingCard->m_grabPoint );
 				heldCardTrans.m_z = cardPos.m_z;
-				Core::Render::DrawSpriteThisFrame( _gameRender.m_cardFront[ _gameData.m_players[ 0 ].m_hand.m_drawnCard->DeckIndex() ], heldCardTrans );
+
+				GameRender::CardRender& card = _gameRender.m_cards[ _gameData.m_players[ 0 ].m_hand.m_drawnCard->DeckIndex() ];
+				card.m_showCard = true;
+				card.m_showFront = true;
+				card.m_trans = heldCardTrans;
 				return;
 			}
 		}
 
 		cardPos.m_pos = c_playerDrawnLoc;
-		Core::Render::DrawSpriteThisFrame( _gameRender.m_cardFront[ _gameData.m_players[ 0 ].m_hand.m_drawnCard->DeckIndex() ], cardPos );
+
+		GameRender::CardRender& card = _gameRender.m_cards[ _gameData.m_players[ 0 ].m_hand.m_drawnCard->DeckIndex() ];
+		card.m_showCard = true;
+		card.m_showFront = true;
+		card.m_trans = cardPos;
 	}
 }
 
 static void DrawAIHand
 (
 	Core::FrameData const& _fd,
-	Game::GinRummy::GameData& _gameData,
+	Game::GinRummy::GameData const& _gameData,
 	Game::GinRummy::GameRender& _gameRender,
 	bool _hideDrawnCard = false
 )
@@ -474,7 +514,11 @@ static void DrawAIHand
 	cardPos.m_pos = c_aiStartLoc;
 	for ( usize cardI = 0; cardI < 10; ++cardI )
 	{
-		Core::Render::DrawSpriteThisFrame( _gameRender.m_cardBack, cardPos );
+		GameRender::CardRender& card = _gameRender.m_cards[ _gameData.m_players[ 1 ].m_hand.m_cards[ cardI ].DeckIndex() ];
+		card.m_showCard = true;
+		card.m_showFront = false;
+		card.m_trans = cardPos;
+
 		cardPos.m_pos.x -= c_handCardSeparation;
 		cardPos.m_z += 1.0f / 108.0f;
 	}
@@ -482,7 +526,11 @@ static void DrawAIHand
 	if ( !_hideDrawnCard && _gameData.m_players[ 1 ].m_hand.m_drawnCard.has_value() )
 	{
 		cardPos.m_pos = c_aiDrawnLoc;
-		Core::Render::DrawSpriteThisFrame( _gameRender.m_cardBack, cardPos );
+
+		GameRender::CardRender& card = _gameRender.m_cards[ _gameData.m_players[ 1 ].m_hand.m_drawnCard->DeckIndex() ];
+		card.m_showCard = true;
+		card.m_showFront = false;
+		card.m_trans = cardPos;
 	}
 }
 
@@ -496,6 +544,17 @@ static void DrawGame
 	_gameRender.m_playerHandValue = std::nullopt;
 	_gameRender.m_playerFullHandValue = std::nullopt;
 
+	// Reset all cards
+	std::for_each(
+		std::execution::par_unseq,
+		_gameRender.m_cards.begin(),
+		_gameRender.m_cards.end(),
+		[]( GameRender::CardRender& _card )
+		{
+			_card.m_showCard = false;
+		}
+	);
+
 	// Debug draw whole deck
 	if constexpr ( false )
 	{
@@ -508,14 +567,12 @@ static void DrawGame
 			{
 				pos.m_pos.x = ( Vec1 )f * 24.0f;
 				pos.m_z = ( Vec1 )( s * 13 + f ) / 52.0f;
-				if ( flip )
-				{
-					Core::Render::DrawSpriteThisFrame( _gameRender.m_cardFront[ _gameData.m_deck.m_cards[ s * 13 + f ].DeckIndex() ], pos );
-				}
-				else
-				{
-					Core::Render::DrawSpriteThisFrame( _gameRender.m_cardBack, pos );
-				}
+
+				GameRender::CardRender& card = _gameRender.m_cards[ s * 13 + f ];
+				card.m_trans = pos;
+				card.m_showCard = true;
+				card.m_showFront = flip;
+
 				flip = !flip;
 			}
 		}
@@ -558,6 +615,11 @@ static void DrawGame
 					{
 						Vec1 const upToHereTime = ( Vec1 )cardI;
 						Vec1 const diff = anim.m_animatingTime - upToHereTime;
+
+						GameRender::CardRender& card = _gameRender.m_cards[ nextCardAI ? _gameData.m_players[ 1 ].m_hand.m_cards[ aiI ].DeckIndex() : _gameData.m_players[ 0 ].m_hand.m_cards[ playerI ].DeckIndex() ];
+						card.m_showCard = true;
+						card.m_showFront = false;
+
 						if ( diff <= 1.0f )
 						{
 							deckSize = 52 - cardI;
@@ -567,12 +629,13 @@ static void DrawGame
 							Trans2D cardTrans;
 							cardTrans.m_pos = cardPos;
 							cardTrans.m_z = 1.0f;
-							Core::Render::DrawSpriteThisFrame( _gameRender.m_cardBack, cardTrans );
+
+							card.m_trans = cardTrans;
 							break;
 						}
 						else
 						{
-							Core::Render::DrawSpriteThisFrame( _gameRender.m_cardBack, nextCardAI ? targetTransAI : targetTransP );
+							card.m_trans = nextCardAI ? targetTransAI : targetTransP;
 						}
 
 						if ( nextCardAI )
@@ -592,7 +655,7 @@ static void DrawGame
 
 					if ( anim.m_animatingTime >= 20.0f )
 					{
-						deckSize = 32;
+						deckSize = 31;
 
 						Vec2 const topDeckPos = c_deckStart - Vec2{ 0, ( Vec1 )deckSize * c_pileCardHeight };
 						Trans2D targetTrans;
@@ -601,7 +664,11 @@ static void DrawGame
 
 						Vec1 const diff = anim.m_animatingTime - 20.0f;
 						targetTrans.m_pos = glm::floor( Lerp( topDeckPos, targetTrans.m_pos, diff ) );
-						Core::Render::DrawSpriteThisFrame( _gameRender.m_cardBack, targetTrans );
+
+						GameRender::CardRender& card = _gameRender.m_cards[ _gameData.m_discard.CheckTop().DeckIndex() ];
+						card.m_showCard = true;
+						card.m_showFront = false;
+						card.m_trans = targetTrans;
 					}
 
 					{
@@ -610,7 +677,11 @@ static void DrawGame
 						deckPos.m_pos = c_deckStart;
 						for ( usize cardI = 0; cardI < deckSize; ++cardI )
 						{
-							Core::Render::DrawSpriteThisFrame( _gameRender.m_cardBack, deckPos );
+							GameRender::CardRender& card = _gameRender.m_cards[ _gameData.m_deck.m_cards[ cardI ].DeckIndex() ];
+							card.m_showCard = true;
+							card.m_showFront = false;
+							card.m_trans = deckPos;
+
 							deckPos.m_pos.y -= c_pileCardHeight;
 							deckPos.m_z += 1.0f / 108.0f;
 						}
@@ -629,22 +700,19 @@ static void DrawGame
 				}
 				else
 				{
-					Trans2D cardPos;
-					cardPos.m_pos = glm::floor( Lerp( anim.m_start, anim.m_end, anim.m_animatingTime ) );
-					cardPos.m_z = 1.0f;
-					if ( anim.m_cardValue.has_value() )
-					{
-						Core::Render::DrawSpriteThisFrame( _gameRender.m_cardFront[ anim.m_cardValue->DeckIndex() ], cardPos );
-					}
-					else
-					{
-						Core::Render::DrawSpriteThisFrame( _gameRender.m_cardBack, cardPos );
-					}
-
 					DrawDeck( _fd, _gameData, _gameRender, anim.m_hideTopDeck );
 					DrawDiscard( _fd, _gameData, _gameRender, anim.m_hideTopDiscard );
 					DrawPlayerHand( _fd, _gameData, _gameRender, anim.m_hideDrawn[ 0 ] );
 					DrawAIHand( _fd, _gameData, _gameRender, anim.m_hideDrawn[ 1 ] );
+
+					Trans2D cardPos;
+					cardPos.m_pos = glm::floor( Lerp( anim.m_start, anim.m_end, anim.m_animatingTime ) );
+					cardPos.m_z = 1.0f;
+
+					GameRender::CardRender& card = _gameRender.m_cards[ anim.m_cardValue.DeckIndex() ];
+					card.m_showCard = true;
+					card.m_showFront = anim.m_showFront;
+					card.m_trans = cardPos;
 				}
 				break;
 			}
@@ -681,6 +749,18 @@ static void DrawGame
 		DrawDeck( _fd, _gameData, _gameRender );
 		DrawDiscard( _fd, _gameData, _gameRender );
 	}
+
+	// Push to render manager
+	std::for_each(
+		std::execution::par_unseq,
+		_gameRender.m_cards.begin(),
+		_gameRender.m_cards.end(),
+		[]( GameRender::CardRender const& _card )
+		{
+			Core::Render::UpdateSpriteInScene( _card.m_cardFront, _card.m_trans, _card.m_showCard && _card.m_showFront ? 0u : SpriteFlag_Hidden );
+			Core::Render::UpdateSpriteInScene( _card.m_cardBack, _card.m_trans, _card.m_showCard && !_card.m_showFront ? 0u : SpriteFlag_Hidden );
+		}
+	);
 }
 
 static void DrawText
@@ -886,24 +966,28 @@ static void HandleInteraction
 			{
 				if ( c_drawBox.Contains( mousePos ) && selected )
 				{
+					_gameData.m_players[ 0 ].m_hand.m_drawnCard = _gameData.m_deck.Draw();
+
 					AnimMoveCard anim;
 					anim.m_start = GetDeckTop( _gameData );
 					anim.m_end = c_playerDrawnLoc;
 					anim.m_hideDrawn[ 0 ] = true;
-					_gameData.QueueAnim( std::move( anim ) );
+					anim.m_cardValue = *_gameData.m_players[ 0 ].m_hand.m_drawnCard;
 
-					_gameData.m_players[ 0 ].m_hand.m_drawnCard = _gameData.m_deck.Draw();
+					_gameData.QueueAnim( std::move( anim ) );
 				}
 
 				if ( c_takeBox.Contains( mousePos ) && selected )
 				{
+					_gameData.m_players[ 0 ].m_hand.m_drawnCard = _gameData.m_discard.PickUpTop();
+
 					AnimMoveCard anim;
 					anim.m_start = GetDiscardTop( _gameData );
 					anim.m_end = c_playerDrawnLoc;
 					anim.m_hideDrawn[ 0 ] = true;
-					_gameData.QueueAnim( std::move( anim ) );
+					anim.m_cardValue = *_gameData.m_players[ 0 ].m_hand.m_drawnCard;
 
-					_gameData.m_players[ 0 ].m_hand.m_drawnCard = _gameData.m_discard.PickUpTop();
+					_gameData.QueueAnim( std::move( anim ) );
 				}
 			}
 		}

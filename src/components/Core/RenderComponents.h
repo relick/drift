@@ -76,6 +76,7 @@ namespace Core
 			using SpriteInit = std::variant< std::string, Resource::SpriteID >;
 			SpriteInit m_spriteInit;
 			Trans2D m_initTrans;
+			uint32 m_initFlags;
 		};
 
 		struct Sprite
@@ -84,6 +85,7 @@ namespace Core
 
 			Resource::SpriteID m_spriteID;
 			Render::SpriteSceneID m_spriteSceneID;
+			uint32 m_spriteFlags;
 		};
 
 	}

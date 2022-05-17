@@ -54,7 +54,7 @@ namespace Core
 		if (loaded)
 		{
 			// Add to render manager
-			newComponent.m_spriteSceneID = Core::Render::AddSpriteToScene( newComponent.m_spriteID, _desc.m_initTrans );
+			newComponent.m_spriteSceneID = Core::Render::AddSpriteToScene( newComponent.m_spriteID, _desc.m_initTrans, _desc.m_initFlags );
 			
 			// Add to ecs
 			Core::ECS::AddComponent(_entity, newComponent);

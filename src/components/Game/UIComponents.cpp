@@ -27,7 +27,7 @@ namespace Core
 		if ( success )
 		{
 			Trans2D fullScreenSpriteTrans; // default will cover the whole screen.
-			loadingScreen.m_fullScreenSprite = Core::Render::AddSpriteToScene( fullScreenSprite, fullScreenSpriteTrans );
+			loadingScreen.m_fullScreenSprite = Core::Render::AddSpriteToScene( fullScreenSprite, fullScreenSpriteTrans, 0u );
 		}
 		else
 		{

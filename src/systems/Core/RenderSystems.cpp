@@ -88,7 +88,7 @@ namespace Core
 
 			Core::MakeSystem<Sys::RENDER_QUEUE>([](Core::Render::Sprite const& _sprite, Core::Transform2D const& _t)
 			{
-				UpdateSpriteInScene( _sprite.m_spriteSceneID, _t.CalculateWorldTransform() );
+				UpdateSpriteInScene( _sprite.m_spriteSceneID, _t.CalculateWorldTransform(), _sprite.m_spriteFlags );
 			});
 
 

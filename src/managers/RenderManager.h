@@ -32,8 +32,8 @@ namespace Core
 
 		CameraState const& GetCameraState();
 
-		[[nodiscard]] SpriteSceneID AddSpriteToScene( Core::Resource::SpriteID _sprite, Trans2D const& _screenTrans );
-		void UpdateSpriteInScene( SpriteSceneID _sprite, Trans2D const& _screenTrans );
+		[[nodiscard]] SpriteSceneID AddSpriteToScene( Core::Resource::SpriteID _sprite, Trans2D const& _screenTrans, uint32 _initFlags );
+		void UpdateSpriteInScene( SpriteSceneID _sprite, Trans2D const& _screenTrans, uint32 _flags );
 		void RemoveSpriteFromScene( SpriteSceneID _sprite );
 
 		// Functions for adding graphics just this frame. The more this is done, the slower things are :)

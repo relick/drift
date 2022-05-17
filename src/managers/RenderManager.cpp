@@ -289,14 +289,14 @@ namespace Core
 			Vec2 m_spriteDims;
 			uint32 m_flags;
 
-			SpriteBufferData(Vec3 _position, Vec2 _scale, Vec1 _rotation, Vec2 _topLeftUV, Vec2 _uvDims, Vec2 _spriteDims)
+			SpriteBufferData(Vec3 _position, Vec2 _scale, Vec1 _rotation, Vec2 _topLeftUV, Vec2 _uvDims, Vec2 _spriteDims, uint32 _flags = 0u)
 				: m_position(_position)
 				, m_scale(_scale)
 				, m_rotation(_rotation)
 				, m_topLeftUV(_topLeftUV)
 				, m_UVDims(_uvDims)
 				, m_spriteDims(_spriteDims)
-				, m_flags(0u)
+				, m_flags(_flags)
 			{}
 		};
 
@@ -309,6 +309,7 @@ namespace Core
 			{
 				Resource::SpriteID m_sprite;
 				usize m_pos;
+				bool m_needsReorder{ false };
 			};
 
 			struct NonBufferData
@@ -330,9 +331,13 @@ namespace Core
 			std::vector<SpriteBufferData> spriteBuffer;
 			std::vector<DrawCall> drawCallList;
 			bool m_callListDirty{ false };
+			bool m_orderDirty{ false };
+			absl::Mutex m_mutex;
 
-			SpriteSceneID Add( Resource::SpriteID _sprite, Trans2D const& _screenTrans )
+			SpriteSceneID Add( Resource::SpriteID _sprite, Trans2D const& _screenTrans, uint32 _flags )
 			{
+				absl::MutexLock lock( &m_mutex );
+
 				SpriteSceneID const sceneSprite = sceneSpriteMapping.Emplace( _sprite, ordering.size() );
 				Resource::SpriteData const& spriteData = Core::Resource::GetSprite( _sprite );
 				ordering.emplace_back( sceneSprite, spriteData.m_texture, spriteData.m_useAlpha );
@@ -342,10 +347,11 @@ namespace Core
 					_screenTrans.m_rot.m_rads,
 					spriteData.m_topLeftUV,
 					spriteData.m_dimensionsUV,
-					spriteData.m_dimensions
+					spriteData.m_dimensions,
+					_flags
 				);
 
-				Reorder( sceneSprite );
+				MarkForReorder( sceneSprite );
 
 				m_callListDirty = true;
 
@@ -356,6 +362,8 @@ namespace Core
 
 			void Erase( SpriteSceneID _sprite )
 			{
+				absl::MutexLock lock( &m_mutex );
+
 				usize pos = FindSprite( _sprite );
 				ordering.erase( ordering.begin() + pos );
 				spriteBuffer.erase( spriteBuffer.begin() + pos );
@@ -367,9 +375,16 @@ namespace Core
 				return sceneSpriteMapping[ _sprite ].m_pos;
 			}
 
+			void MarkForReorder( SpriteSceneID _sprite )
+			{
+				sceneSpriteMapping[ _sprite ].m_needsReorder = true;
+				m_orderDirty = true;
+			}
+
 			void Reorder( SpriteSceneID _sprite )
 			{
 				usize curPos = FindSprite( _sprite );
+				sceneSpriteMapping[ _sprite ].m_needsReorder = false;
 
 				auto isLess = [this]( usize _a, usize _b )
 				{
@@ -409,38 +424,61 @@ namespace Core
 
 			}
 
-			void RegenerateDrawCallList()
+			void ProcessReorder()
 			{
-				drawCallList.clear();
+				absl::MutexLock lock( &m_mutex );
 
-				Resource::TextureID currentTexture;
-				usize firstSpriteWithTextureI = 0;
-				for ( usize spriteI{ 0 }; spriteI < spriteBuffer.size(); ++spriteI )
+				if ( m_orderDirty )
 				{
-					if ( currentTexture != ordering[ spriteI ].m_texture )
+					for ( auto const& [sceneSpriteID, spriteData] : sceneSpriteMapping )
 					{
-						if ( spriteI != 0 )
+						if ( spriteData.m_needsReorder )
 						{
-							drawCallList.emplace_back(
-								( int )( sizeof( SpriteBufferData ) * firstSpriteWithTextureI ),
-								spriteI - firstSpriteWithTextureI,
-								currentTexture
-							);
+							Reorder( sceneSpriteID );
 						}
-
-						currentTexture = ordering[ spriteI ].m_texture;
-						firstSpriteWithTextureI = spriteI;
 					}
+
+					m_orderDirty = false;
 				}
+			}
 
-				// final draw
-				drawCallList.emplace_back(
-					( int )( sizeof( SpriteBufferData ) * firstSpriteWithTextureI ),
-					spriteBuffer.size() - firstSpriteWithTextureI,
-					currentTexture
-				);
+			void ProcessDrawCallList()
+			{
+				absl::MutexLock lock( &m_mutex );
 
-				m_callListDirty = false;
+				if ( m_callListDirty )
+				{
+					drawCallList.clear();
+
+					Resource::TextureID currentTexture;
+					usize firstSpriteWithTextureI = 0;
+					for ( usize spriteI{ 0 }; spriteI < spriteBuffer.size(); ++spriteI )
+					{
+						if ( currentTexture != ordering[ spriteI ].m_texture )
+						{
+							if ( spriteI != 0 )
+							{
+								drawCallList.emplace_back(
+									( int )( sizeof( SpriteBufferData ) * firstSpriteWithTextureI ),
+									spriteI - firstSpriteWithTextureI,
+									currentTexture
+								);
+							}
+
+							currentTexture = ordering[ spriteI ].m_texture;
+							firstSpriteWithTextureI = spriteI;
+						}
+					}
+
+					// final draw
+					drawCallList.emplace_back(
+						( int )( sizeof( SpriteBufferData ) * firstSpriteWithTextureI ),
+						spriteBuffer.size() - firstSpriteWithTextureI,
+						currentTexture
+					);
+
+					m_callListDirty = false;
+				}
 			}
 		};
 
@@ -1094,11 +1132,9 @@ namespace Core
 
 			if ( !g_frameScene.sceneSpriteData.spriteBuffer.empty() )
 			{
+				g_frameScene.sceneSpriteData.ProcessReorder();
+				g_frameScene.sceneSpriteData.ProcessDrawCallList();
 				sg_update_buffer( g_frameScene.sceneSpriteBuffer, SG_RANGE_VEC( g_frameScene.sceneSpriteData.spriteBuffer ) );
-				if ( g_frameScene.sceneSpriteData.m_callListDirty )
-				{
-					g_frameScene.sceneSpriteData.RegenerateDrawCallList();
-				}
 
 				for ( SpriteSceneData::DrawCall const& call : g_frameScene.sceneSpriteData.drawCallList )
 				{
@@ -1197,17 +1233,19 @@ namespace Core
 		SpriteSceneID AddSpriteToScene
 		(
 			Core::Resource::SpriteID _sprite,
-			Trans2D const& _screenTrans
+			Trans2D const& _screenTrans,
+			uint32 _initFlags
 		)
 		{
-			return g_frameScene.sceneSpriteData.Add( _sprite, _screenTrans );
+			return g_frameScene.sceneSpriteData.Add( _sprite, _screenTrans, _initFlags );
 		}
 
 		//--------------------------------------------------------------------------------
 		void UpdateSpriteInScene
 		(
 			SpriteSceneID _sprite,
-			Trans2D const& _screenTrans
+			Trans2D const& _screenTrans,
+			uint32 _flags
 		)
 		{
 			SpriteBufferData& sbData = g_frameScene.sceneSpriteData.spriteBuffer[ g_frameScene.sceneSpriteData.FindSprite( _sprite ) ];
@@ -1215,11 +1253,10 @@ namespace Core
 			sbData.m_position = Vec3( _screenTrans.m_pos, _screenTrans.m_z );
 			sbData.m_scale = _screenTrans.m_scale;
 			sbData.m_rotation = _screenTrans.m_rot.m_rads;
+			sbData.m_flags = _flags;
 			if ( prevZ != _screenTrans.m_z )
 			{
-				// TODO: this is not thread safe
-
-				g_frameScene.sceneSpriteData.Reorder( _sprite );
+				g_frameScene.sceneSpriteData.MarkForReorder( _sprite );
 			}
 		}
 

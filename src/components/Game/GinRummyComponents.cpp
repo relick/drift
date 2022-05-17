@@ -37,6 +37,20 @@ void Deck::Shuffle()
 	std::mt19937 rng{ rd() };
 
 	std::shuffle( m_cards.begin(), m_cards.end(), rng );
+
+	// Hand override
+	/*m_cards.assign(52, {Card::Suit::Diamonds, Card::Face::Ace});
+
+	m_cards[ 50 ] = { Card::Suit::Spades, Card::Face::Two };
+	m_cards[ 48 ] = { Card::Suit::Spades, Card::Face::Three };
+	m_cards[ 46 ] = { Card::Suit::Spades, Card::Face::Four };
+	m_cards[ 44 ] = { Card::Suit::Spades, Card::Face::Five };
+	m_cards[ 42 ] = { Card::Suit::Clubs, Card::Face::Four };
+	m_cards[ 40 ] = { Card::Suit::Hearts, Card::Face::Four };
+	m_cards[ 38 ] = { Card::Suit::Diamonds, Card::Face::Four };
+	m_cards[ 36 ] = { Card::Suit::Hearts, Card::Face::Seven };
+	m_cards[ 34 ] = { Card::Suit::Hearts, Card::Face::Eight };
+	m_cards[ 32 ] = { Card::Suit::Clubs, Card::Face::Ace };*/
 }
 
 Card Deck::Draw()
@@ -145,9 +159,22 @@ std::vector<Card> Hand::GetBestJunkCards
 		return GetJunk( matches, runs, _includeDrawn );
 	}
 
-	// Split runs into overlapping groups of 3.
+	// Split matches and runs into overlapping groups of 3.
 	// Calculate values of all combinations of including or excluding matches
-	// Take best - this should be a maximum of 4 calculations given a run must be at least 3 cards, leaving only 8 that can be matches, of which only 2 matches can fit
+	// Take best - this calculation method sucks but I think it works and that'll do.
+	std::vector<std::vector<Card>> splitMatches;
+	for ( std::vector<Card> const& match : matches )
+	{
+		splitMatches.push_back( match );
+		if ( match.size() > 3 )
+		{
+			splitMatches.push_back( { match[ 0 ], match[ 1 ], match[ 2 ], } );
+			splitMatches.push_back( { match[ 0 ], match[ 1 ], match[ 3 ], } );
+			splitMatches.push_back( { match[ 0 ], match[ 2 ], match[ 3 ], } );
+			splitMatches.push_back( { match[ 1 ], match[ 2 ], match[ 3 ], } );
+		}
+	}
+
 	std::vector<std::vector<Card>> splitRuns;
 	for ( std::vector<Card> const& run : runs )
 	{
@@ -157,7 +184,7 @@ std::vector<Card> Hand::GetBestJunkCards
 		}
 	}
 
-	return GetBestJunkCards_TestCombos( matches, splitRuns, _includeDrawn, 0 ).second;
+	return GetBestJunkCards_TestCombos( splitMatches, splitRuns, _includeDrawn, 0 ).second;
 }
 
 std::vector<Card> Hand::GetJunk

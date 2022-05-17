@@ -6,6 +6,31 @@
 
 namespace Core
 {
+	// Accessors/mutators that could allow for alternative transform storage and checks at some point
+	
+	struct Transform3D;
+	struct Transform2D;
+
+	Trans GetTransform3D( Core::EntityID _entity )
+	{
+		return Core::GetComponent<Transform3D>( _entity )->m_transform;
+	}
+
+	Trans2D GetTransform2D( Core::EntityID _entity )
+	{
+		return Core::GetComponent<Transform2D>( _entity )->m_transform;
+	}
+
+	void SetTransform3D( Core::EntityID _entity, Trans const& _newTrans )
+	{
+		Core::GetComponent<Transform3D>( _entity )->m_transform = _newTrans;
+	}
+
+	void SetTransform2D( Core::EntityID _entity, Trans2D const& _newTrans )
+	{
+		Core::GetComponent<Transform2D>( _entity )->m_transform = _newTrans;
+	}
+
 	// Transform types split between 'normal' (3D) and '2D' (sprites only).
 	// In a way this is kind of inconvenient but I don't think it's ever going to be an actual issue
 	// In fact, if the same entity ever wants to exist in both 3D and 2D, it feels better that they control those two transforms separately.

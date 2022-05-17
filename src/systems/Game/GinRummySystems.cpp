@@ -620,7 +620,18 @@ static void DrawGame
 						card.m_showCard = true;
 						card.m_showFront = false;
 
-						if ( diff <= 1.0f )
+						if ( diff < 0.0f )
+						{
+							deckSize = 52 - cardI;
+							Vec2 const topDeckPos = c_deckStart - Vec2{ 0, ( Vec1 )deckSize * c_pileCardHeight };
+
+							Trans2D cardTrans;
+							cardTrans.m_pos = topDeckPos;
+							cardTrans.m_z = 1.5f - targetTransAI.m_z;
+
+							card.m_trans = cardTrans;
+						}
+						else if ( diff <= 1.0f )
 						{
 							deckSize = 52 - cardI;
 							Vec2 const topDeckPos = c_deckStart - Vec2{ 0, ( Vec1 )deckSize * c_pileCardHeight };
@@ -631,7 +642,6 @@ static void DrawGame
 							cardTrans.m_z = 1.0f;
 
 							card.m_trans = cardTrans;
-							break;
 						}
 						else
 						{
@@ -672,10 +682,9 @@ static void DrawGame
 					}
 
 					{
-						deckSize--;
 						Trans2D deckPos;
 						deckPos.m_pos = c_deckStart;
-						for ( usize cardI = 0; cardI < deckSize; ++cardI )
+						for ( usize cardI = 0; cardI < _gameData.m_deck.m_cards.size(); ++cardI )
 						{
 							GameRender::CardRender& card = _gameRender.m_cards[ _gameData.m_deck.m_cards[ cardI ].DeckIndex() ];
 							card.m_showCard = true;

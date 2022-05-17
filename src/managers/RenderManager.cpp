@@ -257,28 +257,6 @@ namespace Core
 			{}
 		};
 
-		struct SpriteToDraw
-		{
-			Resource::SpriteID m_sprite{};
-			Trans2D m_transform{};
-
-			SpriteToDraw(Resource::SpriteID _sprite, Trans2D const& _trans)
-				: m_sprite{ _sprite }
-				, m_transform{ _trans }
-			{}
-		};
-
-		struct SpriteScratchData
-		{
-			std::reference_wrapper<Resource::SpriteData const> m_sprite;
-			Trans2D m_transform;
-
-			SpriteScratchData(Resource::SpriteData const& _sprite, Trans2D const& _transform)
-				: m_sprite{ _sprite }
-				, m_transform{ _transform }
-			{}
-		};
-
 		struct SpriteBufferData
 		{
 			Vec3 m_position;
@@ -300,7 +278,6 @@ namespace Core
 			{}
 		};
 
-		constexpr usize g_maxFreeSpritesPerFrame = 128;
 		constexpr usize g_maxSceneSpritesPerFrame = 262'144;
 
 		struct SpriteSceneData
@@ -388,6 +365,30 @@ namespace Core
 
 				auto isLess = [this]( usize _a, usize _b )
 				{
+					// Explanation:
+					// a and b both alpha - sort by Z, then sort by texture (lessZ || lessTex)
+					// a alpha, b not - a must be above b (false)
+					// b alpha, a not - b must be above a (true)
+					// a and b not alpha - sort by texture (lessTex)
+					/*if ( bSpriteData.m_useAlpha )
+					{
+						if ( aSpriteData.m_useAlpha )
+						{
+							return _a.m_transform.m_z < _b.m_transform.m_z || aSpriteData.m_texture < bSpriteData.m_texture;
+						}
+						else
+						{
+							return true;
+						}
+					}
+					else if ( aSpriteData.m_useAlpha )
+					{
+						return false;
+					}
+					else
+					{
+						return aSpriteData.m_texture < bSpriteData.m_texture;
+					}*/
 					bool const lessTexture = ordering[ _a ].m_texture < ordering[ _b ].m_texture;
 					bool const lessZ = spriteBuffer[ _a ].m_position.z < spriteBuffer[ _b ].m_position.z;
 					bool const equalAlpha = ordering[ _a ].m_useAlpha == ordering[ _b ].m_useAlpha;
@@ -489,14 +490,10 @@ namespace Core
 			CameraState camera{};
 			Mutex< std::vector<ModelToDraw> > models;
 			std::vector<ModelScratchData> modelScratchData;
-			Mutex< std::vector<SpriteToDraw> > sprites;
-			std::vector<SpriteScratchData> spriteScratchData;
 			std::vector<SpriteBufferData> spriteBufferData;
 
 			SpriteSceneData sceneSpriteData;
 
-			sg_bindings spriteBinds{};
-			sg_buffer spriteBuffer{};
 			sg_bindings sceneSpriteBinds{};
 			sg_buffer sceneSpriteBuffer{};
 			Resource::TextureSampleID skybox{};
@@ -612,27 +609,14 @@ namespace Core
 					1.0f, 0.0f,		1, 0,
 					0.0f, 1.0f,		0, 1,
 					1.0f, 1.0f,		1, 1,
-				} );
+					} );
 
 				sg_buffer_desc rectangle2DWithUVBufferDesc{
 					.type = SG_BUFFERTYPE_VERTEXBUFFER,
-					.data = SG_RANGE(rectangle2DWithUV),
+					.data = SG_RANGE( rectangle2DWithUV ),
 					.label = "rectangle2DWithUV-buffer",
 				};
-				g_frameScene.spriteBinds.vertex_buffers[0] = sg_make_buffer(rectangle2DWithUVBufferDesc);
-
-				sg_buffer_desc spriteBufferDesc{
-					.size = sizeof(SpriteBufferData) * g_maxFreeSpritesPerFrame,
-					.type = SG_BUFFERTYPE_VERTEXBUFFER,
-					.usage = SG_USAGE_STREAM,
-					.label = "sprite-buffer",
-				};
-				g_frameScene.spriteBuffer = sg_make_buffer(spriteBufferDesc);
-				g_frameScene.spriteBinds.vertex_buffers[1] = g_frameScene.spriteBuffer;
-			}
-
-			{
-				g_frameScene.sceneSpriteBinds.vertex_buffers[ 0 ] = g_frameScene.spriteBinds.vertex_buffers[ 0 ];
+				g_frameScene.sceneSpriteBinds.vertex_buffers[ 0 ] = sg_make_buffer( rectangle2DWithUVBufferDesc );
 
 				sg_buffer_desc spriteBufferDesc{
 					.size = sizeof( SpriteBufferData ) * g_maxSceneSpritesPerFrame,
@@ -892,19 +876,6 @@ namespace Core
 		}
 
 		//--------------------------------------------------------------------------------
-		static void RenderSpriteBuffer(Resource::TextureID _texture)
-		{
-			// fill and draw buffer
-			g_frameScene.spriteBinds.vertex_buffer_offsets[1] = sg_append_buffer(g_frameScene.spriteBuffer, SG_RANGE_VEC(g_frameScene.spriteBufferData));
-			g_frameScene.spriteBinds.fs_images[SLOT_sprites_textureAtlas] = _texture.GetSokolID();
-
-			g_renderState.SetBinding(g_frameScene.spriteBinds, 4);
-			g_renderState.Draw(static_cast<int>(g_frameScene.spriteBufferData.size()));
-
-			g_frameScene.spriteBufferData.clear();
-		}
-
-		//--------------------------------------------------------------------------------
 		static void RenderSceneSpriteBuffer( int _vertexOffset, usize _size, Resource::TextureID _texture )
 		{
 			// fill and draw buffer
@@ -1046,89 +1017,12 @@ namespace Core
 			Core::Render::FrameData const& _rfd
 		)
 		{
-			auto spritesAccess = g_frameScene.sprites.Read();
-
 			g_renderState.NextPass(Pass_MainTarget);
 			g_renderState.SetRenderer(Renderer_Sprites);
 			sprites_vs_params_t vs_params{
 				.projection = GetSpriteOrthoMat(_rfd),
 			};
 			sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_sprites_vs_params, SG_RANGE_REF(vs_params));
-
-			g_frameScene.spriteScratchData.clear();
-			g_frameScene.spriteScratchData.reserve( spritesAccess->size() );
-			for ( SpriteToDraw const& std : *spritesAccess )
-			{
-				g_frameScene.spriteScratchData.emplace_back( Resource::GetSprite( std.m_sprite ), std.m_transform );
-			}
-
-			// Alpha and texture sort
-			std::sort(g_frameScene.spriteScratchData.begin(), g_frameScene.spriteScratchData.end(), [](auto const& _a, auto const& _b) -> bool
-			{
-				auto const& aSpriteData = _a.m_sprite.get();
-				auto const& bSpriteData = _b.m_sprite.get();
-				// Explanation:
-				// a and b both alpha - sort by Z, then sort by texture (lessZ || lessTex)
-				// a alpha, b not - a must be above b (false)
-				// b alpha, a not - b must be above a (true)
-				// a and b not alpha - sort by texture (lessTex)
-				/*if ( bSpriteData.m_useAlpha )
-				{
-					if ( aSpriteData.m_useAlpha )
-					{
-						return _a.m_transform.m_z < _b.m_transform.m_z || aSpriteData.m_texture < bSpriteData.m_texture;
-					}
-					else
-					{
-						return true;
-					}
-				}
-				else if ( aSpriteData.m_useAlpha )
-				{
-					return false;
-				}
-				else
-				{
-					return aSpriteData.m_texture < bSpriteData.m_texture;
-				}*/
-				bool const lessTexture = aSpriteData.m_texture < bSpriteData.m_texture;
-				bool const lessZ = _a.m_transform.m_z < _b.m_transform.m_z;
-				bool const equalAlpha = aSpriteData.m_useAlpha == bSpriteData.m_useAlpha;
-				return ( !equalAlpha && bSpriteData.m_useAlpha ) || ( equalAlpha && ( ( bSpriteData.m_useAlpha && lessZ ) || lessTexture ) );
-			});
-
-			// For each texture, set up buffer and binding and draw sprites
-			Resource::TextureID currentTexture;
-			for (usize spriteI{ 0 }; spriteI < g_frameScene.spriteScratchData.size(); ++spriteI)
-			{
-				SpriteScratchData const& spriteScratch = g_frameScene.spriteScratchData[spriteI];
-				Resource::SpriteData const& sprite = spriteScratch.m_sprite.get();
-				if (currentTexture != sprite.m_texture)
-				{
-					if (spriteI != 0)
-					{
-						RenderSpriteBuffer(currentTexture);
-					}
-
-					currentTexture = sprite.m_texture;
-				}
-
-
-				g_frameScene.spriteBufferData.emplace_back(
-					Vec3(spriteScratch.m_transform.m_pos, spriteScratch.m_transform.m_z),
-					spriteScratch.m_transform.m_scale,
-					spriteScratch.m_transform.m_rot.m_rads,
-					sprite.m_topLeftUV,
-					sprite.m_dimensionsUV,
-					sprite.m_dimensions
-				);
-			}
-
-			// final draw
-			if (!g_frameScene.spriteBufferData.empty())
-			{
-				RenderSpriteBuffer(currentTexture);
-			}
 
 			if ( !g_frameScene.sceneSpriteData.spriteBuffer.empty() )
 			{
@@ -1183,7 +1077,6 @@ namespace Core
 			g_frameScene.skybox = Resource::TextureSampleID{};
 			g_frameScene.lights.Write()->Reset();
 			g_frameScene.models.Write()->clear();
-			g_frameScene.sprites.Write()->clear();
 
 			// end of the main drawing pass
 			// begin of the screen drawing pass
@@ -1269,18 +1162,6 @@ namespace Core
 		)
 		{
 			g_frameScene.sceneSpriteData.Erase( _sprite );
-		}
-
-		//--------------------------------------------------------------------------------
-		void DrawSpriteThisFrame
-		(
-			Core::Resource::SpriteID _sprite,
-			Trans2D const& _screenTrans
-		)
-		{
-			auto spritesAccess = g_frameScene.sprites.Write();
-			spritesAccess->emplace_back(_sprite, _screenTrans);
-			kaAssert( spritesAccess->size() < g_maxFreeSpritesPerFrame );
 		}
 
 		//--------------------------------------------------------------------------------

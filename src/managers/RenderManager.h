@@ -37,7 +37,6 @@ namespace Core
 		void RemoveSpriteFromScene( SpriteSceneID _sprite );
 
 		// Functions for adding graphics just this frame. The more this is done, the slower things are :)
-		void DrawSpriteThisFrame( Core::Resource::SpriteID _sprite, Trans2D const& _screenTrans );
 		void DrawModelThisFrame(Core::Resource::ModelID _model, Trans const& _worldTrans);
 		void DrawSkyboxThisFrame(Core::Resource::TextureSampleID _skybox);
 		LightSetter AddLightThisFrame();

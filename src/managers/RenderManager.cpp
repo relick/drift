@@ -1248,6 +1248,8 @@ namespace Core
 			uint32 _flags
 		)
 		{
+			// FIXME: https://github.com/relick/drift/issues/1
+
 			SpriteBufferData& sbData = g_frameScene.sceneSpriteData.spriteBuffer[ g_frameScene.sceneSpriteData.FindSprite( _sprite ) ];
 			Vec1 const prevZ = sbData.m_position.z;
 			sbData.m_position = Vec3( _screenTrans.m_pos, _screenTrans.m_z );

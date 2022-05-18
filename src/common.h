@@ -25,7 +25,7 @@ constexpr void SafeDelete(T*& _obj)
 	_obj = nullptr;
 }
 
-#define SG_RANGE_VEC(x) sg_range{ x.data(), sizeof(decltype(x)::value_type) * x.size() }
+#define SG_RANGE_VEC(x) sg_range{ x.data(), sizeof(std::remove_reference_t<decltype(x)>::value_type) * x.size() }
 
 // component helpers
 #define use_initialiser struct _initialiser_only {}

@@ -14,6 +14,7 @@
 #include "shaders/sprites_constants.glslh"
 
 #include "RenderTools/Pipeline.h"
+#include "RenderTools/SpriteSceneData.h"
 
 #include <sokol_app.h>
 #include <sokol_gfx.h>
@@ -257,232 +258,6 @@ namespace Core
 			{}
 		};
 
-		struct SpriteBufferData
-		{
-			Vec3 m_position;
-			Vec2 m_scale;
-			Vec1 m_rotation;
-			Vec2 m_topLeftUV;
-			Vec2 m_UVDims;
-			Vec2 m_spriteDims;
-			uint32 m_flags;
-
-			SpriteBufferData(Vec3 _position, Vec2 _scale, Vec1 _rotation, Vec2 _topLeftUV, Vec2 _uvDims, Vec2 _spriteDims, uint32 _flags = 0u)
-				: m_position(_position)
-				, m_scale(_scale)
-				, m_rotation(_rotation)
-				, m_topLeftUV(_topLeftUV)
-				, m_UVDims(_uvDims)
-				, m_spriteDims(_spriteDims)
-				, m_flags(_flags)
-			{}
-		};
-
-		constexpr usize g_maxSceneSpritesPerFrame = 262'144;
-
-		struct SpriteSceneData
-		{
-			struct SpriteData
-			{
-				Resource::SpriteID m_sprite;
-				usize m_pos;
-				bool m_needsReorder{ false };
-			};
-
-			struct NonBufferData
-			{
-				SpriteSceneID m_id;
-				Resource::TextureID m_texture;
-				bool m_useAlpha{ false };
-			};
-
-			struct DrawCall
-			{
-				int vertexOffset;
-				usize count;
-				Resource::TextureID texture;
-			};
-
-			StaticVector<SpriteSceneID, SpriteData> sceneSpriteMapping;
-			std::vector<NonBufferData> ordering;
-			std::vector<SpriteBufferData> spriteBuffer;
-			std::vector<DrawCall> drawCallList;
-			bool m_callListDirty{ false };
-			bool m_orderDirty{ false };
-			absl::Mutex m_mutex;
-
-			SpriteSceneID Add( Resource::SpriteID _sprite, Trans2D const& _screenTrans, uint32 _flags )
-			{
-				absl::MutexLock lock( &m_mutex );
-
-				SpriteSceneID const sceneSprite = sceneSpriteMapping.Emplace( _sprite, ordering.size() );
-				Resource::SpriteData const& spriteData = Core::Resource::GetSprite( _sprite );
-				ordering.emplace_back( sceneSprite, spriteData.m_texture, spriteData.m_useAlpha );
-				spriteBuffer.emplace_back(
-					Vec3( _screenTrans.m_pos, _screenTrans.m_z ),
-					_screenTrans.m_scale,
-					_screenTrans.m_rot.m_rads,
-					spriteData.m_topLeftUV,
-					spriteData.m_dimensionsUV,
-					spriteData.m_dimensions,
-					_flags
-				);
-
-				MarkForReorder( sceneSprite );
-
-				m_callListDirty = true;
-
-				kaAssert( ordering.size() < g_maxSceneSpritesPerFrame );
-
-				return sceneSprite;
-			}
-
-			void Erase( SpriteSceneID _sprite )
-			{
-				absl::MutexLock lock( &m_mutex );
-
-				usize pos = FindSprite( _sprite );
-				ordering.erase( ordering.begin() + pos );
-				spriteBuffer.erase( spriteBuffer.begin() + pos );
-				sceneSpriteMapping.Erase( _sprite );
-			}
-
-			usize FindSprite( SpriteSceneID _sprite ) const
-			{
-				return sceneSpriteMapping[ _sprite ].m_pos;
-			}
-
-			void MarkForReorder( SpriteSceneID _sprite )
-			{
-				sceneSpriteMapping[ _sprite ].m_needsReorder = true;
-				m_orderDirty = true;
-			}
-
-			void Reorder( SpriteSceneID _sprite )
-			{
-				usize curPos = FindSprite( _sprite );
-				sceneSpriteMapping[ _sprite ].m_needsReorder = false;
-
-				auto isLess = [this]( usize _a, usize _b )
-				{
-					// Explanation:
-					// a and b both alpha - sort by Z, then sort by texture (lessZ || lessTex)
-					// a alpha, b not - a must be above b (false)
-					// b alpha, a not - b must be above a (true)
-					// a and b not alpha - sort by texture (lessTex)
-					/*if ( bSpriteData.m_useAlpha )
-					{
-						if ( aSpriteData.m_useAlpha )
-						{
-							return _a.m_transform.m_z < _b.m_transform.m_z || aSpriteData.m_texture < bSpriteData.m_texture;
-						}
-						else
-						{
-							return true;
-						}
-					}
-					else if ( aSpriteData.m_useAlpha )
-					{
-						return false;
-					}
-					else
-					{
-						return aSpriteData.m_texture < bSpriteData.m_texture;
-					}*/
-					bool const lessTexture = ordering[ _a ].m_texture < ordering[ _b ].m_texture;
-					bool const lessZ = spriteBuffer[ _a ].m_position.z < spriteBuffer[ _b ].m_position.z;
-					bool const equalAlpha = ordering[ _a ].m_useAlpha == ordering[ _b ].m_useAlpha;
-					return ( !equalAlpha && ordering[ _b ].m_useAlpha ) || ( equalAlpha && ( ( ordering[ _b ].m_useAlpha && lessZ ) || lessTexture ) );
-				};
-
-				while ( curPos > 0u )
-				{
-					usize prevPos = curPos - 1u;
-					if ( isLess( prevPos, curPos ) )
-					{
-						break;
-					}
-					std::swap( sceneSpriteMapping[ ordering[ prevPos ].m_id ].m_pos, sceneSpriteMapping[ ordering[ curPos ].m_id ].m_pos );
-					std::swap( ordering[ prevPos ], ordering[ curPos ] );
-					std::swap( spriteBuffer[ prevPos ], spriteBuffer[ curPos ] );
-					curPos--;
-					m_callListDirty = true;
-				}
-
-				while ( curPos < ordering.size() - 1u )
-				{
-					usize nextPos = curPos + 1u;
-					if ( isLess( curPos, nextPos ) )
-					{
-						break;
-					}
-					std::swap( sceneSpriteMapping[ ordering[ curPos ].m_id ].m_pos, sceneSpriteMapping[ ordering[ nextPos ].m_id ].m_pos );
-					std::swap( ordering[ curPos ], ordering[ nextPos ] );
-					std::swap( spriteBuffer[ curPos ], spriteBuffer[ nextPos ] );
-					curPos++;
-					m_callListDirty = true;
-				}
-
-			}
-
-			void ProcessReorder()
-			{
-				absl::MutexLock lock( &m_mutex );
-
-				if ( m_orderDirty )
-				{
-					for ( auto const& [sceneSpriteID, spriteData] : sceneSpriteMapping )
-					{
-						if ( spriteData.m_needsReorder )
-						{
-							Reorder( sceneSpriteID );
-						}
-					}
-
-					m_orderDirty = false;
-				}
-			}
-
-			void ProcessDrawCallList()
-			{
-				absl::MutexLock lock( &m_mutex );
-
-				if ( m_callListDirty )
-				{
-					drawCallList.clear();
-
-					Resource::TextureID currentTexture;
-					usize firstSpriteWithTextureI = 0;
-					for ( usize spriteI{ 0 }; spriteI < spriteBuffer.size(); ++spriteI )
-					{
-						if ( currentTexture != ordering[ spriteI ].m_texture )
-						{
-							if ( spriteI != 0 )
-							{
-								drawCallList.emplace_back(
-									( int )( sizeof( SpriteBufferData ) * firstSpriteWithTextureI ),
-									spriteI - firstSpriteWithTextureI,
-									currentTexture
-								);
-							}
-
-							currentTexture = ordering[ spriteI ].m_texture;
-							firstSpriteWithTextureI = spriteI;
-						}
-					}
-
-					// final draw
-					drawCallList.emplace_back(
-						( int )( sizeof( SpriteBufferData ) * firstSpriteWithTextureI ),
-						spriteBuffer.size() - firstSpriteWithTextureI,
-						currentTexture
-					);
-
-					m_callListDirty = false;
-				}
-			}
-		};
-
 		struct FrameScene
 		{
 			Mutex< LightsState > lights{};
@@ -490,7 +265,6 @@ namespace Core
 			CameraState camera{};
 			Mutex< std::vector<ModelToDraw> > models;
 			std::vector<ModelScratchData> modelScratchData;
-			std::vector<SpriteBufferData> spriteBufferData;
 
 			SpriteSceneData sceneSpriteData;
 
@@ -619,7 +393,7 @@ namespace Core
 				g_frameScene.sceneSpriteBinds.vertex_buffers[ 0 ] = sg_make_buffer( rectangle2DWithUVBufferDesc );
 
 				sg_buffer_desc spriteBufferDesc{
-					.size = sizeof( SpriteBufferData ) * g_maxSceneSpritesPerFrame,
+					.size = sizeof( SpriteBufferData ) * c_maxSprites,
 					.type = SG_BUFFERTYPE_VERTEXBUFFER,
 					.usage = SG_USAGE_STREAM,
 					.label = "scene-sprite-buffer",
@@ -1017,25 +791,23 @@ namespace Core
 			Core::Render::FrameData const& _rfd
 		)
 		{
-			g_renderState.NextPass(Pass_MainTarget);
-			g_renderState.SetRenderer(Renderer_Sprites);
-			sprites_vs_params_t vs_params{
-				.projection = GetSpriteOrthoMat(_rfd),
-			};
-			sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_sprites_vs_params, SG_RANGE_REF(vs_params));
-
-			if ( !g_frameScene.sceneSpriteData.spriteBuffer.empty() )
-			{
-				g_frameScene.sceneSpriteData.ProcessReorder();
-				g_frameScene.sceneSpriteData.ProcessDrawCallList();
-				sg_update_buffer( g_frameScene.sceneSpriteBuffer, SG_RANGE_VEC( g_frameScene.sceneSpriteData.spriteBuffer ) );
-
-				for ( SpriteSceneData::DrawCall const& call : g_frameScene.sceneSpriteData.drawCallList )
+			g_frameScene.sceneSpriteData.RunRender(
+				[ &_rfd ]( std::vector<SpriteBufferData> const& _spriteBuffer )
 				{
-					RenderSceneSpriteBuffer( call.vertexOffset, call.count, call.texture );
-				}
+					sg_update_buffer( g_frameScene.sceneSpriteBuffer, SG_RANGE_VEC( _spriteBuffer ) );
 
-			}
+					g_renderState.NextPass( Pass_MainTarget );
+					g_renderState.SetRenderer( Renderer_Sprites );
+					sprites_vs_params_t vs_params{
+						.projection = GetSpriteOrthoMat( _rfd ),
+					};
+					sg_apply_uniforms( SG_SHADERSTAGE_VS, SLOT_sprites_vs_params, SG_RANGE_REF( vs_params ) );
+				},
+				[]( SpriteSceneData::DrawCall const& _drawCall )
+				{
+					RenderSceneSpriteBuffer( _drawCall.vertexOffset, _drawCall.count, _drawCall.texture );
+				}
+			);
 		}
 
 		//--------------------------------------------------------------------------------
@@ -1141,18 +913,7 @@ namespace Core
 			uint32 _flags
 		)
 		{
-			// FIXME: https://github.com/relick/drift/issues/1
-
-			SpriteBufferData& sbData = g_frameScene.sceneSpriteData.spriteBuffer[ g_frameScene.sceneSpriteData.FindSprite( _sprite ) ];
-			Vec1 const prevZ = sbData.m_position.z;
-			sbData.m_position = Vec3( _screenTrans.m_pos, _screenTrans.m_z );
-			sbData.m_scale = _screenTrans.m_scale;
-			sbData.m_rotation = _screenTrans.m_rot.m_rads;
-			sbData.m_flags = _flags;
-			if ( prevZ != _screenTrans.m_z )
-			{
-				g_frameScene.sceneSpriteData.MarkForReorder( _sprite );
-			}
+			g_frameScene.sceneSpriteData.Update( _sprite, _screenTrans, _flags );
 		}
 
 		//--------------------------------------------------------------------------------

@@ -197,7 +197,6 @@ namespace Core
 							linearVelocity[2] *= correction;
 						}
 
-						//_cc.m_body->velo
 						_cc.m_body->setLinearVelocity(linearVelocity);
 					}
 
@@ -216,6 +215,7 @@ namespace Core
 					_cc.m_onGround = false;
 				}
 
+				// TODO: I assume this is to prevent randomly sliding down on slopes we're meant to be on
 				if (_cc.m_onGround)
 				{
 					_cc.m_body->setGravity({ 0, 0, 0 });
@@ -252,7 +252,7 @@ namespace Core
 								Vec1 r = localPoint.length();
 								Vec1 cosTheta = localPoint[1] / r;
 
-								if (fabs(r - mShapeRadius) <= mRadiusThreshold && cosTheta < mMaxCosGround)
+								if (fabs(r - mShapeRadius) <= mRadiusThreshold && cosTheta <= mMaxCosGround)
 								{
 									mHaveGround = true;
 									mGroundPoint = cp.m_positionWorldOnB;

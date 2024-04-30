@@ -147,7 +147,7 @@ void Initialise()
 	{
 		Core::EntityID const preloadEntity = Core::CreateEntity();
 		Game::UI::SceneLoadDesc startScene;
-		startScene.m_nextScene = std::make_shared<Game::Scene::GinRummy>();
+		startScene.m_nextScene = std::make_shared<Game::Scene::CubeTestScene>();
 		Core::AddComponent( preloadEntity, startScene );
 	}
 
